@@ -20,7 +20,7 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 | Strom4 | Power wheelchairs | Heavy rear-wheel drive, very stable |
 | Arrivo Karton | One-piece folder | Light folding power chair, nimble |
 | e-skalation | Push assist | Hub motors, thrust in push strokes |
-| E-six(7) | Push assist | Hub motors with a joystick, optional attendant control |
+| e-six(7) | Push assist | Hub motors with a joystick, optional attendant control |
 | Arschtritt 3000 | Push assist | Pusher wheel at the back, steered and braked by hand |
 | e-kapitän | Tractor unit | Front-mounted drive, three wheels, fastest |
 | Kohlibri | Mobility scooters | Tiny, agile, tippy |

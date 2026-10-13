@@ -20,7 +20,7 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange d
 | Strom4 | Bordstein-Brecher | Schwerer Heckantrieb, sehr standfest |
 | Arrivo Karton | Falt(en)wunder | Leichter faltbarer Elektrorollstuhl, flink |
 | e-skalation | Schubshilfen | Radnabenmotoren, Schub in Greifreifen-Stößen |
-| E-six(7) | Schubshilfen | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
+| e-six(7) | Schubshilfen | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
 | Arschtritt 3000 | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
 | e-kapitän | Vorderlader | Zuggerät vorn, drei Räder, am schnellsten |
 | Kohlibri | Seniorenraketen | Winziges Seniorenmobil, wendig, kippelig |

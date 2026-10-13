@@ -359,7 +359,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   enix: define({
     id: 'enix',
-    label: 'E-six(7)',
+    label: 'e-six(7)',
     profiles: [
       BASE,
       prof('Begleitperson', 'Jemand anderes lenkt von hinten. Vorsichtig. Sehr vorsichtig.', { accel: 0.7, turn: 0.7, speed: 0.85, tip: 0.7, brake: 1.2 }),
