@@ -47,6 +47,8 @@ export class Vehicle {
   private wantedYawTorque = 0;
   private readonly drives: number;
   private readonly turners: number;
+  /** How far the differential axle sits ahead of the centre of mass (0 if it does not). */
+  private readonly frontGripZ: number;
   private readonly handbraked: number;
   /** Phase of the push stroke for vehicles with `pushRhythm`, in rad. */
   pushPhase = 0;
@@ -84,6 +86,8 @@ export class Vehicle {
     this.wheelYaw = spec.wheels.map(() => 0);
     this.drives = spec.wheels.filter((w) => w.drive).length;
     this.turners = spec.wheels.filter((w) => w.turn).length;
+    const turnZ = spec.wheels.find((w) => w.turn)?.z ?? spec.com[2];
+    this.frontGripZ = Math.max(0, turnZ - spec.com[2]);
     this.handbraked = spec.wheels.filter((w) => w.handbrake ?? !!w.drive).length;
     this.tracked = new Tracked(this.body);
   }
@@ -160,6 +164,13 @@ export class Vehicle {
       body.applyTorqueImpulse({ x: this.up.x * fill, y: this.up.y * fill, z: this.up.z * fill }, true);
     }
     this.wantedYawTorque = 0;
+    // Front-wheel drive is the other way round: grip ahead of the centre of mass tightens
+    // every turn until the chair swaps ends. The real ones tame that with gyros; here the
+    // extra yaw torque is simply taken out again.
+    if (this.frontGripZ > 0 && this.wheelsOnGround > 0) {
+      const cancel = -this.frontGripZ * spec.mass * v * yawRate * HANDLING.fwdStability * dt;
+      body.applyTorqueImpulse({ x: this.up.x * cancel, y: this.up.y * cancel, z: this.up.z * cancel }, true);
+    }
 
     let onGround = 0;
     spec.wheels.forEach((w, i) => {
@@ -176,7 +187,7 @@ export class Vehicle {
         turn = -(spec.mass / this.turners) * HANDLING.yawGain * (yawTarget - yawRate) * w.x;
         // An axle behind the centre of mass pulls the nose straight again through its
         // cornering grip. Feed forward the wheel force that cancels this, else it understeers.
-        turn += ((w.z - spec.com[2]) * spec.mass * v * yawTarget) / (this.turners * w.x);
+        if (w.z < spec.com[2]) turn += ((w.z - spec.com[2]) * spec.mass * v * yawTarget) / (this.turners * w.x);
       }
 
       if (input.handbrake && (w.handbrake ?? !!w.drive)) {

@@ -1,5 +1,5 @@
 import { formatMoney } from '../config/tuning';
-import { VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
+import { CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from '../sim/Progress';
 import { TRACKS } from '../tracks';
 import { formatTime } from './Hud';
@@ -26,7 +26,7 @@ export class Menu {
   private readonly root = document.getElementById('menu')!;
   private readonly money = h('b');
   private readonly detail = h('div', 'detail');
-  private readonly vehicleList = h('div', 'cards');
+  private readonly vehicleList = h('div', 'garage');
   private readonly trackList = h('div', 'cards tracks');
   private readonly start = h('button', 'start');
   /** What the cursor is on; may be locked, unlike the progress selection. */
@@ -44,13 +44,13 @@ export class Menu {
     head.append(purse);
 
     const left = h('section', 'col');
-    left.append(h('h2', '', 'Gefährt'), this.vehicleList, this.detail);
+    left.append(this.vehicleList);
     const right = h('section', 'col');
     right.append(h('h2', '', 'Strecke'), this.trackList, this.start);
     const hint = h('p', 'keys');
     hint.innerHTML = '<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los';
     right.append(hint);
-    this.root.append(head, left, right);
+    this.root.append(head, left, this.detail, right);
 
     this.start.addEventListener('click', () => this.go());
     window.addEventListener('keydown', (e) => {
@@ -132,17 +132,22 @@ export class Menu {
     this.money.textContent = formatMoney(this.progress.money);
 
     this.vehicleList.replaceChildren(
-      ...VEHICLE_ORDER.map((id) => {
-        const v = VEHICLES[id];
-        const open = this.vehicleOpen(id);
-        const b = h('button', `card${id === this.vehicle ? ' on' : ''}${open ? '' : ' locked'}`);
-        b.style.setProperty('--tint', `#${v.colors.accent.toString(16).padStart(6, '0')}`);
-        b.append(h('small', '', v.maker), h('strong', '', v.label));
-        if (!open) b.append(h('em', '', `🔒 ${formatMoney(v.unlockPrice)}`));
-        b.addEventListener('click', () => this.pickVehicle(id));
-        return b;
+      ...CATEGORIES.flatMap((cat) => {
+        const cards = h('div', 'cards');
+        for (const id of cat.vehicles) {
+          const v = VEHICLES[id];
+          const open = this.vehicleOpen(id);
+          const b = h('button', `card${id === this.vehicle ? ' on' : ''}${open ? '' : ' locked'}`);
+          b.style.setProperty('--tint', `#${v.colors.accent.toString(16).padStart(6, '0')}`);
+          b.append(h('strong', '', v.label));
+          if (!open) b.append(h('em', '', `🔒 ${formatMoney(v.unlockPrice)}`));
+          b.addEventListener('click', () => this.pickVehicle(id));
+          cards.append(b);
+        }
+        return [h('h2', '', cat.title), cards];
       }),
     );
+    this.vehicleList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
 
     const v = VEHICLES[this.vehicle];
     const stats = h('dl');

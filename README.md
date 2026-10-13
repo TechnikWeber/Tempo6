@@ -4,21 +4,26 @@
 
 A browser racing game with power wheelchairs and mobility scooters. You start at the legal 6 km/h, collect deposit bottles on a supermarket car park, and spend the money on increasingly questionable tuning until 75 km/h.
 
-Status: playable prototype with a start screen, two tracks, seven vehicles and a tuning ladder.
+Status: playable prototype with a start screen, two tracks, twelve vehicles and a tuning ladder.
 
 ## Vehicles
 
 All makers and models are made up; they are loosely inspired by real product categories.
 
-| Model | Type | Character |
+| Model | Category | Character |
 | --- | --- | --- |
-| Rasicare T-Rex Mitteldreher | Power chair, mid-wheel drive | Six wheels, turns on the spot |
-| Rasicare Avanti RX | Power chair, rear-wheel drive | Fast, prefers wide arcs |
-| Rasicare Orkan 4 | Heavy power chair, rear-wheel drive | Slow to get going, very stable |
-| Halber e-skalation | Manual chair with hub motors | Light, twitchy, thrust in push strokes |
-| Halber schubs one | Manual chair with a pusher wheel | Steered and braked by hand |
-| Halber e-käpt'n | Manual chair with a front tractor unit | Three wheels, fastest, tips easily |
-| Rentnerblitz Komet 4 | Mobility scooter | Steers like a car |
+| Invascare T-Rex Mitteldreher | Power wheelchairs | Mid-wheel drive, six wheels, turns on the spot |
+| Invascare Avanti RX | Power wheelchairs | Rear-wheel drive, fast, prefers wide arcs |
+| Invascare Avanti FX | Power wheelchairs | Front-wheel drive, pulls round corners, tail-happy |
+| Invascare Orkan 4 | Power wheelchairs | Heavy rear-wheel drive, very stable |
+| Albern Arrivo Karton | One-piece folder | Light folding power chair, nimble |
+| Albern e-skalation | Push assist | Hub motors, thrust in push strokes |
+| Albern schubs one | Push assist | Pusher wheel at the back, steered and braked by hand |
+| Albern e-käpt'n | Tractor unit | Front-mounted drive, three wheels, fastest |
+| Invascare Piepmatz | Mobility scooters | Tiny, agile, tippy |
+| Invascare Stubentiger | Mobility scooters | Compact |
+| Invascare Sternschnuppe 4 | Mobility scooters | The classic with basket and flag |
+| Invascare Großer Wagen | Mobility scooters | Long, heavy, fast, huge turning circle |
 
 Vehicles and tracks are unlocked with deposit money; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
 

@@ -157,8 +157,8 @@ kbd {
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template: auto 1fr / minmax(300px, 420px) 1fr minmax(260px, 340px);
-  grid-template-areas: 'head head head' 'left . right';
+  grid-template: auto 1fr auto / minmax(280px, 380px) 1fr minmax(260px, 340px);
+  grid-template-areas: 'head head head' 'left . right' 'left detail right';
   gap: 12px 16px;
   padding: 20px;
   overflow: auto;
@@ -199,11 +199,15 @@ kbd {
 #menu .card.on { border-color: var(--accent); border-left-color: var(--tint); background: rgb(40 44 52 / 0.92); }
 #menu .card.locked strong, #menu .card.locked small, #menu .card.locked span { opacity: 0.5; }
 
-#menu .detail { margin-top: 12px; padding: 12px 14px; background: var(--panel); border-radius: 10px; font-size: 14px; line-height: 1.4; }
+#menu .garage { overflow-y: auto; min-height: 0; padding-right: 4px; }
+#menu .garage h2 { margin-top: 12px; }
+#menu .garage h2:first-child { margin-top: 0; }
+#menu .garage .card { padding: 7px 10px; }
+#menu .detail { grid-area: detail; justify-self: center; width: min(100%, 520px); padding: 12px 14px; background: var(--panel); border-radius: 10px; font-size: 14px; line-height: 1.4; }
 #menu .detail h3 { margin: 0; font-size: 20px; }
 #menu .detail p { margin: 4px 0 0; }
 #menu .detail .kind { font-size: 12px; opacity: 0.75; }
-#menu dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 10px 0 6px; font-size: 13px; }
+#menu dl { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 4px 12px; margin: 10px 0 6px; font-size: 13px; }
 #menu dt { opacity: 0.85; }
 #menu dd { margin: 0; display: flex; gap: 4px; align-items: center; }
 #menu dd i { width: 22px; height: 8px; border-radius: 2px; background: rgb(255 255 255 / 0.18); }
@@ -228,8 +232,8 @@ kbd {
 
 @media (max-width: 900px) {
   #menu {
-    grid-template: auto auto auto / 1fr;
-    grid-template-areas: 'head' 'left' 'right';
+    grid-template: auto auto auto auto / 1fr;
+    grid-template-areas: 'head' 'left' 'detail' 'right';
     background: rgb(10 12 16 / 0.55);
     padding: 14px;
   }

@@ -177,7 +177,7 @@ describe('tip assist', () => {
 });
 
 describe('differential drive', () => {
-  it.each(['trex', 'avanti', 'orkan', 'eskalation'] as const)('%s turns on the spot', (id) => {
+  it.each(['trex', 'avanti', 'avantifx', 'orkan', 'arrivo', 'eskalation'] as const)('%s turns on the spot', (id) => {
     const sim = new Sim(FLAT, VEHICLES[id]);
     drive(sim, 1, 0);
     drive(sim, 2, 0, 1);

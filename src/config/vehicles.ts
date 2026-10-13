@@ -1,4 +1,11 @@
-export type VehicleId = 'trex' | 'avanti' | 'orkan' | 'eskalation' | 'schubs' | 'ekaptn' | 'komet';
+export type VehicleId =
+  | 'trex' | 'avanti' | 'avantifx' | 'orkan'
+  | 'arrivo'
+  | 'eskalation' | 'schubs'
+  | 'ekaptn'
+  | 'piepmatz' | 'tiger' | 'komet' | 'wagen';
+
+export type CategoryId = 'power' | 'folder' | 'push' | 'tractor' | 'scooter';
 
 /** For testing: everything selectable without paying. */
 export const UNLOCK_ALL = true;
@@ -26,13 +33,14 @@ export interface WheelSpec {
   stiffness: number;
 }
 
-export type Look = 'mid' | 'rear' | 'heavy' | 'manual' | 'scooter';
+export type Look = 'mid' | 'rear' | 'front' | 'heavy' | 'folder' | 'manual' | 'scooter';
 
 export interface VehicleSpec {
   id: VehicleId;
   /** Model name, loosely based on a real product but never its real name. */
   label: string;
   maker: string;
+  category: CategoryId;
   kind: string;
   blurb: string;
   /** Menu ratings, 1…5. */
@@ -103,7 +111,8 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   trex: define({
     id: 'trex',
     label: 'T-Rex Mitteldreher',
-    maker: 'Rasicare',
+    maker: 'Invascare',
+    category: 'power',
     kind: 'Elektrorollstuhl · Mittelradantrieb',
     blurb: 'Sechs Räder, dreht auf dem Bierdeckel. Der Allrounder für enge Gänge.',
     stats: { tempo: 3, antritt: 3, wendig: 5, standfest: 4 },
@@ -132,7 +141,8 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   avanti: define({
     id: 'avanti',
     label: 'Avanti RX',
-    maker: 'Rasicare',
+    maker: 'Invascare',
+    category: 'power',
     kind: 'Elektrorollstuhl · Heckantrieb',
     blurb: 'Schlank, schwarz, schnell. Läuft stur geradeaus und mag weite Bögen.',
     stats: { tempo: 4, antritt: 3, wendig: 3, standfest: 4 },
@@ -157,10 +167,69 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     colors: { body: 0x17181c, accent: 0x1e88e5, seat: 0x101114, hub: 0x1e88e5 },
   }),
 
+  avantifx: define({
+    id: 'avantifx',
+    label: 'Avanti FX',
+    maker: 'Invascare',
+    category: 'power',
+    kind: 'Elektrorollstuhl · Frontantrieb',
+    blurb: 'Zieht sich um jede Ecke, klettert über alles. Dafür wedelt bei Tempo das Heck.',
+    stats: { tempo: 3, antritt: 4, wendig: 4, standfest: 3 },
+    unlockPrice: 1500,
+    mass: 150,
+    half: [0.3, 0.22, 0.5],
+    clearance: 0.14,
+    com: [0, -0.12, -0.02],
+    inertia: [22, 20, 14],
+    wheels: [
+      ...pair(0.3, { z: 0.25, radius: 0.17, load: 0.285, drive: true, turn: true }),
+      ...pair(0.24, { z: -0.38, radius: 0.1, load: 0.215, caster: true }),
+    ],
+    maxYawRate: 2.6,
+    maxSteer: 0,
+    wheelbase: 0.63,
+    speedFactor: 1,
+    accelFactor: 1.05,
+    tipFactor: 1,
+    gripFactor: 1,
+    look: 'front',
+    colors: { body: 0x17181c, accent: 0x29b6f6, seat: 0x101114, hub: 0x29b6f6 },
+  }),
+
+  arrivo: define({
+    id: 'arrivo',
+    label: 'Arrivo Karton',
+    maker: 'Albern',
+    category: 'folder',
+    kind: 'Faltbarer Elektrorollstuhl · Heckantrieb',
+    blurb: 'Klappt am Stück zusammen und wiegt fast nichts. Flink, aber der Wind hat Mitspracherecht.',
+    stats: { tempo: 3, antritt: 4, wendig: 4, standfest: 2 },
+    unlockPrice: 2500,
+    mass: 100,
+    half: [0.28, 0.2, 0.42],
+    clearance: 0.14,
+    com: [0, -0.08, 0],
+    inertia: [13, 11, 8],
+    wheels: [
+      ...pair(0.29, { z: -0.22, radius: 0.15, load: 0.305, drive: true, turn: true }),
+      ...pair(0.22, { z: 0.34, radius: 0.09, load: 0.195, caster: true }),
+    ],
+    maxYawRate: 2.8,
+    maxSteer: 0,
+    wheelbase: 0.56,
+    speedFactor: 1,
+    accelFactor: 1.15,
+    tipFactor: 1.15,
+    gripFactor: 1,
+    look: 'folder',
+    colors: { body: 0x141416, accent: PURPLE, seat: 0x1b1b1f, hub: 0x2a2a2e },
+  }),
+
   orkan: define({
     id: 'orkan',
     label: 'Orkan 4',
-    maker: 'Rasicare',
+    maker: 'Invascare',
+    category: 'power',
     kind: 'Elektrorollstuhl · Heckantrieb, schwer',
     blurb: 'Der Panzer. Kommt langsam in Fahrt und räumt dann alles ab.',
     stats: { tempo: 3, antritt: 2, wendig: 2, standfest: 5 },
@@ -182,14 +251,15 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     tipFactor: 0.75,
     gripFactor: 1.1,
     look: 'heavy',
-    colors: { body: 0x26282d, accent: 0xb71c1c, seat: 0x15161a, hub: 0xc9ccd1 },
+    colors: { body: 0x26282d, accent: 0xc3c7cc, seat: 0x15161a, hub: 0xc9ccd1 },
   }),
 
   eskalation: define({
     id: 'eskalation',
     label: 'e-skalation',
-    maker: 'Halber',
-    kind: 'Faltrollstuhl · Radnabenmotoren',
+    maker: 'Albern',
+    category: 'push',
+    kind: 'Faltrollstuhl · Radnabenmotoren im Rad',
     blurb: 'Motoren in den Rädern verstärken jeden Schubs. Leicht, zappelig, liebt das Hinterrad.',
     stats: { tempo: 2, antritt: 5, wendig: 5, standfest: 1 },
     unlockPrice: 1000,
@@ -218,8 +288,9 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   schubs: define({
     id: 'schubs',
     label: 'schubs one',
-    maker: 'Halber',
-    kind: 'Faltrollstuhl · Schubantrieb am Heck',
+    maker: 'Albern',
+    category: 'push',
+    kind: 'Faltrollstuhl · Schiebehilfe am Heck',
     blurb: 'Ein kleines Rad schiebt von hinten. Geradeaus top, Kurven sind Handarbeit.',
     stats: { tempo: 3, antritt: 2, wendig: 2, standfest: 2 },
     unlockPrice: 2000,
@@ -249,7 +320,8 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   ekaptn: define({
     id: 'ekaptn',
     label: "e-käpt'n",
-    maker: 'Halber',
+    maker: 'Albern',
+    category: 'tractor',
     kind: 'Faltrollstuhl · Zuggerät vorn',
     blurb: 'Die Legende. Ein Motorrad zum Anklemmen: drei Räder, Lenker, viel zu schnell.',
     stats: { tempo: 5, antritt: 3, wendig: 3, standfest: 1 },
@@ -275,12 +347,71 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     colors: { body: 0x2a2a2e, accent: PURPLE, seat: 0x1b1b1f, hub: 0x8d9299 },
   }),
 
+  piepmatz: define({
+    id: 'piepmatz',
+    label: 'Piepmatz',
+    maker: 'Invascare',
+    category: 'scooter',
+    kind: 'Seniorenmobil · zerlegbar, winzig',
+    blurb: 'Passt in jeden Kofferraum und durch jede Lücke. Kippt, wenn man es böse anschaut.',
+    stats: { tempo: 2, antritt: 4, wendig: 5, standfest: 1 },
+    unlockPrice: 500,
+    mass: 115,
+    half: [0.23, 0.18, 0.45],
+    clearance: 0.12,
+    com: [0, -0.1, -0.06],
+    inertia: [15, 14, 8],
+    wheels: [
+      ...pair(0.22, { z: -0.32, radius: 0.1, load: 0.3, drive: true }),
+      ...pair(0.18, { z: 0.33, radius: 0.1, load: 0.2, steer: true }),
+    ],
+    maxYawRate: 0,
+    maxSteer: 0.8,
+    wheelbase: 0.65,
+    speedFactor: 0.85,
+    accelFactor: 1.15,
+    tipFactor: 1.2,
+    gripFactor: 1,
+    look: 'scooter',
+    colors: { body: 0x19b5a5, accent: 0xffd23f, seat: 0x24262b, hub: 0xd9d9d9 },
+  }),
+
+  tiger: define({
+    id: 'tiger',
+    label: 'Stubentiger',
+    maker: 'Invascare',
+    category: 'scooter',
+    kind: 'Seniorenmobil · kompakt',
+    blurb: 'Der kleine Bruder vom Löwen. Wendig genug für den Wochenmarkt, brav genug für Oma.',
+    stats: { tempo: 3, antritt: 3, wendig: 4, standfest: 3 },
+    unlockPrice: 1000,
+    mass: 150,
+    half: [0.27, 0.2, 0.55],
+    clearance: 0.14,
+    com: [0, -0.12, -0.07],
+    inertia: [24, 22, 12],
+    wheels: [
+      ...pair(0.26, { z: -0.38, radius: 0.12, load: 0.3, drive: true }),
+      ...pair(0.21, { z: 0.4, radius: 0.12, load: 0.2, steer: true }),
+    ],
+    maxYawRate: 0,
+    maxSteer: 0.7,
+    wheelbase: 0.78,
+    speedFactor: 0.95,
+    accelFactor: 1.05,
+    tipFactor: 1,
+    gripFactor: 1,
+    look: 'scooter',
+    colors: { body: 0xd97a1e, accent: 0x1a1a1a, seat: 0x24262b, hub: 0xd9d9d9 },
+  }),
+
   komet: define({
     id: 'komet',
-    label: 'Komet 4',
-    maker: 'Rentnerblitz',
+    label: 'Sternschnuppe 4',
+    maker: 'Invascare',
+    category: 'scooter',
     kind: 'Seniorenmobil · vier Räder',
-    blurb: 'Mit Einkaufskorb und Wimpel. Lenkt wie ein Auto, wendet wie ein Tanker.',
+    blurb: 'Der Klassiker mit Einkaufskorb und Wimpel. Lenkt wie ein Auto, wendet wie ein Tanker.',
     stats: { tempo: 3, antritt: 3, wendig: 2, standfest: 3 },
     unlockPrice: 500,
     mass: 170,
@@ -302,9 +433,47 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     look: 'scooter',
     colors: { body: 0xb3202a, accent: 0xff7a00, seat: 0x24262b, hub: 0xd9d9d9 },
   }),
+
+  wagen: define({
+    id: 'wagen',
+    label: 'Großer Wagen',
+    maker: 'Invascare',
+    category: 'scooter',
+    kind: 'Seniorenmobil · Langstrecke',
+    blurb: 'Das Sternbild unter den Seniorenmobilen. Lang, schwer, schnell, mit dem Wendekreis einer Fähre.',
+    stats: { tempo: 4, antritt: 2, wendig: 1, standfest: 5 },
+    unlockPrice: 4000,
+    mass: 200,
+    half: [0.31, 0.2, 0.7],
+    clearance: 0.17,
+    com: [0, -0.12, -0.1],
+    inertia: [38, 36, 18],
+    wheels: [
+      ...pair(0.3, { z: -0.5, radius: 0.15, load: 0.305, drive: true }),
+      ...pair(0.25, { z: 0.52, radius: 0.15, load: 0.195, steer: true }),
+    ],
+    maxYawRate: 0,
+    maxSteer: 0.5,
+    wheelbase: 1.02,
+    speedFactor: 1.15,
+    accelFactor: 0.9,
+    tipFactor: 0.8,
+    gripFactor: 1,
+    look: 'scooter',
+    colors: { body: 0x1f3f7a, accent: 0xff7a00, seat: 0x24262b, hub: 0xd9d9d9 },
+  }),
 };
 
-export const VEHICLE_ORDER: VehicleId[] = ['trex', 'komet', 'eskalation', 'avanti', 'schubs', 'orkan', 'ekaptn'];
+/** Menu groups. The titles stay close to what the trade calls these things. */
+export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
+  { id: 'power', title: 'Vollpower Wheelchairs', vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
+  { id: 'folder', title: 'One-Piece-Falter', vehicles: ['arrivo'] },
+  { id: 'push', title: 'Schubshilfen', vehicles: ['eskalation', 'schubs'] },
+  { id: 'tractor', title: 'Zugmaschinen', vehicles: ['ekaptn'] },
+  { id: 'scooter', title: 'Rentnerblitze', vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
+];
+
+export const VEHICLE_ORDER: VehicleId[] = CATEGORIES.flatMap((c) => c.vehicles);
 
 /** Height of the ground below the chassis origin when standing on level ground. */
 export function groundY(spec: VehicleSpec): number {
@@ -338,6 +507,8 @@ export const HANDLING = {
   motorGain: 6,
   /** Gain on the yaw rate error of differential drive (1/s). */
   yawGain: 20,
+  /** Front-wheel drive: share of the tail-happy yaw torque that gets cancelled. Below 1 the rear steps out. */
+  fwdStability: 0.9,
   /** Deceleration when letting go of the stick: the magnetic brake bites (m/s²). */
   brakeDecel: 5,
   /** Deceleration when actively braking against the direction of travel, on all wheels (m/s²). */

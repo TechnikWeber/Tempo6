@@ -35,6 +35,7 @@ export function createDebugPanel(game: () => GameCore): GUI {
   h.add(HANDLING, 'rollDamping', 0, 200, 5).name('Wank-Dämpfung');
   h.add(HANDLING, 'motorGain', 1, 15, 0.5).name('Motor-Biss');
   h.add(HANDLING, 'yawGain', 2, 40, 1).name('Dreh-Biss (Rollstuhl)');
+  h.add(HANDLING, 'fwdStability', 0, 1.2, 0.05).name('Frontantrieb: Heck-Ruhe');
   h.add(HANDLING, 'brakeDecel', 1, 12, 0.5).name('Magnetbremse (m/s²)');
   h.add(HANDLING, 'footBrake', 2, 20, 0.5).name('Bremse mit S (m/s²)');
   h.add(HANDLING, 'handbrakeSlide', 0, 1, 0.05).name('Handbremse: Heckgrip');

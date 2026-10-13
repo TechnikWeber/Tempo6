@@ -151,6 +151,11 @@ const DRIVERS: Record<VehicleSpec['id'], DriverStyle> = {
   schubs: { shirt: 0xf0c020, trousers: 0x3c5a8a, hair: 0x8a5a2b, arms: 'rims', hat: 0x9ccc3c },
   ekaptn: { shirt: 0x5a3d2b, trousers: 0x2b2b30, hair: 0x4a3a2a, arms: 'forward', hat: 0x5a3d2b, scarf: 0xf2f2f2 },
   komet: { shirt: 0x3f8f5f, trousers: 0x8a6f4d, hair: 0xf0f0f0, arms: 'forward', hat: 0x8a8068 },
+  avantifx: { shirt: 0xf2f2f2, trousers: 0x2b2b30, hair: 0xc9a227, arms: 'rest', hat: 0x29b6f6 },
+  arrivo: { shirt: 0x2f2f35, trousers: 0xb9b2a0, hair: 0x1c1c1c, arms: 'rest', scarf: 0x7b2d8e },
+  piepmatz: { shirt: 0xf7c8d8, trousers: 0x6a6f80, hair: 0xe9e9e9, arms: 'forward', hat: 0xffd23f },
+  tiger: { shirt: 0x7a5a3a, trousers: 0x4a4a52, hair: 0xdadada, arms: 'forward', hat: 0x1a1a1a },
+  wagen: { shirt: 0x24457a, trousers: 0x3a3a40, hair: 0xb0b0b0, arms: 'forward', hat: 0x1f3f7a, beard: 0xd0d0d0 },
 };
 
 /** Power chair: battery base, shroud in the model's colour, captain's seat. */
@@ -173,21 +178,26 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
     }
   } else if (heavy) {
     box(root, baseW, 0.24, 0.8, body, 0, -0.1, -0.06);
-    box(root, baseW + 0.06, 0.26, 0.46, accent, 0, 0.0, -0.34); // the big rear shroud
-    box(root, baseW - 0.1, 0.05, 0.03, 0xff2a2a, 0, 0.04, -0.575); // tail light
+    box(root, baseW - 0.06, 0.05, 0.5, 0x1a1b1e, 0, 0.045, -0.2); // battery lid, flush with the base
+    box(root, baseW - 0.1, 0.04, 0.02, 0xff2a2a, 0, -0.02, -0.465); // tail light
     box(root, baseW + 0.2, 0.05, 0.05, STEEL, 0, -0.16, 0.38); // bumper
     for (const s of [1, -1]) {
-      box(root, 0.12, 0.05, 0.5, body, s * driveX, g + 0.43, -0.28);
+      box(root, 0.13, 0.05, 0.5, accent, s * driveX, g + 0.43, -0.28); // fender over the drive wheel
+      box(root, 0.02, 0.16, 0.44, accent, s * (baseW / 2 + 0.005), -0.06, 0.12); // side panel
       box(root, 0.07, 0.2, 0.07, STEEL, s * 0.27, g + 0.26, 0.42); // caster fork
       box(root, 0.07, 0.05, 0.05, 0xfff3b0, s * 0.18, -0.02, 0.35); // headlights
     }
   } else {
-    box(root, baseW, 0.18, 0.64, body, 0, -0.1, -0.1);
-    box(root, baseW - 0.1, 0.03, 0.02, 0xff2a2a, 0, -0.06, -0.425); // tail light strip
+    // Same sleek base for both; front-wheel drive carries it at the other end.
+    const d = spec.look === 'front' ? -1 : 1;
+    const baseZ = -0.1 * d;
+    box(root, baseW, 0.18, 0.64, body, 0, -0.1, baseZ);
+    box(root, baseW - 0.1, 0.03, 0.02, 0xff2a2a, 0, -0.06, baseZ - 0.325); // tail light strip
     for (const s of [1, -1]) {
-      box(root, 0.02, 0.035, 0.6, accent, s * (baseW / 2 + 0.005), -0.05, -0.1); // accent line
-      box(root, 0.05, 0.05, 0.34, body, s * 0.24, g + 0.22, 0.26); // caster arms
-      box(root, 0.05, 0.03, 0.03, 0xdff3ff, s * 0.14, -0.07, 0.225); // LED lights
+      box(root, 0.02, 0.035, 0.6, accent, s * (baseW / 2 + 0.005), -0.05, baseZ); // accent line
+      box(root, 0.05, 0.05, 0.34, body, s * 0.24, g + 0.22, 0.26 * d); // caster arms
+      box(root, 0.05, 0.03, 0.03, 0xdff3ff, s * 0.14, -0.07, baseZ + 0.325); // LED lights
+      if (d < 0) box(root, 0.11, 0.05, 0.4, accent, s * driveX, g + 0.37, 0.25); // fender over the front drive wheel
     }
   }
 
@@ -195,7 +205,7 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
   box(root, 0.46, 0.08, 0.46, seat, 0, seatY, -0.02);
   box(root, 0.46, 0.56, 0.08, seat, 0, seatY + 0.32, -0.27);
   box(root, 0.22, 0.14, 0.07, seat, 0, seatY + 0.7, -0.27); // headrest
-  if (spec.look === 'rear') box(root, 0.3, 0.4, 0.02, accent, 0, seatY + 0.34, -0.315); // back panel
+  if (spec.look === 'rear' || spec.look === 'front') box(root, 0.3, 0.4, 0.02, accent, 0, seatY + 0.34, -0.315); // back panel
   for (const s of [1, -1]) {
     box(root, 0.06, 0.05, 0.38, seat, s * 0.27, seatY + 0.21, -0.04);
     box(root, 0.04, 0.2, 0.04, body, s * 0.27, seatY + 0.1, -0.18);
@@ -251,15 +261,21 @@ function buildManual(spec: VehicleSpec): VehicleModel {
   }
   if (spec.addon === 'tractor') {
     const front = spec.wheels.find((w) => w.steer)!;
-    const topY = seatY + 0.42;
-    const topZ = front.z - 0.24;
+    // The driver's hands: the bars have to end exactly there.
+    const handY = seatY + 0.38;
+    const handZ = seatZ + 0.34;
+    const topY = handY + 0.02;
+    const topZ = front.z - 0.34;
     const hubY = g + front.radius;
     // fork and steering column, raked back towards the rider
     const col = box(root, 0.06, 0.95, 0.06, 0x1a1a1d, 0, (topY + hubY) / 2, (topZ + front.z) / 2);
     col.rotation.x = -Math.atan2(front.z - topZ, topY - hubY);
     for (const s of [1, -1]) box(root, 0.025, front.radius * 1.3, 0.04, STEEL, s * 0.06, hubY + front.radius * 0.5, front.z - 0.03);
-    box(root, 0.56, 0.04, 0.04, 0x1a1a1d, 0, topY, topZ); // handlebar
-    for (const s of [1, -1]) box(root, 0.1, 0.05, 0.05, 0x111111, s * 0.28, topY, topZ);
+    box(root, 0.48, 0.04, 0.04, 0x1a1a1d, 0, topY, topZ); // handlebar, swept back to the rider
+    for (const s of [1, -1]) {
+      box(root, 0.04, 0.04, topZ - handZ + 0.04, 0x1a1a1d, s * 0.22, (topY + handY) / 2, (topZ + handZ) / 2);
+      box(root, 0.055, 0.055, 0.12, 0x111111, s * 0.22, handY, handZ); // grips
+    }
     box(root, 0.14, 0.09, 0.03, 0x111111, 0, topY + 0.06, topZ + 0.02); // display
     box(root, 0.1, 0.02, 0.01, accent, 0, topY + 0.06, topZ + 0.005);
     box(root, 0.12, 0.3, 0.1, 0x25252a, 0, hubY + 0.42, front.z - 0.14); // battery
@@ -288,32 +304,80 @@ function buildScooter(spec: VehicleSpec): VehicleModel {
   const root = new Group();
   const BODY = spec.colors.body;
   const DARK = spec.colors.seat;
-  box(root, 0.5, 0.07, 1.15, DARK, 0, -0.14, 0); // deck
-  box(root, 0.52, 0.22, 0.42, BODY, 0, -0.02, -0.38); // rear cover
-  box(root, 0.4, 0.2, 0.22, BODY, 0, -0.04, 0.5); // front fairing
-  box(root, 0.12, 0.06, 0.02, 0xfff3b0, 0, 0, 0.615); // headlight
-  cyl(root, 0.035, 0.22, 0x888888, 0, 0.18, -0.3, 6); // seat post
-  box(root, 0.44, 0.08, 0.42, DARK, 0, 0.32, -0.3);
-  box(root, 0.44, 0.44, 0.08, DARK, 0, 0.56, -0.5);
-  // tiller, leaning back towards the driver
-  const tiller = box(root, 0.06, 0.72, 0.06, 0x888888, 0, 0.36, 0.4);
-  tiller.rotation.x = -0.3;
-  box(root, 0.5, 0.05, 0.05, DARK, 0, 0.7, 0.3);
-  box(root, 0.16, 0.1, 0.08, BODY, 0, 0.72, 0.31);
+  // All four scooters share one shape, stretched to the chassis size.
+  const sx = spec.half[0] / 0.28;
+  const L = spec.half[2];
+  const w = 0.5 * sx;
+  box(root, w, 0.07, L * 1.92, DARK, 0, -0.14, 0); // deck
+  box(root, w + 0.02, 0.22, L * 0.7, BODY, 0, -0.02, -L * 0.63); // rear cover
+  box(root, w * 0.8, 0.2, 0.22, BODY, 0, -0.04, L - 0.1); // front fairing
+  box(root, 0.12, 0.06, 0.02, 0xfff3b0, 0, 0, L + 0.015); // headlight
+  // Tiller raked back so the handlebar ends up in the driver's hands.
+  const footZ = L - 0.18;
+  const barZ = footZ - 0.3;
+  const barY = 0.7;
+  const tiller = box(root, 0.06, 0.82, 0.06, 0x888888, 0, 0.33, (footZ + barZ) / 2);
+  tiller.rotation.x = -0.38;
+  box(root, 0.5, 0.05, 0.05, DARK, 0, barY, barZ);
+  box(root, 0.16, 0.1, 0.08, BODY, 0, barY + 0.03, barZ + 0.02);
   // shopping basket
-  box(root, 0.36, 0.2, 0.24, 0x9aa0a8, 0, 0.42, 0.62);
-  box(root, 0.3, 0.02, 0.18, 0x3a3d42, 0, 0.525, 0.62);
+  box(root, 0.36 * sx, 0.2, 0.24, 0x9aa0a8, 0, 0.17, L - 0.1); // sits on the front fairing
+  box(root, 0.3 * sx, 0.02, 0.18, 0x3a3d42, 0, 0.275, L - 0.1);
+  // seat under the driver
+  const seatZ = barZ - 0.4;
+  cyl(root, 0.035, 0.22, 0x888888, 0, 0.18, seatZ, 6);
+  box(root, 0.44, 0.08, 0.42, DARK, 0, 0.32, seatZ);
+  box(root, 0.44, 0.44, 0.08, DARK, 0, 0.56, seatZ - 0.2);
   // safety flag
-  cyl(root, 0.01, 1.3, 0xdddddd, -0.22, 0.75, -0.56, 4);
-  box(root, 0.01, 0.16, 0.24, spec.colors.accent, -0.22, 1.32, -0.68);
+  cyl(root, 0.01, 1.3, 0xdddddd, -w * 0.44, 0.75, -L + 0.04, 4);
+  box(root, 0.01, 0.16, 0.24, spec.colors.accent, -w * 0.44, 1.32, -L - 0.08);
   const d = driver(DRIVERS[spec.id]);
-  d.group.position.set(0, 0.36, -0.36);
+  d.group.position.set(0, 0.36, seatZ - 0.06);
+  root.add(d.group);
+  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
+}
+
+/** Slim folding power chair: carbon side frames instead of a battery base. */
+function buildFolder(spec: VehicleSpec): VehicleModel {
+  const root = new Group();
+  const { body, accent, seat } = spec.colors;
+  const g = groundY(spec);
+  const drive = spec.wheels.find((w) => w.drive)!;
+  const axleY = g + drive.radius;
+  const seatY = 0.06;
+  box(root, 0.42, 0.04, 0.42, seat, 0, seatY, 0);
+  box(root, 0.42, 0.46, 0.035, seat, 0, seatY + 0.27, -0.22);
+  box(root, 0.3, 0.08, 0.2, 0x25252a, 0, seatY - 0.08, -0.04); // battery under the seat
+  box(root, 0.305, 0.02, 0.205, accent, 0, seatY - 0.045, -0.04);
+  for (const s of [1, -1]) {
+    // one swooping side frame from the rear hub to the front caster
+    const rear = box(root, 0.035, 0.05, 0.4, body, s * 0.22, (seatY + axleY) / 2 - 0.02, -0.12);
+    rear.rotation.x = -0.75;
+    const front = box(root, 0.035, 0.05, 0.5, body, s * 0.22, (seatY + g) / 2 + 0.06, 0.2);
+    front.rotation.x = 0.7;
+    box(root, 0.035, 0.035, 0.44, body, s * 0.22, seatY - 0.02, 0); // seat rail
+    box(root, 0.012, 0.02, 0.44, accent, s * 0.24, seatY - 0.02, 0); // pinstripe
+    box(root, 0.035, 0.52, 0.035, body, s * 0.22, seatY + 0.28, -0.235); // back tube
+    box(root, 0.035, 0.035, 0.12, 0x111111, s * 0.22, seatY + 0.54, -0.29); // push handle
+    box(root, 0.05, 0.035, 0.32, seat, s * 0.25, seatY + 0.2, 0); // armrest
+    box(root, 0.03, 0.2, 0.03, body, s * 0.25, seatY + 0.1, -0.14);
+  }
+  box(root, 0.34, 0.02, 0.16, body, 0, g + 0.08, 0.44); // one-piece footplate
+  for (const w of spec.wheels) if (w.caster) box(root, 0.03, 0.12, 0.03, STEEL, w.x, g + w.radius + 0.09, w.z);
+  // joystick on the right armrest (right is -X)
+  box(root, 0.07, 0.04, 0.09, body, -0.25, seatY + 0.22, 0.2);
+  cyl(root, 0.011, 0.08, STEEL, -0.25, seatY + 0.28, 0.2, 5);
+  box(root, 0.035, 0.035, 0.035, accent, -0.25, seatY + 0.33, 0.2);
+
+  const d = driver(DRIVERS[spec.id]);
+  d.group.position.set(0, seatY + 0.02, -0.1);
   root.add(d.group);
   return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
 }
 
 export function buildVehicle(spec: VehicleSpec): VehicleModel {
   if (spec.look === 'scooter') return buildScooter(spec);
+  if (spec.look === 'folder') return buildFolder(spec);
   if (spec.look === 'manual') return buildManual(spec);
   return buildPowerchair(spec);
 }
