@@ -374,7 +374,7 @@ export class View {
     this.camYaw += diff * (1 - Math.exp(-dt * 3.5));
 
     // Under boost the camera falls back a little, as if left behind.
-    const dist = 3.0 + Math.min(speed, 22) * 0.06 + v.boost * 0.15;
+    const dist = 3.0 + Math.min(speed, 22) * 0.06 + v.boost * 0.3;
     const height = 1.7 + Math.min(speed, 22) * 0.02;
     const sx = Math.sin(this.camYaw), cz = Math.cos(this.camYaw);
     // A little life: a bob that grows with speed, a jolt after landings.
@@ -388,7 +388,7 @@ export class View {
     // Bank into the corner a touch.
     this.camera.rotateZ(Math.max(-0.06, Math.min(0.06, v.latAccel * 0.004)));
     // Wider lens at speed: 60 km/h in a wheelchair should look terrifying.
-    const fov = 58 + Math.min(16, speed * 0.8) + v.boost * 4;
+    const fov = 58 + Math.min(16, speed * 0.8) + v.boost * 6;
     if (Math.abs(fov - this.camera.fov) > 0.05) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();

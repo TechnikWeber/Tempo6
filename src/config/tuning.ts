@@ -25,7 +25,7 @@ export const STAGES: TuningStage[] = [
   { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 10000 },
 ];
 
-/** The boost battery: a short shove that fades in and out instead of kicking. */
+/** The boost battery: a short shove with a bit of a kick, though it still fades in rather than snapping on. */
 export const BOOST = {
   /** Pfand in cents. */
   price: 1500,
@@ -38,12 +38,12 @@ export const BOOST = {
   /** Charge needed before it fires again after running dry. */
   minCharge: 0.25,
   /** Extra top speed at full boost: a share of the current top speed plus a fixed bit (m/s). */
-  speed: 0.35,
-  extraSpeed: 1,
+  speed: 0.45,
+  extraSpeed: 1.5,
   /** Extra motor acceleration at full boost, as a share. */
-  accel: 0.7,
+  accel: 1.3,
   /** Seconds to fade in and out. */
-  rampUp: 0.7,
+  rampUp: 0.45,
   rampDown: 1.1,
 };
 

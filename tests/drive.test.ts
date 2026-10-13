@@ -379,14 +379,14 @@ describe('boost battery', () => {
     expect(sim.vehicle.speed * 3.6).toBeLessThan(31);
   });
 
-  it('pushes well past the top speed, fades in gently and runs dry after a moment', () => {
+  it('pushes well past the top speed, fades in without a jolt and runs dry after a moment', () => {
     const sim = fitted(VEHICLES.trex, 30, 6.6);
     drive(sim, 6, 1);
     const top = sim.vehicle.speed;
-    // no kick: after a tenth of a second there is next to nothing yet
+    // a kick, but not a jolt: after a tenth of a second only a little of it is there
     boost(sim, 0.1);
     expect(sim.vehicle.boosting).toBe(true);
-    expect(sim.vehicle.boost).toBeLessThan(0.08);
+    expect(sim.vehicle.boost).toBeLessThan(0.2);
     let fastest = 0;
     let biggestStep = 0;
     let last = sim.vehicle.boost;
@@ -400,7 +400,7 @@ describe('boost battery', () => {
     }
     expect(fastest).toBeGreaterThan(top * 1.25);
     expect(fastest).toBeLessThan(top * (1 + BOOST.speed) + BOOST.extraSpeed + 0.5);
-    expect(biggestStep).toBeLessThan(0.05);
+    expect(biggestStep).toBeLessThan(0.08);
     expect(lasted).toBeGreaterThan(BOOST.duration - 0.1);
     expect(lasted).toBeLessThan(BOOST.duration + 0.1);
     // held down on an empty battery: nothing more comes, and it does not recharge either
