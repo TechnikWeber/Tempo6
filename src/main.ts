@@ -1,5 +1,6 @@
 import { Sound } from './audio/Sound';
 import { formatMoney } from './config/tuning';
+import { VEHICLE_ORDER, VEHICLES } from './config/vehicles';
 import { createDebugPanel } from './debug/panel';
 import { Input } from './input/Input';
 import { installTouchControls } from './input/touch';
@@ -34,10 +35,30 @@ const sound = new Sound();
 input.onFirstGesture = () => sound.unlock();
 installTouchControls(input);
 const hud = new Hud(() => input.trigger('tune'));
-const gui = createDebugPanel(() => core);
+const gui = createDebugPanel(() => core, () => {
+  const p = core.sim.vehicle.profile;
+  hud.toast(`Fahrprofil: ${p.name}`, p.blurb, 2.5);
+  reportProfiles();
+});
 gui.hide();
 const hudRoot = document.getElementById('hud')!;
 const touchRoot = document.getElementById('touch')!;
+
+/**
+ * While developing, the chosen profile per vehicle is written to profile-choices.json
+ * in the project folder, so the keepers can be read off there later.
+ */
+function reportProfiles(): void {
+  if (!import.meta.env.DEV) return;
+  const picks: Record<string, { index: number; name: string }> = {};
+  for (const id of VEHICLE_ORDER) {
+    const list = VEHICLES[id].profiles;
+    const index = Math.min(progress.profiles[id] ?? 0, list.length - 1);
+    picks[id] = { index, name: list[index].name };
+  }
+  void fetch('/__profiles', { method: 'POST', body: JSON.stringify(picks, null, 2) }).catch(() => {});
+}
+reportProfiles();
 
 let racing = false;
 const menu = new Menu(progress, {
@@ -51,7 +72,7 @@ const menu = new Menu(progress, {
     core.restart();
     setRacing(true);
     const v = core.sim.vehicle.spec;
-    hud.toast(core.track.name, `${v.maker} ${v.label}`, 2.5);
+    hud.toast(core.track.name, `${v.label} · ${core.sim.vehicle.profile.name}`, 2.5);
   },
 });
 
@@ -64,6 +85,7 @@ function setRacing(on: boolean): void {
     menu.hide();
   } else {
     core.restart();
+    view.clearMarks();
     menu.show();
   }
 }
@@ -131,6 +153,7 @@ function frame(now: number): void {
   handleEvents();
   const v = core.sim.vehicle;
   sound.setMotor(racing ? v.speed : 0, racing && v.wheelsOnGround > 0 ? Math.abs(cmd.throttle) : 0);
+  sound.setSqueal(racing ? Math.max(...v.skid) : 0);
   if (racing) hud.update(core);
   view.render(core, acc / STEP, dt, !racing);
   requestAnimationFrame(frame);

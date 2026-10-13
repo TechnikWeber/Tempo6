@@ -3,11 +3,12 @@ import {
   HemisphereLight, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Quaternion, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
-import type { VehicleSpec } from '../config/vehicles';
+import { HANDLING, type VehicleSpec } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
 import type { DecorDef, TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
-import { box, buildPickup, buildProp, buildVehicle, mat, type VehicleModel } from './models';
+import { box, buildPickup, buildProp, buildVehicle, mat, type VehicleRig } from './models';
+import { SkidMarks } from './Skid';
 
 const SKY = 0x9fd3f0;
 const qa = new Quaternion();
@@ -113,7 +114,11 @@ export class View {
   private pickupMeshes: Object3D[] = [];
   private level: Group | null = null;
   private track: TrackDef | null = null;
-  private model: VehicleModel | null = null;
+  private model: VehicleRig | null = null;
+  private readonly skids: SkidMarks;
+  /** Visual body sway on the springs: angle and angular velocity for roll and pitch. */
+  private sway = { roll: 0, rollV: 0, pitch: 0, pitchV: 0, lastSpeed: 0, accel: 0 };
+  private spinExtra: number[] = [];
   private camYaw = 0;
   private camReady = false;
   private lean = 0;
@@ -143,8 +148,14 @@ export class View {
     lawn.position.y = -0.05;
     this.scene.add(lawn);
 
+    this.skids = new SkidMarks(this.scene);
     this.resize();
     window.addEventListener('resize', () => this.resize());
+  }
+
+  /** Wipe tyre marks, e.g. when the level restarts. */
+  clearMarks(): void {
+    this.skids.clear();
   }
 
   /** Swap the level geometry. */
@@ -177,6 +188,7 @@ export class View {
       level.add(m);
     }
     this.scene.add(level);
+    this.skids.clear();
     this.camReady = false;
   }
 
@@ -191,6 +203,7 @@ export class View {
     if (this.model) this.scene.remove(this.model.root);
     this.model = buildVehicle(spec);
     this.scene.add(this.model.root);
+    this.sway = { roll: 0, rollV: 0, pitch: 0, pitchV: 0, lastSpeed: 0, accel: 0 };
     this.camReady = false;
   }
 
@@ -210,8 +223,12 @@ export class View {
       const m = model.wheels[i];
       m.pivot.position.y = w.y - v.wheelSuspension(i);
       m.pivot.rotation.y = v.wheelYaw[i];
-      m.spin.rotation.x = v.wheelSpin(i);
+      // Spinning up: the wheel turns faster than the ground goes by.
+      if (w.drive) this.spinExtra[i] = (this.spinExtra[i] ?? 0) + v.burnout * dt * 45;
+      m.spin.rotation.x = v.wheelSpin(i) + (this.spinExtra[i] ?? 0);
     });
+    this.swayBody(model, v.yawRate * v.speed, v.speed, v.wheelsOnGround > 0, dt);
+    this.skids.update(v, dt);
     // The driver leans out of the corner, a lot.
     const target = Math.max(-0.45, Math.min(0.45, v.yawRate * v.speed * 0.05));
     this.lean += (target - this.lean) * Math.min(1, dt * 6);
@@ -229,6 +246,30 @@ export class View {
     if (showroom) this.showroomCamera(model.root.position, v.yaw);
     else this.updateCamera(model.root.position, v.yaw, Math.abs(v.speed), dt);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /**
+   * The body rocks on its springs like a soft old sofa: it leans out of corners,
+   * squats under power and dives on the brakes, and it overshoots a little.
+   */
+  private swayBody(model: VehicleRig, lateral: number, speed: number, grounded: boolean, dt: number): void {
+    const s = this.sway;
+    if (dt > 0) {
+      s.accel += ((speed - s.lastSpeed) / Math.max(dt, 1 / 120) - s.accel) * Math.min(1, dt * 8);
+      s.lastSpeed = speed;
+    }
+    const k = HANDLING.bodySway;
+    const rollTo = grounded ? Math.max(-0.22, Math.min(0.22, lateral * 0.022 * k)) : 0;
+    const pitchTo = grounded ? Math.max(-0.14, Math.min(0.14, -s.accel * 0.014 * k)) : 0;
+    // Under-damped spring: 1 Hz, so it visibly settles.
+    const w = 6.5, zeta = 0.38;
+    const h = Math.min(dt, 0.05);
+    s.rollV += ((rollTo - s.roll) * w * w - 2 * zeta * w * s.rollV) * h;
+    s.roll += s.rollV * h;
+    s.pitchV += ((pitchTo - s.pitch) * w * w - 2 * zeta * w * s.pitchV) * h;
+    s.pitch += s.pitchV * h;
+    model.body.rotation.z = s.roll;
+    model.body.rotation.x = s.pitch;
   }
 
   private showroomCamera(pos: Vector3, yaw: number): void {

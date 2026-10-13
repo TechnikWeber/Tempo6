@@ -8,22 +8,24 @@ Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, zwölf Fahrzeugen
 
 ## Fahrzeuge
 
-Alle Hersteller und Modelle sind erfunden und nur lose an echte Produktkategorien angelehnt.
+Alle Modellnamen sind erfunden, die Fahrzeuge nur lose an echte Produktkategorien angelehnt. Herstellernamen gibt es nicht, nur eine Farbplakette.
+
+Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange der Dev-Server läuft, steht die aktuelle Auswahl in `profile-choices.json`.
 
 | Modell | Kategorie | Charakter |
 | --- | --- | --- |
-| Invascare T-Rex Mitteldreher | Vollpower Wheelchairs | Mittelradantrieb, sechs Räder, dreht auf der Stelle |
-| Invascare Avanti RX | Vollpower Wheelchairs | Heckantrieb, schnell, mag weite Bögen |
-| Invascare Avanti FX | Vollpower Wheelchairs | Frontantrieb, zieht um die Ecke, Heck wedelt |
-| Invascare Orkan 4 | Vollpower Wheelchairs | Schwerer Heckantrieb, sehr standfest |
-| Albern Arrivo Karton | One-Piece-Falter | Leichter faltbarer Elektrorollstuhl, flink |
-| Albern e-skalation | Schubshilfen | Radnabenmotoren, Schub in Greifreifen-Stößen |
-| Albern schubs one | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
-| Albern e-käpt'n | Zugmaschinen | Zuggerät vorn, drei Räder, am schnellsten |
-| Invascare Piepmatz | Rentnerblitze | Winziges Seniorenmobil, wendig, kippelig |
-| Invascare Stubentiger | Rentnerblitze | Kompaktes Seniorenmobil |
-| Invascare Sternschnuppe 4 | Rentnerblitze | Der Klassiker mit Korb und Wimpel |
-| Invascare Großer Wagen | Rentnerblitze | Lang, schwer, schnell, riesiger Wendekreis |
+| T-Rex Mitteldreher | Vollpower Wheelchairs | Mittelradantrieb, sechs Räder, dreht auf der Stelle |
+| Avanti RX | Vollpower Wheelchairs | Heckantrieb, schnell, mag weite Bögen |
+| Avanti FX | Vollpower Wheelchairs | Frontantrieb, zieht um die Ecke, Heck wedelt |
+| Orkan 4 | Vollpower Wheelchairs | Schwerer Heckantrieb, sehr standfest |
+| Arrivo Karton | One-Piece-Falter | Leichter faltbarer Elektrorollstuhl, flink |
+| e-skalation | Schubshilfen | Radnabenmotoren, Schub in Greifreifen-Stößen |
+| schubs one | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
+| e-käpt'n | Zugmaschinen | Zuggerät vorn, drei Räder, am schnellsten |
+| Piepmatz | Rentnerblitze | Winziges Seniorenmobil, wendig, kippelig |
+| Stubentiger | Rentnerblitze | Kompaktes Seniorenmobil |
+| Sternschnuppe 4 | Rentnerblitze | Der Klassiker mit Korb und Wimpel |
+| Großer Wagen | Rentnerblitze | Lang, schwer, schnell, riesiger Wendekreis |
 
 Fahrzeuge und Strecken werden mit Pfand freigeschaltet; `UNLOCK_ALL` in `src/config/vehicles.ts` öffnet zum Testen alles.
 

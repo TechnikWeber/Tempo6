@@ -18,6 +18,8 @@ export class Progress {
   track = '';
   /** Best lap in seconds per track id. */
   readonly bestLaps: Record<string, number> = {};
+  /** Chosen driving profile (index into the vehicle's list) per vehicle id. */
+  readonly profiles: Record<string, number> = {};
   /** Ids of bought vehicles and tracks. */
   readonly unlocked = new Set<string>();
 
@@ -31,6 +33,7 @@ export class Progress {
       if (d.vehicle in VEHICLES) this.vehicle = d.vehicle;
       if (typeof d.track === 'string') this.track = d.track;
       for (const [k, v] of Object.entries(d.bestLaps ?? {})) if (typeof v === 'number') this.bestLaps[k] = v;
+      for (const [k, v] of Object.entries(d.profiles ?? {})) if (typeof v === 'number') this.profiles[k] = v;
       for (const id of d.unlocked ?? []) if (typeof id === 'string') this.unlocked.add(id);
     } catch {
       // A broken save just means starting over.
@@ -87,6 +90,7 @@ export class Progress {
         vehicle: this.vehicle,
         track: this.track,
         bestLaps: this.bestLaps,
+        profiles: this.profiles,
         unlocked: [...this.unlocked],
       }),
     );

@@ -4,7 +4,7 @@ import { HANDLING, HANDLING_DEFAULTS } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
 
 /** The "Werkstatt": live tuning of the handling and cheats for testing. Toggle with F2. */
-export function createDebugPanel(game: () => GameCore): GUI {
+export function createDebugPanel(game: () => GameCore, onProfile: () => void = () => {}): GUI {
   const gui = new GUI({ title: 'Werkstatt (F2)' });
   const progress = game().progress;
   const state = { stufe: progress.stageIndex };
@@ -24,6 +24,28 @@ export function createDebugPanel(game: () => GameCore): GUI {
 
   gui.add({ f: () => game().restart() }, 'f').name('Level neu starten (⌫)');
 
+  // One button per candidate driving profile of the current vehicle; the list is
+  // rebuilt whenever the vehicle changes.
+  let profiles = gui.addFolder('Fahrprofil');
+  let shownFor = '';
+  const showProfiles = () => {
+    const core = game();
+    const spec = core.sim.vehicle.spec;
+    shownFor = `${spec.id}:${core.profileIndex}`;
+    profiles.destroy();
+    profiles = gui.addFolder(`Fahrprofil: ${spec.label}`);
+    spec.profiles.forEach((p, i) => {
+      const pick = () => {
+        game().setProfile(i);
+        onProfile();
+        showProfiles();
+      };
+      const c = profiles.add({ pick }, 'pick').name(`${i === core.profileIndex ? '● ' : '○ '}${i + 1} · ${p.name}`);
+      c.domElement.title = p.blurb;
+    });
+  };
+  showProfiles();
+
   const h = gui.addFolder('Fahrverhalten');
   h.add({ f: () => { Object.assign(HANDLING, HANDLING_DEFAULTS); h.controllersRecursive().forEach((c) => c.updateDisplay()); } }, 'f')
     .name('Einstellungen zurücksetzen');
@@ -41,9 +63,12 @@ export function createDebugPanel(game: () => GameCore): GUI {
   h.add(HANDLING, 'handbrakeSlide', 0, 1, 0.05).name('Handbremse: Heckgrip');
   h.add(HANDLING, 'suspensionCompression', 0.5, 10, 0.1).name('Dämpfung ein');
   h.add(HANDLING, 'suspensionRelaxation', 0.5, 10, 0.1).name('Dämpfung aus');
+  h.add(HANDLING, 'bodySway', 0, 3, 0.1).name('Aufbau-Wanken (Optik)');
 
   // Keep the slider in step when the stage changes through normal play.
   setInterval(() => {
+    const core = game();
+    if (shownFor !== `${core.sim.vehicle.spec.id}:${core.profileIndex}`) showProfiles();
     if (state.stufe !== progress.stageIndex) {
       state.stufe = progress.stageIndex;
       stufe.updateDisplay();

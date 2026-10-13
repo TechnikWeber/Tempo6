@@ -1,5 +1,5 @@
 import { formatMoney } from '../config/tuning';
-import { CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
+import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from '../sim/Progress';
 import { TRACKS } from '../tracks';
 import { formatTime } from './Hud';
@@ -138,7 +138,7 @@ export class Menu {
           const v = VEHICLES[id];
           const open = this.vehicleOpen(id);
           const b = h('button', `card${id === this.vehicle ? ' on' : ''}${open ? '' : ' locked'}`);
-          b.style.setProperty('--tint', `#${v.colors.accent.toString(16).padStart(6, '0')}`);
+          b.style.setProperty('--tint', `#${BRAND_COLORS[v.brand].toString(16).padStart(6, '0')}`);
           b.append(h('strong', '', v.label));
           if (!open) b.append(h('em', '', `🔒 ${formatMoney(v.unlockPrice)}`));
           b.addEventListener('click', () => this.pickVehicle(id));
@@ -156,13 +156,14 @@ export class Menu {
       for (let i = 1; i <= 5; i++) bar.append(h('i', i <= v.stats[key] ? 'on' : ''));
       stats.append(h('dt', '', STAT_LABELS[key]), bar);
     }
-    const top = this.progress.stage.topSpeedKmh * v.speedFactor;
+    const profile = v.profiles[this.progress.profiles[v.id] ?? 0] ?? v.profiles[0];
+    const top = this.progress.stage.topSpeedKmh * v.speedFactor * profile.speed;
     this.detail.replaceChildren(
-      h('h3', '', `${v.maker} ${v.label}`),
+      h('h3', '', v.label),
       h('p', 'kind', v.kind),
       h('p', '', v.blurb),
       stats,
-      h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${this.progress.stageIndex}: ${this.progress.stage.name}`),
+      h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${this.progress.stageIndex}: ${this.progress.stage.name} · Fahrprofil: ${profile.name}`),
     );
 
     this.trackList.replaceChildren(

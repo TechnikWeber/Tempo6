@@ -33,13 +33,57 @@ export interface WheelSpec {
   stiffness: number;
 }
 
+export type Brand = 'blue' | 'purple';
+export const BRAND_COLORS: Record<Brand, number> = { blue: 0x1565c0, purple: 0x7b2d8e };
+
+/**
+ * A driving character: multipliers on top of the vehicle's base numbers.
+ * 1 everywhere is the vehicle as specified.
+ */
+export interface DriveProfile {
+  name: string;
+  blurb: string;
+  /** Top speed. */
+  speed: number;
+  /** Motor acceleration. */
+  accel: number;
+  /** How tight it can turn (yaw rate / steering angle). */
+  turn: number;
+  /** How hard full lock pulls at speed. */
+  sharp: number;
+  /** How readily it leans and tips. */
+  tip: number;
+  /** How much the tip assist helps. */
+  assist: number;
+  /** Tyre grip. */
+  grip: number;
+  /** Braking, both automatic and on purpose. */
+  brake: number;
+  /** Strength of the push-stroke pulsing (vehicles with `pushRhythm`). */
+  surge?: number;
+  /** How far it may rear up before the motor eases off. */
+  wheelie?: number;
+  /** Hand steering force in m/s² (replaces the vehicle's value). */
+  handSteer?: number;
+  /** Front-wheel drive: multiplier on the tail stability. */
+  fwdStability?: number;
+}
+
+const BASE: DriveProfile = { name: 'Serie', blurb: 'So, wie es aus dem Karton kommt.', speed: 1, accel: 1, turn: 1, sharp: 1, tip: 1, assist: 1, grip: 1, brake: 1 };
+function prof(name: string, blurb: string, o: Partial<DriveProfile>): DriveProfile {
+  return { ...BASE, ...o, name, blurb };
+}
+
 export type Look = 'mid' | 'rear' | 'front' | 'heavy' | 'folder' | 'manual' | 'scooter';
 
 export interface VehicleSpec {
   id: VehicleId;
   /** Model name, loosely based on a real product but never its real name. */
   label: string;
-  maker: string;
+  /** Shown only as a colour: on the menu card and as a small badge on the vehicle. */
+  brand: Brand;
+  /** Candidate driving characters to choose from in the workshop; the first is the default. */
+  profiles: DriveProfile[];
   category: CategoryId;
   kind: string;
   blurb: string;
@@ -81,14 +125,16 @@ export interface VehicleSpec {
 }
 
 /** How far the springs sit compressed at rest. */
-const SAG = 0.06;
+const SAG = 0.075;
 type WheelInput = Omit<WheelSpec, 'y' | 'stiffness'>;
-type SpecInput = Omit<VehicleSpec, 'wheels' | 'suspensionRest'> & { wheels: WheelInput[] };
+type SpecInput = Omit<VehicleSpec, 'wheels' | 'suspensionRest' | 'brand'> & { wheels: WheelInput[] };
 
 function define(s: SpecInput): VehicleSpec {
   const suspensionRest = 0.2;
   return {
     ...s,
+    // Add-on drives and the folder come from one maker, everything else from the other.
+    brand: s.category === 'push' || s.category === 'tractor' || s.category === 'folder' ? 'purple' : 'blue',
     suspensionRest,
     wheels: s.wheels.map((w) => ({
       ...w,
@@ -111,7 +157,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   trex: define({
     id: 'trex',
     label: 'T-Rex Mitteldreher',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Kreisel', 'Dreht sich schneller, als der Magen mitkommt. Kippelig.', { turn: 1.5, sharp: 1.3, accel: 1.2, tip: 1.3, assist: 0.8 }),
+      prof('Sänfte', 'Weich, gutmütig, etwas schneller geradeaus.', { turn: 0.7, sharp: 0.75, tip: 0.6, accel: 0.8, speed: 1.1, brake: 0.8 }),
+    ],
     category: 'power',
     kind: 'Elektrorollstuhl · Mittelradantrieb',
     blurb: 'Sechs Räder, dreht auf dem Bierdeckel. Der Allrounder für enge Gänge.',
@@ -141,7 +191,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   avanti: define({
     id: 'avanti',
     label: 'Avanti RX',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Autobahn', 'Viel Endgeschwindigkeit, stur in der Spur.', { speed: 1.25, accel: 0.9, turn: 0.7, sharp: 0.8, tip: 0.7 }),
+      prof('Driftkönig', 'Wenig Grip, viel Lenkung: rutscht, statt zu kippen.', { grip: 0.55, turn: 1.3, sharp: 1.4, accel: 1.3, tip: 0.6 }),
+    ],
     category: 'power',
     kind: 'Elektrorollstuhl · Heckantrieb',
     blurb: 'Schlank, schwarz, schnell. Läuft stur geradeaus und mag weite Bögen.',
@@ -170,7 +224,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   avantifx: define({
     id: 'avantifx',
     label: 'Avanti FX',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Heckschleuder', 'Das Heck macht, was es will.', { fwdStability: 0.55, turn: 1.3, sharp: 1.3, grip: 0.85 }),
+      prof('Zugpferd', 'Zieht wie ein Trecker, läuft ruhig.', { accel: 1.4, speed: 0.9, fwdStability: 1.2, turn: 0.85, tip: 0.8 }),
+    ],
     category: 'power',
     kind: 'Elektrorollstuhl · Frontantrieb',
     blurb: 'Zieht sich um jede Ecke, klettert über alles. Dafür wedelt bei Tempo das Heck.',
@@ -199,7 +257,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   arrivo: define({
     id: 'arrivo',
     label: 'Arrivo Karton',
-    maker: 'Albern',
+    profiles: [
+      BASE,
+      prof('Federgewicht', 'Springt los, dreht sofort, fällt gern um.', { accel: 1.4, turn: 1.3, tip: 1.4, assist: 0.8, brake: 1.2 }),
+      prof('Carbon-Renner', 'Steif, schnell, klebt in der Kurve.', { speed: 1.2, sharp: 1.2, grip: 1.2, tip: 0.8, turn: 0.9 }),
+    ],
     category: 'folder',
     kind: 'Faltbarer Elektrorollstuhl · Heckantrieb',
     blurb: 'Klappt am Stück zusammen und wiegt fast nichts. Flink, aber der Wind hat Mitspracherecht.',
@@ -228,7 +290,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   orkan: define({
     id: 'orkan',
     label: 'Orkan 4',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Panzer', 'Noch träger, unkippbar, bremst wie ein Anker.', { speed: 0.9, accel: 0.7, turn: 0.7, tip: 0.4, grip: 1.3, brake: 1.3 }),
+      prof('Dampfhammer', 'Schwer und trotzdem schnell. Bremsen ist Verhandlungssache.', { speed: 1.2, accel: 1.3, turn: 0.9, tip: 0.9, brake: 0.7 }),
+    ],
     category: 'power',
     kind: 'Elektrorollstuhl · Heckantrieb, schwer',
     blurb: 'Der Panzer. Kommt langsam in Fahrt und räumt dann alles ab.',
@@ -257,7 +323,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   eskalation: define({
     id: 'eskalation',
     label: 'e-skalation',
-    maker: 'Albern',
+    profiles: [
+      BASE,
+      prof('Wheelie-Maschine', 'Jeder Schubs ein Tritt. Das Vorderrad ist Deko.', { accel: 1.5, surge: 1.7, wheelie: 1.15, tip: 1.2, turn: 1.2 }),
+      prof('Gleiter', 'Gleichmäßiger Schub, mehr Tempo, ruhiger.', { surge: 0.25, accel: 0.9, speed: 1.15, tip: 0.8, turn: 0.85 }),
+    ],
     category: 'push',
     kind: 'Faltrollstuhl · Radnabenmotoren im Rad',
     blurb: 'Motoren in den Rädern verstärken jeden Schubs. Leicht, zappelig, liebt das Hinterrad.',
@@ -288,7 +358,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   schubs: define({
     id: 'schubs',
     label: 'schubs one',
-    maker: 'Albern',
+    profiles: [
+      BASE,
+      prof('Bärenkräfte', 'Arme wie ein Türsteher: lenkt und bremst richtig.', { handSteer: 9, brake: 1.7, turn: 1.3 }),
+      prof('Rakete', 'Schiebt gewaltig. Lenken und Bremsen eher theoretisch.', { speed: 1.3, accel: 1.4, handSteer: 3, brake: 0.7, tip: 1.1 }),
+    ],
     category: 'push',
     kind: 'Faltrollstuhl · Schiebehilfe am Heck',
     blurb: 'Ein kleines Rad schiebt von hinten. Geradeaus top, Kurven sind Handarbeit.',
@@ -320,7 +394,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   ekaptn: define({
     id: 'ekaptn',
     label: "e-käpt'n",
-    maker: 'Albern',
+    profiles: [
+      BASE,
+      prof('Chopper', 'Lang, stabil, cruist. Enge Kurven sind nicht sein Ding.', { speed: 1.15, turn: 0.7, sharp: 0.8, tip: 0.6, accel: 0.9 }),
+      prof('Dreirad des Todes', 'Schneller, giftiger, kippt beim Hinschauen.', { speed: 1.25, accel: 1.4, turn: 1.2, sharp: 1.2, tip: 1.15, assist: 0.9 }),
+    ],
     category: 'tractor',
     kind: 'Faltrollstuhl · Zuggerät vorn',
     blurb: 'Die Legende. Ein Motorrad zum Anklemmen: drei Räder, Lenker, viel zu schnell.',
@@ -350,7 +428,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   piepmatz: define({
     id: 'piepmatz',
     label: 'Piepmatz',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Spatz auf Koffein', 'Zappelt los und schlägt Haken.', { accel: 1.5, turn: 1.2, sharp: 1.4, tip: 1.4, assist: 0.8 }),
+      prof('Brav', 'Kippt kaum noch, dafür gemütlicher.', { tip: 0.6, turn: 0.85, accel: 0.8, speed: 1.1 }),
+    ],
     category: 'scooter',
     kind: 'Seniorenmobil · zerlegbar, winzig',
     blurb: 'Passt in jeden Kofferraum und durch jede Lücke. Kippt, wenn man es böse anschaut.',
@@ -379,7 +461,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   tiger: define({
     id: 'tiger',
     label: 'Stubentiger',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Raubkatze', 'Bissiger Antritt, scharfe Lenkung, guter Grip.', { accel: 1.4, sharp: 1.3, turn: 1.15, grip: 1.2, tip: 1.1 }),
+      prof('Schmusekater', 'Sanft in allem. Für die Fahrt zum Bäcker.', { accel: 0.75, tip: 0.6, turn: 0.9, brake: 0.8, speed: 1.05 }),
+    ],
     category: 'scooter',
     kind: 'Seniorenmobil · kompakt',
     blurb: 'Der kleine Bruder vom Löwen. Wendig genug für den Wochenmarkt, brav genug für Oma.',
@@ -408,7 +494,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   komet: define({
     id: 'komet',
     label: 'Sternschnuppe 4',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Sonntagsfahrer', 'Gemächlich und standfest.', { accel: 0.7, speed: 0.9, tip: 0.5, turn: 0.9, sharp: 0.8 }),
+      prof('Einkaufsrowdy', 'Flott, rutschig, eng ums Regal.', { accel: 1.3, turn: 1.2, sharp: 1.3, grip: 0.75, tip: 0.9 }),
+    ],
     category: 'scooter',
     kind: 'Seniorenmobil · vier Räder',
     blurb: 'Der Klassiker mit Einkaufskorb und Wimpel. Lenkt wie ein Auto, wendet wie ein Tanker.',
@@ -437,7 +527,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   wagen: define({
     id: 'wagen',
     label: 'Großer Wagen',
-    maker: 'Invascare',
+    profiles: [
+      BASE,
+      prof('Reisebus', 'Noch schneller, noch träger, kippt nie.', { speed: 1.2, accel: 0.75, turn: 0.75, tip: 0.5 }),
+      prof('Sportcoupé', 'Der Lange kann auch zackig.', { accel: 1.3, turn: 1.3, sharp: 1.2, grip: 1.2 }),
+    ],
     category: 'scooter',
     kind: 'Seniorenmobil · Langstrecke',
     blurb: 'Das Sternbild unter den Seniorenmobilen. Lang, schwer, schnell, mit dem Wendekreis einer Fähre.',
@@ -501,8 +595,8 @@ export const HANDLING = {
   tipAngle: 0.45,
   /** How far ahead (s) the assist extrapolates the lean. */
   tipLookahead: 0.25,
-  /** Damps the rocking from side to side (N·m·s/rad). */
-  rollDamping: 60,
+  /** Damps the rocking from side to side (N·m·s/rad). Higher = leans over more slowly. */
+  rollDamping: 110,
   /** Proportional gain of the wheel speed controller (1/s). */
   motorGain: 6,
   /** Gain on the yaw rate error of differential drive (1/s). */
@@ -515,8 +609,10 @@ export const HANDLING = {
   footBrake: 10,
   /** Rear side grip multiplier while the handbrake is held. */
   handbrakeSlide: 0.35,
-  suspensionCompression: 3.5,
-  suspensionRelaxation: 4.5,
+  suspensionCompression: 3.0,
+  suspensionRelaxation: 3.8,
+  /** How much the body visibly sways on its springs, on top of the physics. */
+  bodySway: 1,
 };
 
 export const HANDLING_DEFAULTS: Readonly<typeof HANDLING> = { ...HANDLING };

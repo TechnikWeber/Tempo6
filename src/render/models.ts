@@ -1,6 +1,6 @@
 import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { PROP_SHAPES, type PickupType, type PropType } from '../sim/Track';
-import { groundY, type VehicleSpec, type WheelSpec } from '../config/vehicles';
+import { BRAND_COLORS, groundY, type VehicleSpec, type WheelSpec } from '../config/vehicles';
 
 const materials = new Map<number, MeshStandardMaterial>();
 
@@ -45,6 +45,17 @@ export interface VehicleModel {
   driver: Group;
   /** Shoulder pivots that swing when pushing the rims. */
   arms: Group[];
+}
+
+/** A built model plus the sprung part: everything but the wheels, swaying on the suspension. */
+export interface VehicleRig extends VehicleModel {
+  body: Group;
+}
+
+/** Small plate in the maker's colour; the only branding there is. */
+function badge(root: Group, spec: VehicleSpec, x: number, y: number, z: number): void {
+  box(root, 0.13, 0.075, 0.012, 0xf4f4f4, x, y, z);
+  box(root, 0.11, 0.055, 0.016, BRAND_COLORS[spec.brand], x, y, z);
 }
 
 const SKIN = 0xe8b48c;
@@ -123,21 +134,24 @@ function driver(st: DriverStyle): { group: Group; arms: Group[] } {
     box(g, 0.12, 0.38, 0.12, st.trousers, s * 0.1, -0.16, 0.36);
     box(g, 0.13, 0.07, 0.24, 0x2a2a2a, s * 0.1, -0.36, 0.42);
     if (st.arms === 'forward') {
-      const arm = box(g, 0.1, 0.1, 0.46, st.shirt, s * 0.22, 0.3, 0.2);
-      arm.rotation.x = -0.25;
-      box(g, 0.09, 0.09, 0.09, SKIN, s * 0.22, 0.36, 0.44);
+      // Straight from the shoulder to the hand on the bars.
+      const sy = 0.43, sz = 0.02, hy = 0.36, hz = 0.44;
+      const arm = box(g, 0.1, 0.1, Math.hypot(hy - sy, hz - sz), st.shirt, s * 0.22, (sy + hy) / 2, (sz + hz) / 2);
+      arm.rotation.x = Math.atan2(sy - hy, hz - sz);
+      box(g, 0.09, 0.09, 0.09, SKIN, s * 0.22, hy, hz);
     } else if (st.arms === 'rims') {
       // Shoulder pivot; the arm hangs down and out to the push rim.
       const shoulder = new Group();
-      shoulder.position.set(s * 0.22, 0.42, -0.02);
+      shoulder.position.set(s * 0.22, 0.44, -0.02);
       shoulder.rotation.z = s * 0.28;
       box(shoulder, 0.1, 0.36, 0.1, st.shirt, 0, -0.16, 0);
       box(shoulder, 0.09, 0.09, 0.09, SKIN, 0, -0.38, 0);
       g.add(shoulder);
       arms.push(shoulder);
     } else {
-      box(g, 0.1, 0.3, 0.1, st.shirt, s * 0.24, 0.28, -0.02);
-      box(g, 0.1, 0.09, 0.3, SKIN, s * 0.24, 0.14, 0.14);
+      // Upper arm down from the shoulder, forearm on the armrest.
+      box(g, 0.1, 0.32, 0.1, st.shirt, s * 0.24, 0.32, -0.02);
+      box(g, 0.1, 0.09, 0.3, SKIN, s * 0.24, 0.17, 0.12);
     }
   }
   return { group: g, arms };
@@ -219,6 +233,8 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
   cyl(root, 0.012, 0.09, STEEL, -0.27, seatY + 0.29, 0.19, 5);
   box(root, 0.04, 0.04, 0.04, accent, -0.27, seatY + 0.34, 0.19);
 
+  badge(root, spec, 0, seatY + 0.7, -0.31);
+
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.04, -0.14);
   root.add(d.group);
@@ -294,6 +310,8 @@ function buildManual(spec: VehicleSpec): VehicleModel {
     for (const w of spec.wheels) if (w.caster) box(root, 0.03, 0.14, 0.03, STEEL, w.x, g + w.radius + 0.1, w.z); // caster forks
   }
 
+  badge(root, spec, 0, seatY + 0.32, seatZ - 0.245);
+
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.02, seatZ - 0.1);
   root.add(d.group);
@@ -331,6 +349,8 @@ function buildScooter(spec: VehicleSpec): VehicleModel {
   // safety flag
   cyl(root, 0.01, 1.3, 0xdddddd, -w * 0.44, 0.75, -L + 0.04, 4);
   box(root, 0.01, 0.16, 0.24, spec.colors.accent, -w * 0.44, 1.32, -L - 0.08);
+  badge(root, spec, 0, 0, -L * 0.98 - 0.006);
+
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, 0.36, seatZ - 0.06);
   root.add(d.group);
@@ -369,17 +389,35 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
   cyl(root, 0.011, 0.08, STEEL, -0.25, seatY + 0.28, 0.2, 5);
   box(root, 0.035, 0.035, 0.035, accent, -0.25, seatY + 0.33, 0.2);
 
+  badge(root, spec, 0, seatY + 0.32, -0.245);
+
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.02, -0.1);
   root.add(d.group);
   return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
 }
 
-export function buildVehicle(spec: VehicleSpec): VehicleModel {
+function buildModel(spec: VehicleSpec): VehicleModel {
   if (spec.look === 'scooter') return buildScooter(spec);
   if (spec.look === 'folder') return buildFolder(spec);
   if (spec.look === 'manual') return buildManual(spec);
   return buildPowerchair(spec);
+}
+
+export function buildVehicle(spec: VehicleSpec): VehicleRig {
+  const m = buildModel(spec);
+  // Everything except the wheels goes into one group that pivots near axle height.
+  const body = new Group();
+  const pivotY = groundY(spec) + 0.15;
+  body.position.y = pivotY;
+  const wheelPivots = new Set<unknown>(m.wheels.map((w) => w.pivot));
+  for (const child of [...m.root.children]) {
+    if (wheelPivots.has(child)) continue;
+    child.position.y -= pivotY;
+    body.add(child);
+  }
+  m.root.add(body);
+  return { ...m, body };
 }
 
 export function buildProp(type: PropType): Group {

@@ -8,22 +8,24 @@ Status: playable prototype with a start screen, two tracks, twelve vehicles and 
 
 ## Vehicles
 
-All makers and models are made up; they are loosely inspired by real product categories.
+All model names are made up; the vehicles are loosely inspired by real product categories. There are no maker names, only a colour badge.
+
+Every vehicle has three candidate driving profiles to try out in the workshop (F2). While the dev server runs, the chosen ones are written to `profile-choices.json`.
 
 | Model | Category | Character |
 | --- | --- | --- |
-| Invascare T-Rex Mitteldreher | Power wheelchairs | Mid-wheel drive, six wheels, turns on the spot |
-| Invascare Avanti RX | Power wheelchairs | Rear-wheel drive, fast, prefers wide arcs |
-| Invascare Avanti FX | Power wheelchairs | Front-wheel drive, pulls round corners, tail-happy |
-| Invascare Orkan 4 | Power wheelchairs | Heavy rear-wheel drive, very stable |
-| Albern Arrivo Karton | One-piece folder | Light folding power chair, nimble |
-| Albern e-skalation | Push assist | Hub motors, thrust in push strokes |
-| Albern schubs one | Push assist | Pusher wheel at the back, steered and braked by hand |
-| Albern e-käpt'n | Tractor unit | Front-mounted drive, three wheels, fastest |
-| Invascare Piepmatz | Mobility scooters | Tiny, agile, tippy |
-| Invascare Stubentiger | Mobility scooters | Compact |
-| Invascare Sternschnuppe 4 | Mobility scooters | The classic with basket and flag |
-| Invascare Großer Wagen | Mobility scooters | Long, heavy, fast, huge turning circle |
+| T-Rex Mitteldreher | Power wheelchairs | Mid-wheel drive, six wheels, turns on the spot |
+| Avanti RX | Power wheelchairs | Rear-wheel drive, fast, prefers wide arcs |
+| Avanti FX | Power wheelchairs | Front-wheel drive, pulls round corners, tail-happy |
+| Orkan 4 | Power wheelchairs | Heavy rear-wheel drive, very stable |
+| Arrivo Karton | One-piece folder | Light folding power chair, nimble |
+| e-skalation | Push assist | Hub motors, thrust in push strokes |
+| schubs one | Push assist | Pusher wheel at the back, steered and braked by hand |
+| e-käpt'n | Tractor unit | Front-mounted drive, three wheels, fastest |
+| Piepmatz | Mobility scooters | Tiny, agile, tippy |
+| Stubentiger | Mobility scooters | Compact |
+| Sternschnuppe 4 | Mobility scooters | The classic with basket and flag |
+| Großer Wagen | Mobility scooters | Long, heavy, fast, huge turning circle |
 
 Vehicles and tracks are unlocked with deposit money; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
 

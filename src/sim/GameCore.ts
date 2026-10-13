@@ -43,8 +43,23 @@ export class GameCore {
 
   applyStage(): void {
     const s = this.progress.stage;
+    const v = this.sim.vehicle;
+    const spec = v.spec;
+    v.profile = spec.profiles[this.profileIndex] ?? spec.profiles[0];
+    v.setMotor((s.topSpeedKmh * spec.speedFactor * v.profile.speed) / 3.6, s.accel * spec.accelFactor * v.profile.accel);
+  }
+
+  /** Index of the driving profile in use for the current vehicle. */
+  get profileIndex(): number {
     const spec = this.sim.vehicle.spec;
-    this.sim.vehicle.setMotor((s.topSpeedKmh * spec.speedFactor) / 3.6, s.accel * spec.accelFactor);
+    const i = this.progress.profiles[spec.id] ?? 0;
+    return i < spec.profiles.length ? i : 0;
+  }
+
+  setProfile(index: number): void {
+    this.progress.profiles[this.sim.vehicle.spec.id] = index;
+    this.progress.save();
+    this.applyStage();
   }
 
   /** Top speed of the current vehicle at the current tuning stage, in km/h. */

@@ -5,6 +5,7 @@ export class Sound {
   private whine: OscillatorNode | null = null;
   private motorGain: GainNode | null = null;
   private master: GainNode | null = null;
+  private squealGain: GainNode | null = null;
   muted = false;
 
   /** Browsers only allow audio after a user gesture. */
@@ -30,6 +31,23 @@ export class Sound {
     this.whine.connect(filter);
     this.motor.start();
     this.whine.start();
+
+    // Tyre squeal: looping noise through a narrow band.
+    const len = ctx.sampleRate;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    noise.loop = true;
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 1500;
+    band.Q.value = 6;
+    this.squealGain = ctx.createGain();
+    this.squealGain.gain.value = 0;
+    noise.connect(band).connect(this.squealGain).connect(this.master);
+    noise.start();
   }
 
   toggleMute(): void {
@@ -46,6 +64,12 @@ export class Sound {
     this.whine.frequency.setTargetAtTime(220 + s * 150, t, 0.05);
     const vol = s < 0.05 && load < 0.05 ? 0 : 0.035 + 0.05 * load + Math.min(0.04, s * 0.004);
     this.motorGain.gain.setTargetAtTime(vol, t, 0.08);
+  }
+
+  /** @param amount 0…1 how hard the tyres are scrubbing */
+  setSqueal(amount: number): void {
+    if (!this.ctx || !this.squealGain) return;
+    this.squealGain.gain.setTargetAtTime(0.22 * amount, this.ctx.currentTime, 0.06);
   }
 
   private blip(freqs: number[], step: number, type: OscillatorType = 'triangle', vol = 0.25): void {
