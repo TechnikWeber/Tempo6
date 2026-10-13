@@ -21,7 +21,7 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 | Arrivo Karton | One-piece folder | Light folding power chair, nimble |
 | e-skalation | Push assist | Hub motors, thrust in push strokes |
 | e-nix | Push assist | Hub motors with a joystick, optional attendant control |
-| schubs one | Push assist | Pusher wheel at the back, steered and braked by hand |
+| Arschtritt 3000 | Push assist | Pusher wheel at the back, steered and braked by hand |
 | e-käpt'n | Tractor unit | Front-mounted drive, three wheels, fastest |
 | Piepmatz | Mobility scooters | Tiny, agile, tippy |
 | Stubentiger | Mobility scooters | Compact |

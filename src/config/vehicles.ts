@@ -391,7 +391,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   schubs: define({
     id: 'schubs',
-    label: 'schubs one',
+    label: 'Arschtritt 3000',
     profiles: [
       BASE,
       prof('Bärenkräfte', 'Arme wie ein Türsteher: lenkt und bremst richtig.', { handSteer: 9, brake: 1.7, turn: 1.3 }),
@@ -595,10 +595,10 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 /** Menu groups. The titles stay close to what the trade calls these things. */
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
   { id: 'power', title: 'Vollpower Wheelchairs', vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
-  { id: 'folder', title: 'One-Piece-Falter', vehicles: ['arrivo'] },
+  { id: 'folder', title: 'Falt(en)wunder', vehicles: ['arrivo'] },
   { id: 'push', title: 'Schubshilfen', vehicles: ['eskalation', 'enix', 'schubs'] },
   { id: 'tractor', title: 'Zugmaschinen', vehicles: ['ekaptn'] },
-  { id: 'scooter', title: 'Rentnerblitze', vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
+  { id: 'scooter', title: 'Seniorenraketen', vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
 ];
 
 export const VEHICLE_ORDER: VehicleId[] = CATEGORIES.flatMap((c) => c.vehicles);

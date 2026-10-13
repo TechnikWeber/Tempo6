@@ -18,15 +18,15 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange d
 | Avanti RX | Vollpower Wheelchairs | Heckantrieb, schnell, mag weite Bögen |
 | Avanti FX | Vollpower Wheelchairs | Frontantrieb, zieht um die Ecke, Heck wedelt |
 | Orkan 4 | Vollpower Wheelchairs | Schwerer Heckantrieb, sehr standfest |
-| Arrivo Karton | One-Piece-Falter | Leichter faltbarer Elektrorollstuhl, flink |
+| Arrivo Karton | Falt(en)wunder | Leichter faltbarer Elektrorollstuhl, flink |
 | e-skalation | Schubshilfen | Radnabenmotoren, Schub in Greifreifen-Stößen |
 | e-nix | Schubshilfen | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
-| schubs one | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
+| Arschtritt 3000 | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
 | e-käpt'n | Zugmaschinen | Zuggerät vorn, drei Räder, am schnellsten |
-| Piepmatz | Rentnerblitze | Winziges Seniorenmobil, wendig, kippelig |
-| Stubentiger | Rentnerblitze | Kompaktes Seniorenmobil |
-| Sternschnuppe 4 | Rentnerblitze | Der Klassiker mit Korb und Wimpel |
-| Großer Wagen | Rentnerblitze | Lang, schwer, schnell, riesiger Wendekreis |
+| Piepmatz | Seniorenraketen | Winziges Seniorenmobil, wendig, kippelig |
+| Stubentiger | Seniorenraketen | Kompaktes Seniorenmobil |
+| Sternschnuppe 4 | Seniorenraketen | Der Klassiker mit Korb |
+| Großer Wagen | Seniorenraketen | Lang, schwer, schnell, riesiger Wendekreis |
 
 Fahrzeuge und Strecken werden mit Pfand freigeschaltet; `UNLOCK_ALL` in `src/config/vehicles.ts` öffnet zum Testen alles.
 
