@@ -17,7 +17,7 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
       progress.save();
       game().applyStage();
     });
-  gui.add({ f: () => progress.earn(1000) }, 'f').name('+10 € Pfand');
+  gui.add({ f: () => progress.earn(100) }, 'f').name('+100 Schrauben');
   gui
     .add({ f: () => { progress.wipe(); game().applyStage(); } }, 'f')
     .name('Spielstand löschen');

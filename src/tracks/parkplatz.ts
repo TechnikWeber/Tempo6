@@ -58,15 +58,15 @@ for (let side = 0; side < 4; side++) {
   const [bx, bz] = corners[(side + 1) % 4];
   const len = Math.hypot(bx - ax, bz - az);
   for (let d = 2.5; d < len; d += 5) {
-    pickups.push({ type: 'bottle', pos: [ax + ((bx - ax) * d) / len, 0.5, az + ((bz - az) * d) / len] });
+    pickups.push({ type: 'screw', pos: [ax + ((bx - ax) * d) / len, 0.5, az + ((bz - az) * d) / len] });
   }
 }
 // Crates hang in the air behind the ramps: you need speed to reach them.
-pickups.push({ type: 'crate', pos: [-4.5, 1.6, 8.6] });
-pickups.push({ type: 'crate', pos: [-40, 2.2, 4] });
-pickups.push({ type: 'crate', pos: [40, 4.3, 11] });
+pickups.push({ type: 'toolbox', pos: [-4.5, 1.6, 8.6] });
+pickups.push({ type: 'toolbox', pos: [-40, 2.2, 4] });
+pickups.push({ type: 'toolbox', pos: [40, 4.3, 11] });
 for (let z = -35; z <= -10; z += 5) {
-  pickups.push({ type: 'bottle', pos: [40, 0.5, z] }, { type: 'bottle', pos: [-40, 0.5, z] });
+  pickups.push({ type: 'screw', pos: [40, 0.5, z] }, { type: 'screw', pos: [-40, 0.5, z] });
 }
 
 const decor: DecorDef[] = [
@@ -78,7 +78,7 @@ const decor: DecorDef[] = [
   { type: 'tree', pos: [6, 0.6, -0.5] },
   { type: 'lamp', pos: [-9, 0.6, 3] },
   { type: 'lamp', pos: [9, 0.6, -3] },
-  { type: 'sign', pos: [0, 5, LOT_Z + 8], half: [38, 5, 6], color: 0xe8e2d0, text: 'PFANDLAND' },
+  { type: 'sign', pos: [0, 5, LOT_Z + 8], half: [38, 5, 6], color: 0xe8e2d0, text: 'BAUMARKT' },
 ];
 // Parking bays north and south.
 for (const z of [-33, 33]) {
@@ -89,9 +89,10 @@ for (const z of [-33, 33]) {
 
 export const PARKPLATZ: TrackDef = {
   id: 'parkplatz',
-  name: 'Pfandland-Parkplatz',
+  name: 'Baumarkt-Parkplatz',
   blurb: 'Enger Rundkurs um die Grüninsel. Hier fängt jeder an, mit 6 km/h.',
   unlockPrice: 0,
+  lapPay: 10,
   spawn: { pos: [-3, 0.5, -LINE_Z], yaw: Math.PI / 2 },
   statics,
   props,

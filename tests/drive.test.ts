@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BOOST, DAMAGE, STAGES } from '../src/config/tuning';
+import { BONUS, BOOST, DAMAGE, STAGES, STUNTS } from '../src/config/tuning';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
 import { Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
+import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
 import { TRACKS } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
@@ -15,6 +16,7 @@ const FLAT: TrackDef = {
   name: 'flat',
   blurb: '',
   unlockPrice: 0,
+  lapPay: 0,
   spawn: { pos: [0, 0.7, 0], yaw: 0 },
   statics: [{ pos: [0, -0.5, 0], half: [500, 0.5, 500], color: 0 }],
   props: [],
@@ -908,6 +910,10 @@ describe('curve test ground', () => {
     }
     expect(core.race.laps).toBe(1);
     expect(minUp).toBeGreaterThan(0.9);
+    // the finish line pays: the lap, a first best time, and nothing got scratched
+    const paid = core.events.find((e) => e.type === 'payout');
+    expect(paid).toMatchObject({ lap: KURVEN.lapPay, best: Math.round(KURVEN.lapPay * BONUS.best), clean: Math.round(KURVEN.lapPay * BONUS.clean) });
+    expect(progress.money).toBe(paid && paid.type === 'payout' ? paid.total : -1);
     core.dispose();
   });
 });
@@ -943,13 +949,100 @@ describe.each(TRACKS.filter((t) => t.line).map((t) => [t.id, t] as const))('road
   });
 });
 
+describe('stunts', () => {
+  /** Run a sim with a stunt counter alongside. */
+  const watch = (sim: Sim, st: Stunts, seconds: number, input: { throttle: number; steer: number }) => {
+    const kinds: string[] = [];
+    for (let i = 0; i < seconds * 60; i++) {
+      sim.step({ ...input, handbrake: false });
+      for (const s of st.update(sim.vehicle, [], 1 / 60)) kinds.push(s.kind);
+    }
+    return kinds;
+  };
+
+  it('pays for a flight that ends on the wheels, and for a looping', () => {
+    const st = new Stunts();
+    const jump = new Sim({ ...FLAT, spawn: { pos: [0, 0.7, -60], yaw: 0 }, statics: [...FLAT.statics, ramp([0, 0], 0, 10, 6, 0.3, 0)] }, VEHICLES.komet);
+    jump.vehicle.setMotor(50 / 3.6, 7);
+    expect(watch(jump, st, 10, { throttle: 1, steer: 0 })).toContain('air');
+    // a good second in the air
+    expect(st.pending).toBeGreaterThan(STUNTS.air.perSecond * 0.8);
+    jump.world.free();
+
+    const loop = new Sim({ ...FLAT, spawn: { pos: [-130, 0.7, 0], yaw: Math.PI / 2 }, statics: [...FLAT.statics, ...looping([0, 0], 5, 4.7, 5, 0)] }, VEHICLES.komet);
+    loop.vehicle.setMotor(65 / 3.6, 9);
+    expect(watch(loop, new Stunts(), 12, { throttle: 1, steer: 0 })).toContain('looping');
+    loop.world.free();
+  });
+
+  it('pays for a drift, and nothing for plain driving', () => {
+    const drifter = simAt(VEHICLES.avanti, 40, 7);
+    drifter.vehicle.profile = VEHICLES.avanti.profiles[2];
+    drive(drifter, 6, 1);
+    const st = new Stunts();
+    // in and out of full lock, like a slalom
+    const kinds: string[] = [];
+    for (let i = 0; i < 60 * 8; i++) {
+      drifter.step({ throttle: 1, steer: Math.floor(i / 60) % 2 ? 1 : -1, handbrake: false });
+      for (const s of st.update(drifter.vehicle, [], 1 / 60)) kinds.push(s.kind);
+    }
+    expect(kinds).toContain('drift');
+    drifter.world.free();
+
+    const plain = simAt(VEHICLES.komet, 30, 6);
+    const none = new Stunts();
+    expect(watch(plain, none, 8, { throttle: 1, steer: 0 })).toEqual([]);
+    expect(watch(plain, none, 3, { throttle: 1, steer: 0.3 })).toEqual([]);
+    expect(none.pending).toBe(0);
+    plain.world.free();
+  });
+
+  it('multiplies a run of stunts, until a knock or a pause ends it', () => {
+    const st = new Stunts();
+    const sim = simAt(VEHICLES.komet, 30, 6);
+    drive(sim, 2, 1);
+    // (stunts fed by hand: flights one after the other)
+    const flight = () => {
+      const v = sim.vehicle;
+      const real = v.wheelsOnGround;
+      v.wheelsOnGround = 0;
+      for (let i = 0; i < 60; i++) st.update(v, [], 1 / 60);
+      v.wheelsOnGround = real;
+      return st.update(v, [], 1 / 60)[0];
+    };
+    expect(flight().multiplier).toBe(1);
+    expect(flight().multiplier).toBe(1 + STUNTS.chainStep);
+    expect(st.multiplier).toBe(1 + 2 * STUNTS.chainStep);
+    st.crash();
+    expect(st.multiplier).toBe(1);
+    flight();
+    for (let i = 0; i < 60 * (STUNTS.chainWindow + 0.5); i++) st.update(sim.vehicle, [], 1 / 60);
+    expect(st.multiplier).toBe(1);
+    // banking hands over what is there and starts from nothing
+    const sum = st.bank();
+    expect(sum).toBeGreaterThan(0);
+    expect(st.pending).toBe(0);
+    sim.world.free();
+  });
+
+  it('loses what was not banked when the vehicle is written off', () => {
+    const core = new GameCore(PARKPLATZ, new Progress());
+    core.stunts.pending = 40;
+    core.sim.vehicle.setDamage(1);
+    core.step(idle);
+    expect(core.stunts.pending).toBe(0);
+    expect(core.events.some((e) => e.type === 'wreck')).toBe(true);
+    core.dispose();
+  });
+});
+
 describe('game on the Parkplatz', () => {
-  it('collects bottles on the start straight and tunes once the money is there', () => {
+  it('collects screws on the start straight and tunes once the money is there', () => {
     const core = new GameCore(PARKPLATZ, new Progress());
     for (let i = 0; i < 60 * 40; i++) core.step({ ...idle, throttle: 1 });
-    // drove east along the start straight until the cones: three bottles
-    expect(core.progress.money).toBe(75);
-    core.progress.earn(25);
+    // drove east along the start straight until the cones: three screws
+    expect(core.progress.money).toBe(3);
+    core.progress.earn(STAGES[1].price - 3);
     core.step({ ...idle, tune: true });
     expect(core.progress.stageIndex).toBe(1);
     expect(core.topSpeedKmh).toBeCloseTo(8);
@@ -1080,7 +1173,7 @@ describe('traffic', () => {
 });
 
 describe('unlocking', () => {
-  it('buys a vehicle with Pfand when not everything is open', () => {
+  it('buys a vehicle with Schrauben when not everything is open', () => {
     const p = new Progress();
     // UNLOCK_ALL is on for testing, so only the bookkeeping can be checked here.
     expect(p.isUnlocked('trex', 0)).toBe(true);

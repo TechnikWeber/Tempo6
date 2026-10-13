@@ -91,21 +91,23 @@ function setRacing(on: boolean): void {
 }
 setRacing(false);
 
+/** Lap message waiting for its payout line. */
+let lastLap = '';
 function handleEvents(): void {
   for (const e of core.events) {
     if (!racing) continue;
     switch (e.type) {
       case 'pickup':
-        if (e.kind === 'crate') {
+        if (e.kind === 'toolbox') {
           sound.crate();
-          hud.toast(`Kasten Bier! +${formatMoney(e.value)}`, '', 1.5);
+          hud.toast(`Werkzeugkiste! +${formatMoney(e.value)}`, '', 1.5);
         } else {
           sound.bottle();
         }
         break;
       case 'lap':
         sound.lap();
-        hud.toast(e.best ? `Bestzeit! ${formatTime(e.time)}` : `Runde: ${formatTime(e.time)}`);
+        lastLap = e.best ? `Bestzeit! ${formatTime(e.time)}` : `Runde: ${formatTime(e.time)}`;
         break;
       case 'tuned':
         sound.tuned();
@@ -118,13 +120,26 @@ function handleEvents(): void {
       case 'honk':
         sound.honk();
         break;
+      case 'stunt': {
+        const names = { drift: 'Drift', twoWheels: 'Zweirad', wheelie: 'Wheelie', air: 'Flug', looping: 'Looping!', nearMiss: 'Knapp vorbei' };
+        hud.stunt(`${names[e.kind]} +${Math.max(1, Math.round(e.points))}${e.multiplier > 1 ? ` (×${e.multiplier.toFixed(1).replace('.', ',')})` : ''}`);
+        break;
+      }
+      case 'payout': {
+        const parts = [e.lap && `Runde ${e.lap}`, e.best && `Bestzeit ${e.best}`, e.clean && `unfallfrei ${e.clean}`, e.stunts && `Stunts ${e.stunts}`].filter(Boolean);
+        sound.crate();
+        // (the lap time comes with it, or the two toasts would cover each other)
+        hud.toast(lastLap ? `${lastLap} · +${formatMoney(e.total)}` : `+${formatMoney(e.total)}`, parts.join(' · '), 3.5);
+        lastLap = '';
+        break;
+      }
       case 'crash':
         view.bump(e.impact * 0.6);
         sound.thud(e.impact * 0.6);
         break;
       case 'wreck':
         sound.nope();
-        hud.toast('Totalschaden!', 'Rücktaste: Level neu starten, dann ist alles wieder heil.', 4);
+        hud.toast('Totalschaden!', 'Was nicht im Ziel war, ist weg. Rücktaste: Level neu starten.', 4);
         break;
       case 'boost':
         sound.zap();
@@ -135,9 +150,14 @@ function handleEvents(): void {
         break;
       case 'broke':
         sound.nope();
-        hud.toast(`Es fehlen noch ${formatMoney(e.missing)} Pfand`, '', 1.5);
+        hud.toast(`Es fehlen noch ${formatMoney(e.missing)}`, '', 1.5);
         break;
     }
+  }
+  if (lastLap) {
+    // a lap that paid nothing still gets its time shown
+    hud.toast(lastLap);
+    lastLap = '';
   }
   core.events.length = 0;
 }

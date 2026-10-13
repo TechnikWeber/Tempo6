@@ -7,13 +7,14 @@ export interface Store {
   setItem(key: string, value: string): void;
 }
 
-const KEY = 'tempo6.save.v2';
+// (v3: the money is Schrauben now, not cents of Pfand)
+const KEY = 'tempo6.save.v3';
 /** Unlock id of the boost battery; it shares the list with vehicles and tracks. */
 const BOOST_ID = 'boost';
 
-/** Player progress: Pfand money, tuning stage, unlocks, best laps. */
+/** Player progress: Schrauben, tuning stage, unlocks, best laps. */
 export class Progress {
-  /** Money in cents. */
+  /** Schrauben. */
   money = 0;
   stageIndex = 0;
   vehicle: VehicleId = 'trex';
@@ -55,8 +56,8 @@ export class Progress {
     return n !== null && this.money >= n.price;
   }
 
-  earn(cents: number): void {
-    this.money += cents;
+  earn(screws: number): void {
+    this.money += screws;
     this.save();
   }
 

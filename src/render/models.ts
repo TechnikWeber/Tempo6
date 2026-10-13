@@ -593,15 +593,19 @@ export function buildProp(type: PropType): Group {
 
 export function buildPickup(type: PickupType): Group {
   const g = new Group();
-  if (type === 'bottle') {
-    cyl(g, 0.09, 0.3, 0x3aa05a, 0, 0, 0, 7);
-    cyl(g, 0.035, 0.14, 0x3aa05a, 0, 0.21, 0, 6);
-    cyl(g, 0.04, 0.03, 0xe8e8e8, 0, 0.29, 0, 6);
-    cyl(g, 0.092, 0.12, 0xf2e9c9, 0, -0.02, 0, 7); // label
+  if (type === 'screw') {
+    // a fat screw, head up, big enough to see from a moving wheelchair
+    cyl(g, 0.11, 0.05, 0xc9ced6, 0, 0.14, 0, 6);
+    box(g, 0.16, 0.02, 0.03, 0x6b7078, 0, 0.17, 0); // slot
+    cyl(g, 0.045, 0.3, 0xa9aeb6, 0, -0.03, 0, 6);
+    for (let i = 0; i < 4; i++) cyl(g, 0.055, 0.02, 0x8d9299, 0, -0.14 + i * 0.07, 0, 6); // thread
   } else {
-    box(g, 0.6, 0.36, 0.45, 0xf2c417);
-    box(g, 0.62, 0.1, 0.47, 0xc22a2a, 0, 0.02, 0);
-    for (let i = -2; i <= 2; i++) for (const z of [-0.12, 0.12]) cyl(g, 0.04, 0.12, 0x6b3f1d, i * 0.11, 0.22, z, 5);
+    // toolbox: red, with a tray lid and a handle
+    box(g, 0.6, 0.26, 0.3, 0xc22a2a, 0, -0.03, 0);
+    box(g, 0.62, 0.08, 0.32, 0xa81f1f, 0, 0.13, 0);
+    box(g, 0.08, 0.06, 0.02, 0xd9dde2, 0, 0.02, 0.155); // latch
+    box(g, 0.3, 0.03, 0.04, 0x1d1d1f, 0, 0.26, 0); // handle
+    for (const s of [1, -1]) box(g, 0.03, 0.1, 0.04, 0x1d1d1f, s * 0.14, 0.21, 0);
   }
   return g;
 }

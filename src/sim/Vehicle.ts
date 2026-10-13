@@ -41,6 +41,8 @@ export class Vehicle {
   yawRate = 0;
   /** Y component of the chassis up vector: 1 upright, below 0 upside down. */
   upY = 1;
+  /** How far the nose points up from the ground it stands on (sine of the angle); negative = nose down. */
+  nose = 0;
   /** Lean to the side in rad, positive = leaning to the driver's right. */
   roll = 0;
   wheelsOnGround = 0;
@@ -265,6 +267,7 @@ export class Vehicle {
       if (n) this.normal.x += n.x, this.normal.y += n.y, this.normal.z += n.z;
     });
     const nose = this.normal.lengthSq() > 0 ? this.fwd.dot(this.normal.normalize()) : this.fwd.y;
+    this.nose = nose;
     if (this.normal.lengthSq() > 0) this.ground.copy(this.normal);
     else this.ground.set(0, 1, 0);
     const rearUp = p.wheelie ?? 1;

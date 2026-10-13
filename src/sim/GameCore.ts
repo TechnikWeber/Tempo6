@@ -1,8 +1,9 @@
-import { BOOST, PICKUP_VALUE, type TuningStage } from '../config/tuning';
+import { BONUS, BOOST, PICKUP_VALUE, type TuningStage } from '../config/tuning';
 import { VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from './Progress';
 import { Race } from './Race';
 import { Sim, STEP } from './Sim';
+import { Stunts, type StuntKind } from './Stunts';
 import type { PickupDef, TrackDef } from './Track';
 import type { DriveInput } from './Vehicle';
 
@@ -27,7 +28,10 @@ export type GameEvent =
   | { type: 'land'; speed: number }
   /** A knock that did damage; `impact` is the change of speed in m/s. */
   | { type: 'crash'; impact: number; damage: number }
-  | { type: 'wreck' };
+  | { type: 'wreck' }
+  | { type: 'stunt'; kind: StuntKind; points: number; multiplier: number }
+  /** Schrauben paid out at the finish line, and what for. */
+  | { type: 'payout'; total: number; lap: number; best: number; clean: number; stunts: number };
 
 const PICKUP_RADIUS = 1.0;
 const PICKUP_RESPAWN = 15;
@@ -42,6 +46,12 @@ export class GameCore {
   readonly events: GameEvent[] = [];
   /** How long the vehicle has been lying on its side or roof. */
   flippedFor = 0;
+  /** Stunt score of the lap in progress; banked at the finish line. */
+  readonly stunts = new Stunts();
+  /** Whether the lap in progress has cost any damage yet. */
+  private scratched = false;
+  /** Whether the write-off has been announced; however it came about, it is announced once. */
+  private wreckSeen = false;
 
   constructor(readonly track: TrackDef, readonly progress: Progress) {
     this.sim = new Sim(track, VEHICLES[progress.vehicle]);
@@ -97,6 +107,8 @@ export class GameCore {
     this.race.reset();
     this.pickupTimers.fill(0);
     this.flippedFor = 0;
+    this.stunts.reset();
+    this.scratched = false;
   }
 
   step(input: GameInput): void {
@@ -127,7 +139,6 @@ export class GameCore {
     }
 
     const wasBoosting = sim.vehicle.boosting;
-    const wasWrecked = sim.vehicle.wrecked;
     sim.step(input);
 
     const v = sim.vehicle;
@@ -135,8 +146,16 @@ export class GameCore {
     if (v.lastHit > 0) {
       this.events.push({ type: 'crash', impact: v.lastHit, damage: v.damage });
       v.lastHit = 0;
+      this.stunts.crash();
+      this.scratched = true;
     }
-    if (v.wrecked && !wasWrecked) this.events.push({ type: 'wreck' });
+    if (v.wrecked && !this.wreckSeen) {
+      this.events.push({ type: 'wreck' });
+      // what was not banked is gone with the vehicle
+      this.stunts.reset();
+    }
+    this.wreckSeen = v.wrecked;
+    for (const s of this.stunts.update(v, sim.traffic.cars.map((c) => c.tracked), STEP)) this.events.push({ type: 'stunt', ...s });
     if (sim.traffic.honk) {
       sim.traffic.honk = false;
       this.events.push({ type: 'honk' });
@@ -157,6 +176,19 @@ export class GameCore {
         progress.save();
       }
       this.events.push({ type: 'lap', time: race.lastLap!, best });
+    }
+    // The finish line is the till: lap money and bonuses, and the stunts of the lap are safe.
+    if (ev) {
+      const lap = ev === 'lap' ? this.track.lapPay : 0;
+      const forBest = ev === 'lap' && race.best === race.lastLap ? Math.round(lap * BONUS.best) : 0;
+      const clean = ev === 'lap' && !this.scratched ? Math.round(lap * BONUS.clean) : 0;
+      const stunts = this.stunts.bank();
+      const total = lap + forBest + clean + stunts;
+      if (total > 0) {
+        progress.earn(total);
+        this.events.push({ type: 'payout', total, lap, best: forBest, clean, stunts });
+      }
+      this.scratched = false;
     }
 
     this.track.pickups.forEach((pk, i) => {

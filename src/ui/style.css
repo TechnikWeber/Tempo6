@@ -100,6 +100,25 @@ html, body {
 #toast.show { opacity: 1; transition: none; }
 #toast small { display: block; font-size: 17px; font-weight: 600; margin-top: 4px; }
 
+#pending { font-size: 14px; color: var(--accent); font-weight: 700; }
+#stunt {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#stunt.show { opacity: 1; }
+
 #flipped, #wrecked {
   position: absolute;
   left: 50%;

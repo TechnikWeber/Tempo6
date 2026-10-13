@@ -66,15 +66,15 @@ for (let side = 0; side < 4; side++) {
   const [bx, bz] = corners[(side + 1) % 4];
   const len = Math.hypot(bx - ax, bz - az);
   for (let d = 6; d < len; d += 12) {
-    pickups.push({ type: 'bottle', pos: [ax + ((bx - ax) * d) / len, 0.5, az + ((bz - az) * d) / len] });
+    pickups.push({ type: 'screw', pos: [ax + ((bx - ax) * d) / len, 0.5, az + ((bz - az) * d) / len] });
   }
 }
-pickups.push({ type: 'crate', pos: [42, 2.2, -LINE_Z - 4] });
-pickups.push({ type: 'crate', pos: [88, 3.4, -LINE_Z + 4] });
-pickups.push({ type: 'crate', pos: [-6, 6.5, LINE_Z] });
-pickups.push({ type: 'crate', pos: [-130, 5, -70] });
-pickups.push({ type: 'crate', pos: [-80, 8.5, -70] });
-for (let x = -200; x <= -160; x += 8) pickups.push({ type: 'bottle', pos: [x, 0.5, -70] });
+pickups.push({ type: 'toolbox', pos: [42, 2.2, -LINE_Z - 4] });
+pickups.push({ type: 'toolbox', pos: [88, 3.4, -LINE_Z + 4] });
+pickups.push({ type: 'toolbox', pos: [-6, 6.5, LINE_Z] });
+pickups.push({ type: 'toolbox', pos: [-130, 5, -70] });
+pickups.push({ type: 'toolbox', pos: [-80, 8.5, -70] });
+for (let x = -200; x <= -160; x += 8) pickups.push({ type: 'screw', pos: [x, 0.5, -70] });
 
 const decor: DecorDef[] = [
   { type: 'finish', pos: [-10, 0.01, -LINE_Z], half: [0.8, 0, WIDTH / 2] },
@@ -98,7 +98,8 @@ export const FLUGPLATZ: TrackDef = {
   id: 'flugplatz',
   name: 'Alter Flugplatz',
   blurb: 'Über 500 m pro Runde, breite Bahn, große Schanzen. Erst mit Tuning ein Vergnügen.',
-  unlockPrice: 2000,
+  unlockPrice: 400,
+  lapPay: 40,
   spawn: { pos: [-20, 0.6, -LINE_Z], yaw: Math.PI / 2 },
   statics,
   props,

@@ -2,7 +2,7 @@
 
 # Tempo6
 
-Ein Rennspiel für den Browser mit Elektrorollstühlen und Seniorenmobilen. Du startest mit den erlaubten 6 km/h, sammelst auf einem Supermarktparkplatz Pfandflaschen und steckst das Geld in immer fragwürdigeres Tuning, bis 75 km/h.
+Ein Rennspiel für den Browser mit Elektrorollstühlen und Seniorenmobilen. Du startest mit den erlaubten 6 km/h, verdienst dir auf einem Baumarktparkplatz mit Runden und Kunststücken Schrauben und steckst sie in immer fragwürdigeres Tuning, bis 75 km/h.
 
 Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, fünf weiteren im Rohbau, einer Kurven-Teststrecke, dreizehn Fahrzeugen und Tuning-Leiter.
 
@@ -28,7 +28,7 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange d
 | Covid Pro | Seniorenraketen | Der Klassiker mit Korb |
 | Olivion | Seniorenraketen | Lang, schwer, schnell, riesiger Wendekreis |
 
-Fahrzeuge und Strecken werden mit Pfand freigeschaltet; `UNLOCK_ALL` in `src/config/vehicles.ts` öffnet zum Testen alles.
+Fahrzeuge und Strecken werden mit Schrauben freigeschaltet; `UNLOCK_ALL` in `src/config/vehicles.ts` öffnet zum Testen alles.
 
 ## Starten
 

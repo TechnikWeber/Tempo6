@@ -23,7 +23,7 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): 
   return e;
 }
 
-/** Start screen: pick a vehicle and a level, unlock them with Pfand, go. */
+/** Start screen: pick a vehicle and a level, unlock them with Schrauben, go. */
 export class Menu {
   private readonly root = document.getElementById('menu')!;
   private readonly money = h('b');
@@ -42,8 +42,8 @@ export class Menu {
     this.track = progress.track || TRACKS[0].id;
 
     const head = h('header');
-    head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', 'Sammle Pfand. Tune dein Gefährt. Werde zu schnell.'));
-    const purse = h('p', 'purse', 'Pfand ');
+    head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', 'Verdien dir Schrauben. Tune dein Gefährt. Werde zu schnell.'));
+    const purse = h('p', 'purse', '🔩 ');
     purse.append(this.money);
     head.append(purse);
 

@@ -32,6 +32,9 @@ export class Hud {
   private readonly boostBar = el('boost-bar');
   private readonly buyBoost = el<HTMLButtonElement>('buy-boost');
   private toastTimer = 0;
+  private readonly pending = el('pending');
+  private readonly stuntEl = el('stunt');
+  private stuntTimer = 0;
 
   constructor(onTune: () => void, onBuyBoost: () => void) {
     this.tune.addEventListener('click', () => {
@@ -62,8 +65,20 @@ export class Hud {
     this.toastTimer = window.setTimeout(() => this.toastEl.classList.remove('show'), seconds * 1000);
   }
 
+  /** A short line for a stunt just done; it does not get in the way like a toast. */
+  stunt(text: string): void {
+    this.stuntEl.textContent = text;
+    this.stuntEl.classList.add('show');
+    clearTimeout(this.stuntTimer);
+    this.stuntTimer = window.setTimeout(() => this.stuntEl.classList.remove('show'), 1400);
+  }
+
   update(core: GameCore): void {
     const { progress, race, sim } = core;
+    // what the lap has earned so far and is not safe yet
+    const open = Math.round(core.stunts.pending);
+    this.pending.hidden = open === 0 && core.stunts.chain === 0;
+    this.set(this.pending, `+${open} offen${core.stunts.multiplier > 1 ? ` · ×${core.stunts.multiplier.toFixed(1).replace('.', ',')}` : ''}`);
     const kmh = Math.abs(sim.vehicle.speed) * 3.6;
     const stage = progress.stage;
     this.set(this.speed, kmh.toFixed(1).replace('.', ','));

@@ -23,7 +23,7 @@ export interface Gate {
   hz: number;
 }
 
-export type PickupType = 'bottle' | 'crate';
+export type PickupType = 'screw' | 'toolbox';
 
 export interface PickupDef {
   type: PickupType;
@@ -99,8 +99,10 @@ export interface TrackDef {
   id: string;
   name: string;
   blurb: string;
-  /** Pfand in cents to unlock; 0 = available from the start. */
+  /** Schrauben to unlock; 0 = available from the start. */
   unlockPrice: number;
+  /** Schrauben paid for every lap. */
+  lapPay: number;
   spawn: { pos: [number, number, number]; yaw: number };
   statics: BoxDef[];
   props: PropDef[];
