@@ -25,7 +25,7 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 | e-käpt'n | Tractor unit | Front-mounted drive, three wheels, fastest |
 | Piepmatz | Mobility scooters | Tiny, agile, tippy |
 | Stubentiger | Mobility scooters | Compact |
-| Sternschnuppe 4 | Mobility scooters | The classic with basket and flag |
+| Sternschnuppe 4 | Mobility scooters | The classic with a basket |
 | Großer Wagen | Mobility scooters | Long, heavy, fast, huge turning circle |
 
 Vehicles and tracks are unlocked with deposit money; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
