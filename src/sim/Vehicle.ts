@@ -90,6 +90,8 @@ export class Vehicle {
   private steerTrim = 1;
   private readonly local = new Vector3();
   private readonly qOther = new Quaternion();
+  private readonly carryV = new Vector3();
+  private readonly carryW = new Vector3();
 
   constructor(private readonly world: RAPIER.World, readonly spec: VehicleSpec, x: number, y: number, z: number, yaw: number) {
     const [hx, hy, hz] = spec.half;
@@ -146,6 +148,15 @@ export class Vehicle {
     this.q.set(r.x, r.y, r.z, r.w);
     this.fwd.set(0, 0, 1).applyQuaternion(this.q);
     this.up.set(0, 1, 0).applyQuaternion(this.q);
+    // Standing on something that moves (a turning disc): the wheel model knows only still
+    // ground, so everything below happens in the frame of that ground, and its motion is
+    // put back on at the end.
+    const carried = this.carrier();
+    if (carried) {
+      const l = body.linvel(), a = body.angvel();
+      body.setLinvel({ x: l.x - this.carryV.x, y: l.y - this.carryV.y, z: l.z - this.carryV.z }, true);
+      body.setAngvel({ x: a.x - this.carryW.x, y: a.y - this.carryW.y, z: a.z - this.carryW.z }, true);
+    }
     const lv = body.linvel();
     const av = body.angvel();
     const v = lv.x * this.fwd.x + lv.y * this.fwd.y + lv.z * this.fwd.z;
@@ -455,6 +466,39 @@ export class Vehicle {
 
     // Wheels ride on the world only; loose props are handled by the chassis collider.
     ctrl.updateVehicle(dt, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC);
+    if (carried) {
+      const l = body.linvel(), a = body.angvel();
+      body.setLinvel({ x: l.x + this.carryV.x, y: l.y + this.carryV.y, z: l.z + this.carryV.z }, true);
+      body.setAngvel({ x: a.x + this.carryW.x, y: a.y + this.carryW.y, z: a.z + this.carryW.z }, true);
+    }
+  }
+
+  /**
+   * How the ground under the wheels moves, as the velocity at the vehicle's position
+   * (`carryV`) and the turning rate (`carryW`), weighted by how many wheels stand on it.
+   */
+  private carrier(): boolean {
+    this.carryV.set(0, 0, 0);
+    this.carryW.set(0, 0, 0);
+    let touching = 0;
+    const at = this.body.translation();
+    this.spec.wheels.forEach((_, i) => {
+      if (!this.ctrl.wheelIsInContact(i)) return;
+      touching++;
+      const ground = this.ctrl.wheelGroundObject(i)?.parent();
+      if (!ground?.isKinematic()) return;
+      const c = ground.translation(), gv = ground.linvel(), gw = ground.angvel();
+      // v + ω × r
+      const rx = at.x - c.x, ry = at.y - c.y, rz = at.z - c.z;
+      this.carryV.x += gv.x + gw.y * rz - gw.z * ry;
+      this.carryV.y += gv.y + gw.z * rx - gw.x * rz;
+      this.carryV.z += gv.z + gw.x * ry - gw.y * rx;
+      this.carryW.x += gw.x, this.carryW.y += gw.y, this.carryW.z += gw.z;
+    });
+    if (touching === 0 || this.carryW.lengthSq() + this.carryV.lengthSq() === 0) return false;
+    this.carryV.multiplyScalar(1 / touching);
+    this.carryW.multiplyScalar(1 / touching);
+    return true;
   }
 
   /** Charge, discharge and the soft ramp of the boost battery. */

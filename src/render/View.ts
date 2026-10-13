@@ -6,6 +6,7 @@ import {
 } from 'three';
 import { HANDLING, type VehicleSpec } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
+import { SPINNER_HALF } from '../sim/Sim';
 import type { DecorDef, TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
 import { box, buildPickup, buildProp, buildTraffic, buildVehicle, mat, type VehicleRig } from './models';
@@ -175,6 +176,7 @@ export class View {
   private propMeshes: Object3D[] = [];
   private pickupMeshes: Object3D[] = [];
   private trafficMeshes: Object3D[] = [];
+  private spinnerMeshes: Object3D[] = [];
   private level: Group | null = null;
   private track: TrackDef | null = null;
   private model: VehicleRig | null = null;
@@ -269,6 +271,20 @@ export class View {
       level.add(m);
       return m;
     });
+    this.spinnerMeshes = (track.spinners ?? []).map((s) => {
+      const g = new Group();
+      const disc = new Mesh(new CylinderGeometry(s.radius, s.radius, SPINNER_HALF * 2, 32), mat(s.color));
+      disc.receiveShadow = true;
+      g.add(disc);
+      // spokes, so one can see it turn
+      for (let k = 0; k < 4; k++) {
+        const spoke = box(g, s.radius * 2 - 0.4, 0.01, 0.35, 0xf2c230, 0, SPINNER_HALF + 0.005, 0);
+        spoke.rotation.y = (k * Math.PI) / 4;
+        spoke.castShadow = false;
+      }
+      level.add(g);
+      return g;
+    });
     this.scene.add(level);
     this.skids.clear();
     this.camReady = false;
@@ -344,6 +360,7 @@ export class View {
 
     core.sim.props.forEach((p, i) => place(this.propMeshes[i], p.tracked, alpha));
     core.sim.traffic.cars.forEach((c, i) => place(this.trafficMeshes[i], c.tracked, alpha));
+    core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));
     this.pickupMeshes.forEach((m, i) => {
       m.visible = !showroom && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;

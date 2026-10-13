@@ -7,6 +7,8 @@ import { Vehicle, type DriveInput } from './Vehicle';
 
 /** Fixed physics step. Rendering interpolates between steps. */
 export const STEP = 1 / 60;
+/** Half the thickness of a spinner disc. */
+export const SPINNER_HALF = 0.05;
 
 export async function initPhysics(): Promise<void> {
   await RAPIER.init();
@@ -21,6 +23,8 @@ export interface Prop {
 export class Sim {
   readonly world: RAPIER.World;
   readonly props: Prop[] = [];
+  /** Turning discs, in the order of the track definition. */
+  readonly spinners: Tracked[] = [];
   readonly traffic: Traffic;
   vehicle: Vehicle;
 
@@ -34,6 +38,14 @@ export class Sim {
       this.world.createCollider(desc);
     }
     for (const def of track.props) this.props.push({ def, tracked: new Tracked(this.createProp(def)) });
+
+    for (const s of track.spinners ?? []) {
+      // (velocity based: it just keeps turning, and the vehicle can read its speed off it)
+      const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicVelocityBased().setTranslation(s.pos[0], s.pos[1] - SPINNER_HALF, s.pos[2]));
+      this.world.createCollider(RAPIER.ColliderDesc.cylinder(SPINNER_HALF, s.radius).setFriction(0.8), body);
+      body.setAngvel({ x: 0, y: s.speed, z: 0 }, true);
+      this.spinners.push(new Tracked(body));
+    }
 
     this.traffic = new Traffic(this.world, track.traffic ?? []);
     this.vehicle = this.spawnVehicle(spec);
@@ -100,5 +112,6 @@ export class Sim {
     this.vehicle.tracked.snap();
     for (const c of this.traffic.cars) c.tracked.snap();
     for (const p of this.props) p.tracked.snap();
+    for (const s of this.spinners) s.snap();
   }
 }

@@ -62,6 +62,16 @@ export interface TrafficDef {
   offset?: number;
 }
 
+/** A flat disc that turns on the spot and takes along whatever stands on it. */
+export interface SpinnerDef {
+  /** Centre of its top surface. */
+  pos: [number, number, number];
+  radius: number;
+  /** Turning rate in rad/s; positive is anticlockwise seen from above. */
+  speed: number;
+  color: number;
+}
+
 export interface TrackDef {
   id: string;
   name: string;
@@ -79,6 +89,7 @@ export interface TrackDef {
   /** Centre line of the lap as x and z, where the track has one. For laying things out along it. */
   line?: [number, number][];
   traffic?: TrafficDef[];
+  spinners?: SpinnerDef[];
 }
 
 /** Collider dimensions per prop type, shared by physics and visuals. */

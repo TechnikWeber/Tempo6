@@ -6,7 +6,7 @@ const RAMP = 0xc9a15a;
 const STEEL = 0x8c949c;
 
 // Rough layout only: a proving ground for the silly stuff. Three lanes side by side, each
-// with its own toys, and two monster ramps along the edges.
+// with its own toys, two monster ramps along the edges and a pair of turntables.
 const LOT_X = 160;
 const LOT_Z = 105;
 const EAST = Math.PI / 2;
@@ -61,6 +61,12 @@ statics.push(ramp([-50, 84], EAST, 45, 10, 0.5, RAMP), ramp([60, -84], WEST, 32,
 cartons(60, 84, 6, 15);
 // A steep bank at the east end to run up and turn round on.
 statics.push(ramp([130, 0], EAST, 14, 60, 0.9, STEEL));
+// Turntables between the lanes: a big lazy one and a small one that throws you off.
+board('KREISEL', 44, -12);
+const spinners = [
+  { pos: [62, 0.1, -24] as [number, number, number], radius: 7, speed: 0.9, color: STEEL },
+  { pos: [96, 0.1, -24] as [number, number, number], radius: 4.5, speed: -2.2, color: RAMP },
+];
 // Slalom between the lanes.
 for (let i = 0; i < 10; i++) props.push({ type: 'cone', pos: [-100 + i * 9, 0.26, 22 + (i % 2 ? 2 : -2)] });
 
@@ -79,4 +85,5 @@ export const SPIELWIESE: TrackDef = {
   ],
   pickups: [],
   decor,
+  spinners,
 };

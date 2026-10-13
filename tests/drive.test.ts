@@ -674,6 +674,39 @@ describe('looping', () => {
   });
 });
 
+describe('turning disc', () => {
+  const disc = (speed: number): TrackDef => ({
+    ...FLAT,
+    spawn: { pos: [4, 0.9, 0], yaw: 0 },
+    spinners: [{ pos: [0, 0.1, 0], radius: 8, speed, color: 0 }],
+  });
+  // angle of the vehicle's position round the middle of the disc
+  const bearing = (sim: Sim) => Math.atan2(sim.vehicle.body.translation().x, sim.vehicle.body.translation().z);
+
+  it.each(ALL)('%s is carried round when it stands on one', (_id, spec) => {
+    const sim = new Sim(disc(1), spec);
+    drive(sim, 1, 0);
+    const from = bearing(sim);
+    const facing = sim.vehicle.yaw;
+    drive(sim, 2, 0);
+    const swept = Math.atan2(Math.sin(bearing(sim) - from), Math.cos(bearing(sim) - from));
+    const turned = Math.atan2(Math.sin(sim.vehicle.yaw - facing), Math.cos(sim.vehicle.yaw - facing));
+    // two seconds at 1 rad/s: most of two radians, both round the middle and round itself
+    expect(swept).toBeGreaterThan(1.4);
+    expect(turned).toBeGreaterThan(1.4);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.9);
+    sim.world.free();
+  });
+
+  it('leaves a vehicle beside it alone', () => {
+    const sim = new Sim({ ...disc(1), spawn: { pos: [12, 0.7, 0], yaw: 0 } }, VEHICLES.trex);
+    drive(sim, 3, 0);
+    expect(Math.abs(sim.vehicle.yaw)).toBeLessThan(0.02);
+    expect(Math.abs(sim.vehicle.speed)).toBeLessThan(0.05);
+    sim.world.free();
+  });
+});
+
 describe('curve test ground', () => {
   it('lets a slow chair round all four corners of the circuit', () => {
     const progress = new Progress();
