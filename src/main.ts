@@ -118,6 +118,14 @@ function handleEvents(): void {
       case 'honk':
         sound.honk();
         break;
+      case 'crash':
+        view.bump(e.impact * 0.6);
+        sound.thud(e.impact * 0.6);
+        break;
+      case 'wreck':
+        sound.nope();
+        hud.toast('Totalschaden!', 'Rücktaste: Level neu starten, dann ist alles wieder heil.', 4);
+        break;
       case 'boost':
         sound.zap();
         break;

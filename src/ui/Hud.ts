@@ -24,6 +24,10 @@ export class Hud {
   private readonly tune = el<HTMLButtonElement>('tune');
   private readonly toastEl = el('toast');
   private readonly flipped = el('flipped');
+  private readonly wrecked = el('wrecked');
+  private readonly damageRow = el('damage-row');
+  private readonly damageBar = el('damage-bar');
+  private readonly damageText = el('damage-text');
   private readonly boostRow = el('boost-row');
   private readonly boostBar = el('boost-bar');
   private readonly buyBoost = el<HTMLButtonElement>('buy-boost');
@@ -88,9 +92,16 @@ export class Hud {
       this.tune.disabled = false;
     }
     this.tune.classList.toggle('ready', progress.canTune);
-    this.flipped.hidden = core.flippedFor < 1;
-
     const v = sim.vehicle;
+    this.wrecked.hidden = !v.wrecked;
+    this.flipped.hidden = v.wrecked || core.flippedFor < 1;
+    // how much of the vehicle is left
+    this.damageRow.hidden = v.damage === 0;
+    if (v.damage > 0) {
+      this.damageBar.style.width = `${((1 - v.damage) * 100).toFixed(0)}%`;
+      this.set(this.damageText, v.wrecked ? 'Schrott' : `${Math.round(v.damage * 100)} % Schaden`);
+      this.damageRow.classList.toggle('low', v.impaired > 0);
+    }
     this.boostRow.hidden = !v.boostFitted;
     if (v.boostFitted) {
       this.boostBar.style.width = `${(v.boostCharge * 100).toFixed(0)}%`;

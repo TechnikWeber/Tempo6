@@ -12,6 +12,7 @@ import type { Tracked } from '../sim/Tracked';
 import { box, buildPickup, buildProp, buildTraffic, buildVehicle, mat, type VehicleRig } from './models';
 import { Sparks, SpeedLines } from './Boost';
 import { SkidMarks } from './Skid';
+import { Wreckage } from './Wreckage';
 
 const SKY = 0x9fd3f0;
 const SHADOW_HALF = 22;
@@ -197,6 +198,9 @@ export class View {
   private sparks: Sparks | null = null;
   private readonly speedLines: SpeedLines;
   private fitted = false;
+  private wreckage: Wreckage | null = null;
+  /** Damage the model on screen shows; when the vehicle has less, it has been repaired. */
+  private shownDamage = 0;
   /** Camera shake that dies away, e.g. after a landing. */
   private shake = 0;
   /** Body bouncing on the springs after a landing: offset and speed. */
@@ -320,7 +324,10 @@ export class View {
   /** @param boost show the boost battery on it */
   setVehicle(spec: VehicleSpec, boost: boolean): void {
     if (this.model) this.scene.remove(this.model.root);
+    this.wreckage?.dispose();
     this.model = buildVehicle(spec, boost);
+    this.wreckage = new Wreckage(this.scene, this.model, (x, z) => heightAt(this.track?.terrain, x, z));
+    this.shownDamage = 0;
     this.fitted = boost;
     this.sparks = new Sparks(this.model.body, this.model.battery, this.model.terminals);
     this.drift = this.driftV = 0;
@@ -338,13 +345,18 @@ export class View {
   render(core: GameCore, alpha: number, dt: number, showroom = false): void {
     const v = core.sim.vehicle;
     // The battery pack shows up on the vehicle the moment it is bought.
-    if (this.model && v.boostFitted !== this.fitted) this.setVehicle(v.spec, v.boostFitted);
+    // …and a repaired one is a new one.
+    if (this.model && (v.boostFitted !== this.fitted || v.damage < this.shownDamage)) this.setVehicle(v.spec, v.boostFitted);
+    this.shownDamage = v.damage;
     const model = this.model;
     const track = this.track;
     if (!model || !track) return;
     this.time += dt;
 
     place(model.root, v.tracked, alpha);
+    this.wreckage?.update(v, dt);
+    // A write-off has no wheels left to stand on: what remains sits on the ground.
+    if (this.wreckage) model.root.position.y -= this.wreckage.sunk * v.spec.clearance;
     // Drift look: under cornering load the model swings its tail out, so from behind
     // you get to see a bit of its flank. The physics keeps going where it was going.
     // It swings out on a soft spring, so it wags back once when the corner is over.
@@ -358,6 +370,7 @@ export class View {
     this.speedLines.update(showroom ? 0 : v.boost, Math.abs(v.speed), dt);
     v.spec.wheels.forEach((w, i) => {
       const m = model.wheels[i];
+      if (this.wreckage?.loose(i)) return;
       m.pivot.position.y = w.y - v.wheelSuspension(i);
       m.pivot.rotation.y = v.wheelYaw[i];
       // Spinning up: the wheel turns faster than the ground goes by.

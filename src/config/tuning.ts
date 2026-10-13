@@ -47,6 +47,26 @@ export const BOOST = {
   rampDown: 1.1,
 };
 
+/** Crash damage: every knock adds up, and one that is hard enough wrecks it on the spot. */
+export const DAMAGE = {
+  /** Change of speed in one instant (m/s) below which a knock does nothing. Shopping carts and gentle landings stay below it. */
+  minImpact: 3,
+  /** Damage per m/s of impact above that, as a share of a whole vehicle. */
+  perImpact: 0.03,
+  /** A single impact this hard (m/s) is a write-off. */
+  wreckImpact: 13,
+  /** Up to this much damage it only looks battered; beyond it the driving suffers too. */
+  effectsFrom: 0.5,
+  /** At this much damage it loses a wheel. */
+  wheelOff: 0.75,
+  /** Steering it pulls to the damaged side with, at the very end (share of full lock). */
+  pull: 0.35,
+  /** Share of the top speed it has lost at the very end. */
+  slow: 0.35,
+  /** Seconds after a knock during which further knocks do not count. One crash is one crash. */
+  grace: 0.4,
+};
+
 /** Pfand values in cents: single-use bottle and a full crate of beer. */
 export const PICKUP_VALUE = { bottle: 25, crate: 310 } as const;
 

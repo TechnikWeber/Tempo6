@@ -93,9 +93,11 @@ export class Sim {
     this.vehicle.setMotor(topSpeed, accel);
   }
 
+  /** Back to the start, and as good as new. */
   respawn(): void {
     const { pos, yaw } = this.track.spawn;
     this.vehicle.place(pos[0], pos[1], pos[2], yaw);
+    this.vehicle.setDamage(0);
   }
 
   /** Put every loose prop back where the track definition has it. */
@@ -115,7 +117,13 @@ export class Sim {
     this.vehicle.update(input, STEP);
     const at = this.vehicle.body.translation();
     this.traffic.update(STEP, at.x, at.z);
+    // What the step does to the speed beyond gravity is something it ran into (or landed on):
+    // tyres, springs and motors have all had their say in `update` already.
+    const before = this.vehicle.body.linvel();
+    const bx = before.x, by = before.y, bz = before.z;
     this.world.step();
+    const after = this.vehicle.body.linvel();
+    this.vehicle.hit(after.x - bx, after.y - by + 9.81 * STEP, after.z - bz);
     this.vehicle.tracked.snap();
     for (const c of this.traffic.cars) c.tracked.snap();
     for (const p of this.props) p.tracked.snap();

@@ -52,6 +52,11 @@ html, body {
 #boost-row .bar i { background: #6fd3ff; }
 #boost-row.on .bar i { background: #fff; box-shadow: 0 0 8px #6fd3ff; }
 #boost-row.low .bar i { background: #8a96a0; }
+#damage-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 14px; }
+#damage-row .bar { flex: 1; margin: 0; height: 8px; }
+#damage-row .bar i { background: #7ed36f; }
+#damage-row.low .bar i { background: #e2513c; }
+#damage-row small { font-size: 12px; opacity: 0.85; white-space: nowrap; }
 
 #laps { left: 16px; top: 16px; font-size: 18px; }
 
@@ -95,7 +100,7 @@ html, body {
 #toast.show { opacity: 1; transition: none; }
 #toast small { display: block; font-size: 17px; font-weight: 600; margin-top: 4px; }
 
-#flipped {
+#flipped, #wrecked {
   position: absolute;
   left: 50%;
   top: 42%;

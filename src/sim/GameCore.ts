@@ -24,7 +24,10 @@ export type GameEvent =
   | { type: 'boostBought' }
   | { type: 'boost' }
   | { type: 'honk' }
-  | { type: 'land'; speed: number };
+  | { type: 'land'; speed: number }
+  /** A knock that did damage; `impact` is the change of speed in m/s. */
+  | { type: 'crash'; impact: number; damage: number }
+  | { type: 'wreck' };
 
 const PICKUP_RADIUS = 1.0;
 const PICKUP_RESPAWN = 15;
@@ -124,10 +127,16 @@ export class GameCore {
     }
 
     const wasBoosting = sim.vehicle.boosting;
+    const wasWrecked = sim.vehicle.wrecked;
     sim.step(input);
 
     const v = sim.vehicle;
     if (v.boosting && !wasBoosting) this.events.push({ type: 'boost' });
+    if (v.lastHit > 0) {
+      this.events.push({ type: 'crash', impact: v.lastHit, damage: v.damage });
+      v.lastHit = 0;
+    }
+    if (v.wrecked && !wasWrecked) this.events.push({ type: 'wreck' });
     if (sim.traffic.honk) {
       sim.traffic.honk = false;
       this.events.push({ type: 'honk' });

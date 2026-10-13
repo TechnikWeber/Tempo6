@@ -1,6 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Quaternion, Vector3 } from 'three';
-import { BOOST } from '../config/tuning';
+import { BOOST, DAMAGE } from '../config/tuning';
 import { HANDLING, type DriveProfile, type VehicleSpec } from '../config/vehicles';
 import { Tracked } from './Tracked';
 
@@ -86,6 +86,15 @@ export class Vehicle {
   /** True while the battery pack is discharging. */
   boosting = false;
   private boostRamp = 0;
+  /** Crash damage, 0 (as new) … 1 (a heap of parts that goes nowhere). */
+  damage = 0;
+  /** Hardest knock since it was last read, as a change of speed in m/s. Consumed by the game. */
+  lastHit = 0;
+  /** Index of the wheel it has lost, or -1. */
+  lostWheel = -1;
+  /** Which side got the worst of it: 1 left, -1 right. It pulls that way. */
+  damagedSide = 1;
+  private hitGrace = 0;
   /** Share of the steering lock in use (handlebar vehicles), see `update`. */
   private steerTrim = 1;
   /** Seconds still to wait at a standstill before reverse engages, after braking to a stop. */
@@ -148,8 +157,68 @@ export class Vehicle {
     this.accel = accel;
   }
 
+  get wrecked(): boolean {
+    return this.damage >= 1;
+  }
+
+  /** How far the damage has got into the driving, 0 … 1. */
+  get impaired(): number {
+    return clamp((this.damage - DAMAGE.effectsFrom) / Math.max(0.01, 1 - DAMAGE.effectsFrom), 0, 1);
+  }
+
+  /**
+   * Take a knock.
+   * @param dx change of velocity in one step that the collision caused, in m/s
+   */
+  hit(dx: number, dy: number, dz: number): void {
+    const impact = Math.hypot(dx, dy, dz);
+    if (impact < DAMAGE.minImpact || this.wrecked || this.hitGrace > 0) return;
+    // Scraping round a looping or up a steep bank is rough, but it is not a crash.
+    if (this.ground.y < 0.85 || this.upY < 0.5) return;
+    this.hitGrace = DAMAGE.grace;
+    this.lastHit = Math.max(this.lastHit, impact);
+    // pushed to the right means it was hit on the left
+    const sideways = dx * this.left.x + dy * this.left.y + dz * this.left.z;
+    if (Math.abs(sideways) > impact * 0.3) this.damagedSide = sideways < 0 ? 1 : -1;
+    this.setDamage(impact >= DAMAGE.wreckImpact ? 1 : this.damage + (impact - DAMAGE.minImpact) * DAMAGE.perImpact);
+  }
+
+  /** Set the damage directly (workshop, repairs); wheels come off and go back on to match. */
+  setDamage(damage: number): void {
+    this.damage = clamp(damage, 0, 1);
+    const off = this.damage >= DAMAGE.wheelOff;
+    if (off && this.lostWheel < 0) {
+      // A front wheel that does not drive, on the damaged side if there is one; without
+      // its spring that corner drops onto the ground.
+      const wheels = this.spec.wheels;
+      const pick = (ok: (w: (typeof wheels)[number]) => boolean) => wheels.findIndex((w) => !w.drive && ok(w));
+      let i = pick((w) => w.z > this.spec.com[2] && Math.sign(w.x) === this.damagedSide);
+      if (i < 0) i = pick((w) => w.z > this.spec.com[2]);
+      if (i < 0) i = pick((w) => Math.sign(w.x) === this.damagedSide);
+      if (i < 0) i = pick(() => true);
+      this.lostWheel = i;
+      if (i >= 0) {
+        this.damagedSide = Math.sign(wheels[i].x) || this.damagedSide;
+        this.ctrl.setWheelSuspensionStiffness(i, 0);
+      }
+    } else if (!off && this.lostWheel >= 0) {
+      this.ctrl.setWheelSuspensionStiffness(this.lostWheel, this.spec.wheels[this.lostWheel].stiffness);
+      this.lostWheel = -1;
+    }
+  }
+
   update(input: DriveInput, dt: number): void {
     const { spec, ctrl, body } = this;
+    this.hitGrace = Math.max(0, this.hitGrace - dt);
+    if (this.wrecked) {
+      // a heap of parts: nothing works, it just slides to a stop
+      input = { throttle: 0, steer: 0, handbrake: true };
+    } else if (this.impaired > 0) {
+      // Bent: it pulls to the damaged side (steering right is positive, so left is minus),
+      // the more the faster it goes, and standing still not at all.
+      const pull = -this.damagedSide * DAMAGE.pull * this.impaired * clamp(Math.abs(this.speed) / 2, 0, 1);
+      input = { ...input, steer: clamp(input.steer + pull, -1, 1) };
+    }
     const r = body.rotation();
     this.q.set(r.x, r.y, r.z, r.w);
     this.fwd.set(0, 0, 1).applyQuaternion(this.q);
@@ -180,7 +249,7 @@ export class Vehicle {
     // Tyres bite harder the faster it goes, or the tight lines at speed would be a slide.
     const grip = HANDLING.grip * spec.gripFactor * p.grip * (1 + HANDLING.gripAtSpeed * Math.abs(v));
     this.updateBoost(input, dt);
-    const topSpeed = this.topSpeed * (1 + BOOST.speed * this.boost) + BOOST.extraSpeed * this.boost;
+    const topSpeed = (this.topSpeed * (1 + BOOST.speed * this.boost) + BOOST.extraSpeed * this.boost) * (1 - DAMAGE.slow * this.impaired);
     const accel = this.accel * (1 + BOOST.accel * this.boost);
     const throttle = this.boosting ? 1 : input.throttle;
     // Measured, not derived from the yaw rate: in a slide the two are far apart.

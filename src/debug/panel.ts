@@ -1,5 +1,5 @@
 import GUI from 'lil-gui';
-import { BOOST, STAGES } from '../config/tuning';
+import { BOOST, DAMAGE, STAGES } from '../config/tuning';
 import { HANDLING, HANDLING_DEFAULTS } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
 
@@ -106,6 +106,20 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   b.add(BOOST, 'rampDown', 0.05, 3, 0.05).name('Ausblenden (s)');
   b.close();
 
+  const d = gui.addFolder('Schaden');
+  const wear = { schaden: 0 };
+  const wearSlider = d.add(wear, 'schaden', 0, 1, 0.05).name('Schaden jetzt (0…1)').onChange((x: number) => game().sim.vehicle.setDamage(x));
+  d.add({ f: () => game().sim.vehicle.setDamage(0) }, 'f').name('Reparieren');
+  d.add(DAMAGE, 'minImpact', 0, 10, 0.25).name('Stoß zählt ab (m/s)');
+  d.add(DAMAGE, 'perImpact', 0, 0.15, 0.005).name('Schaden je m/s darüber');
+  d.add(DAMAGE, 'wreckImpact', 4, 40, 0.5).name('Sofort Schrott ab (m/s)');
+  d.add(DAMAGE, 'effectsFrom', 0, 1, 0.05).name('Fahrverhalten leidet ab');
+  d.add(DAMAGE, 'wheelOff', 0, 1, 0.05).name('Rad fällt ab bei');
+  d.add(DAMAGE, 'pull', 0, 1, 0.05).name('Zieht zur Seite (Anteil Lenkung)');
+  d.add(DAMAGE, 'slow', 0, 0.9, 0.05).name('Tempoverlust am Ende (Anteil)');
+  d.add(DAMAGE, 'grace', 0, 2, 0.05).name('Schonzeit nach Stoß (s)');
+  d.close();
+
   // Keep the slider in step when the stage changes through normal play.
   setInterval(() => {
     const core = game();
@@ -113,6 +127,10 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
     if (state.stufe !== progress.stageIndex) {
       state.stufe = progress.stageIndex;
       stufe.updateDisplay();
+    }
+    if (wear.schaden !== core.sim.vehicle.damage) {
+      wear.schaden = core.sim.vehicle.damage;
+      wearSlider.updateDisplay();
     }
   }, 500);
 

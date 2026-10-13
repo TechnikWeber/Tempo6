@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BOOST, STAGES } from '../src/config/tuning';
+import { BOOST, DAMAGE, STAGES } from '../src/config/tuning';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
@@ -104,9 +104,9 @@ describe.each(ALL)('%s', (_name, spec) => {
     drive(sim, 8, 1);
     let steps = 0;
     while (sim.vehicle.speed > 0.3 && steps++ < 600) sim.step({ throttle: -1, steer: 0, handbrake: false });
-    // the stick stays pulled back: nothing much happens for a good while…
+    // the stick stays pulled back: nothing happens for a moment…
     let minUp = 1;
-    for (let i = 0; i < 60 * 0.4; i++) {
+    for (let i = 0; i < 60 * HANDLING.reverseDelay; i++) {
       sim.step({ throttle: -1, steer: 0, handbrake: false });
       expect(sim.vehicle.speed).toBeGreaterThan(-0.3);
       minUp = Math.min(minUp, sim.vehicle.upY);
@@ -666,6 +666,101 @@ describe.each(TRACKS.map((t) => [t.id, t] as const))('track %s', (_id, track) =>
     for (let i = 0; i < 60 * 15; i++) core.step({ ...idle, throttle: 1 });
     expect(core.race.running).toBe(true);
     expect(core.sim.vehicle.upY).toBeGreaterThan(0.95);
+    core.dispose();
+  });
+});
+
+describe('crash damage', () => {
+  const WALL = { pos: [0, 1, 0.3] as [number, number, number], half: [30, 1, 0.3] as [number, number, number], color: 0 };
+  /** Straight into a wall at the given speed, from 80 m away. */
+  const crash = (spec: VehicleSpec, kmh: number, seconds = 14) => {
+    const sim = new Sim({ ...FLAT, spawn: { pos: [0, 0.7, -80], yaw: 0 }, statics: [...FLAT.statics, WALL] }, spec);
+    sim.vehicle.setMotor(kmh / 3.6, 9);
+    drive(sim, seconds, 1);
+    return sim;
+  };
+
+  it.each(ALL)('%s shrugs off a nudge, is battered by a real knock and written off by a crash at 50 km/h', (_id, spec) => {
+    const nudge = crash(spec, 8);
+    expect(nudge.vehicle.damage).toBe(0);
+    const knock = crash(spec, 30, 12);
+    expect(knock.vehicle.damage).toBeGreaterThan(0.1);
+    expect(knock.vehicle.damage).toBeLessThan(DAMAGE.effectsFrom);
+    expect(knock.vehicle.wrecked).toBe(false);
+    const wreck = crash(spec, 50, 8);
+    expect(wreck.vehicle.wrecked).toBe(true);
+    // a heap of parts goes nowhere, whatever the stick says
+    drive(wreck, 3, -1);
+    expect(Math.abs(wreck.vehicle.speed)).toBeLessThan(0.3);
+    for (const s of [nudge, knock, wreck]) s.world.free();
+  });
+
+  it.each(ALL)('%s does not mind hard driving, props or a jump off a kicker', (_id, spec) => {
+    const track: TrackDef = {
+      ...FLAT,
+      spawn: { pos: [0, 0.7, -80], yaw: 0 },
+      statics: [...FLAT.statics, ramp([0, 0], 0, 6, 5, 0.16, 0)],
+      props: [{ type: 'cone', pos: [0, 0.26, -40] }, { type: 'carton', pos: [0, 0.26, -20] }, { type: 'cart', pos: [1, 0.46, 40] }],
+    };
+    const sim = new Sim(track, spec);
+    sim.vehicle.setMotor(60 / 3.6, 9);
+    drive(sim, 9, 1);
+    drive(sim, 2, -1);
+    for (let i = 0; i < 60 * 6; i++) sim.step({ throttle: 1, steer: Math.floor(i / 45) % 2 ? 1 : -1, handbrake: false });
+    expect(sim.vehicle.damage).toBe(0);
+    sim.world.free();
+  });
+
+  it('only looks battered up to half, then pulls to the damaged side, loses speed and finally a wheel', () => {
+    const run = (damage: number) => {
+      const sim = simAt(VEHICLES.komet, 30, 6);
+      sim.vehicle.damagedSide = 1;
+      sim.vehicle.setDamage(damage);
+      drive(sim, 8, 1);
+      return sim;
+    };
+    const fine = run(0), battered = run(0.45), bent = run(0.7), limping = run(0.9);
+    // up to half it drives like new
+    expect(battered.vehicle.speed).toBeCloseTo(fine.vehicle.speed, 1);
+    expect(Math.abs(battered.vehicle.body.translation().x)).toBeLessThan(0.5);
+    // beyond that it is slower and wanders off to the left (+X when heading +Z)
+    expect(bent.vehicle.speed).toBeLessThan(fine.vehicle.speed * 0.95);
+    expect(bent.vehicle.body.translation().x).toBeGreaterThan(2);
+    expect(bent.vehicle.lostWheel).toBe(-1);
+    // and near the end a front wheel on that side is gone
+    const lost = limping.vehicle.lostWheel;
+    expect(lost).toBeGreaterThanOrEqual(0);
+    expect(VEHICLES.komet.wheels[lost].x).toBeGreaterThan(0);
+    expect(VEHICLES.komet.wheels[lost].drive).toBeFalsy();
+    expect(limping.vehicle.upY).toBeGreaterThan(0.7);
+    for (const s of [fine, battered, bent, limping]) s.world.free();
+  });
+
+  it('is repaired by restarting the level, but not by being put upright', () => {
+    const core = new GameCore(PARKPLATZ, new Progress());
+    core.sim.vehicle.setDamage(0.8);
+    core.step({ ...idle, upright: true });
+    expect(core.sim.vehicle.damage).toBe(0.8);
+    expect(core.sim.vehicle.lostWheel).toBeGreaterThanOrEqual(0);
+    core.step({ ...idle, respawn: true });
+    expect(core.sim.vehicle.damage).toBe(0);
+    expect(core.sim.vehicle.lostWheel).toBe(-1);
+    core.dispose();
+  });
+
+  it('tells the game about a crash and about the write-off', () => {
+    const core = new GameCore(PARKPLATZ, new Progress());
+    core.sim.vehicle.setMotor(60 / 3.6, 9);
+    // straight at the east wall of the lot
+    core.sim.vehicle.place(40, 0.7, 30, Math.PI / 2);
+    const seen = new Set<string>();
+    for (let i = 0; i < 60 * 6; i++) {
+      core.step({ ...idle, throttle: 1 });
+      for (const e of core.events) seen.add(e.type);
+      core.events.length = 0;
+    }
+    expect(seen.has('crash')).toBe(true);
+    expect(seen.has('wreck')).toBe(true);
     core.dispose();
   });
 });
