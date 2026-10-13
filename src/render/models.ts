@@ -58,10 +58,20 @@ export interface VehicleRig extends Omit<VehicleModel, 'battery'> {
   terminals: Vector3 | null;
 }
 
-/** Small plate in the maker's colour; the only branding there is. */
+/** Small plate in the maker's colour and shape, without a name; the only branding there is. */
 function badge(root: Group, spec: VehicleSpec, x: number, y: number, z: number): void {
-  box(root, 0.13, 0.075, 0.012, 0xf4f4f4, x, y, z);
-  box(root, 0.11, 0.055, 0.016, BRAND_COLORS[spec.brand], x, y, z);
+  const color = BRAND_COLORS[spec.brand];
+  if (spec.brand === 'blue') {
+    // an oval: a flat disc facing backwards, stretched sideways
+    for (const [r, thick, c] of [[0.045, 0.012, 0xf4f4f4], [0.036, 0.016, color]] as const) {
+      const m = cyl(root, r, thick, c, x, y, z, 16);
+      m.rotation.x = Math.PI / 2;
+      m.scale.x = 1.6;
+    }
+  } else {
+    box(root, 0.095, 0.095, 0.012, 0xf4f4f4, x, y, z);
+    box(root, 0.075, 0.075, 0.016, color, x, y, z);
+  }
 }
 
 const SKIN = 0xe8b48c;
@@ -255,7 +265,9 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
   cyl(root, 0.012, 0.09, STEEL, -0.27, seatY + 0.29, 0.19, 5);
   box(root, 0.04, 0.04, 0.04, accent, -0.27, seatY + 0.34, 0.19);
 
-  badge(root, spec, 0, seatY + 0.7, -0.31);
+  // on the back of the base, like on the scooters
+  const rearZ = spec.look === 'mid' ? -0.33 : heavy ? -0.46 : (spec.look === 'front' ? 0.1 : -0.1) - 0.32;
+  badge(root, spec, 0, heavy ? -0.13 : spec.look === 'mid' ? -0.08 : -0.13, rearZ - 0.006);
 
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.04, driverZ);
