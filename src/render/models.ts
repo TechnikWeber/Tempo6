@@ -214,7 +214,6 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
     base(0.24, -0.46, 0.34);
     box(root, baseW - 0.06, 0.05, 0.5, 0x1a1b1e, 0, 0.045, -0.2); // battery lid, flush with the base
     box(root, baseW - 0.1, 0.04, 0.02, 0xff2a2a, 0, -0.02, -0.465); // tail light
-    box(root, baseW + 0.2, 0.05, 0.05, STEEL, 0, -0.16, 0.43); // bumper, clear of the toes
     for (const s of [1, -1]) {
       box(root, 0.13, 0.05, 0.5, accent, s * driveX, g + 0.43, -0.28); // fender over the drive wheel
       box(root, 0.02, 0.16, 0.44, accent, s * (baseW / 2 + 0.005), -0.06, 0.12); // side panel
