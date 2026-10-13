@@ -5,7 +5,7 @@ import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
 import { Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
-import { looping, type TrackDef } from '../src/sim/Track';
+import { looping, ramp, type TrackDef } from '../src/sim/Track';
 import { TRACKS } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
@@ -648,6 +648,56 @@ describe.each(TRACKS.map((t) => [t.id, t] as const))('track %s', (_id, track) =>
     expect(core.race.running).toBe(true);
     expect(core.sim.vehicle.upY).toBeGreaterThan(0.95);
     core.dispose();
+  });
+});
+
+describe('air control', () => {
+  // off a ramp at 50 km/h, with the given stick while in the air
+  const jump = (spec: VehicleSpec, throttle: number, steer: number) => {
+    const track: TrackDef = { ...FLAT, spawn: { pos: [0, 0.7, -60], yaw: 0 }, statics: [...FLAT.statics, ramp([0, 0], 0, 10, 6, 0.3, 0)] };
+    const sim = new Sim(track, spec);
+    sim.vehicle.setMotor(50 / 3.6, 7);
+    let air = 0;
+    let turned = 0, across = 0, along = 0, nose = 0, samples = 0;
+    for (let i = 0; i < 60 * 14; i++) {
+      const v = sim.vehicle;
+      const p = v.body.translation();
+      const flying = v.wheelsOnGround === 0 && p.z > 5;
+      if (!flying && air > 10) break;
+      sim.step(flying ? { throttle, steer, handbrake: false } : { throttle: 1, steer: 0, handbrake: false });
+      if (!flying) continue;
+      air++;
+      // (it took off heading +Z at x = 0)
+      turned = v.yaw;
+      across = v.body.translation().x;
+      along = v.body.translation().z;
+      // how far the nose points down, averaged over the flight: minus the height component of the forward axis
+      const q = v.body.rotation();
+      if (air > 20) nose += -2 * (q.y * q.z - q.w * q.x), samples++;
+    }
+    drive(sim, 1.5, 1);
+    const end = { air: air / 60, turned, across, along, nose: nose / Math.max(1, samples), upY: sim.vehicle.upY };
+    sim.world.free();
+    return end;
+  };
+
+  it.each(ALL)('%s can be turned, shifted and tipped a little in the air, and still lands', (_id, spec) => {
+    const hands = jump(spec, 0, 0);
+    expect(Math.abs(hands.turned)).toBeLessThan(0.05);
+
+    const right = jump(spec, 0, 1);
+    // turns right (yaw goes negative) and drifts right (towards -X), but gently
+    expect(right.turned).toBeLessThan(-0.4);
+    expect(right.turned).toBeGreaterThan(-1.4);
+    expect(right.across).toBeLessThan(hands.across - 0.6);
+    expect(right.upY).toBeGreaterThan(0.9);
+
+    const forward = jump(spec, 1, 0), back = jump(spec, -1, 0);
+    // throttle stretches the jump and puts the nose down, pulling back does the opposite
+    expect(forward.along).toBeGreaterThan(back.along + 0.5);
+    expect(forward.nose).toBeGreaterThan(back.nose + 0.3);
+    expect(forward.upY).toBeGreaterThan(0.9);
+    expect(back.upY).toBeGreaterThan(0.9);
   });
 });
 

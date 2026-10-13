@@ -283,14 +283,29 @@ export class Vehicle {
 
     if (this.wheelsOnGround === 0) {
       this.airTime += dt;
-      // Like a kart in a certain racing game: in the air it levels out and stops spinning,
-      // so a jump ends on the wheels.
-      if (this.airTime > 0.06 && HANDLING.airControl > 0) {
-        const inertia = spec.inertia[0];
+      if (this.airTime > 0.06) {
+        const k = spec.inertia[0] * dt;
+        // Like a kart in a certain racing game: in the air it levels out and stops spinning,
+        // so a jump ends on the wheels.
         // axis and size of the rotation that would bring the chassis upright
         const ax = -this.up.z, az = this.up.x;
-        const k = HANDLING.airControl * inertia * dt;
-        body.applyTorqueImpulse({ x: (ax * 45 - av.x * 9) * k, y: -av.y * 5 * k, z: (az * 45 - av.z * 9) * k }, true);
+        const level = HANDLING.airControl * k;
+        body.applyTorqueImpulse({ x: (ax * 45 - av.x * 9) * level, y: -av.y * 5 * level, z: (az * 45 - av.z * 9) * level }, true);
+        // …and it listens to the stick a little. Steering turns it and nudges it sideways,
+        // throttle tips the nose down and stretches the jump, pulling back does the opposite.
+        // (All of it gentle: this is for correcting a flight, not for flying.)
+        const stick = Math.max(HANDLING.airControl, 0.3) * k;
+        // Positive yaw is to the left, so steering right asks for a negative rate. The
+        // levelling above already damps the spin; this only moves what it damps towards.
+        const turn = (-input.steer * HANDLING.airYaw * stick - av.y * (stick - level) * Math.abs(input.steer)) * 5;
+        // The levelling wants the nose at zero; this holds it at the angle asked for instead.
+        const tip = input.throttle * HANDLING.airPitch * 45 * stick;
+        body.applyTorqueImpulse({ x: this.left.x * tip, y: this.left.y * tip + turn, z: this.left.z * tip }, true);
+        // sideways and along, level with the ground whichever way the chassis hangs
+        const lf = Math.hypot(this.left.x, this.left.z) || 1, ff = Math.hypot(this.fwd.x, this.fwd.z) || 1;
+        const side = (-input.steer * spec.mass * HANDLING.airDrift * dt) / lf;
+        const along = (input.throttle * spec.mass * HANDLING.airThrust * dt) / ff;
+        body.applyImpulse({ x: this.left.x * side + this.fwd.x * along, y: 0, z: this.left.z * side + this.fwd.z * along }, true);
       }
     }
 

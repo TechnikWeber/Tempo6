@@ -44,6 +44,7 @@ npm run build    # static build in dist/
 | Action | Keyboard | Gamepad |
 | --- | --- | --- |
 | Drive / steer | WASD or arrow keys | Triggers / left stick |
+| In the air: turn and shift / tip the nose, stretch the jump | Steer / throttle and brake | left stick / triggers |
 | Handbrake | Space | A |
 | Boost (car battery on the lap) | Shift or B | B / RB |
 | Buy next tuning stage | T | X |

@@ -643,6 +643,14 @@ export const HANDLING = {
   driftAngle: 0.32,
   /** In the air the chassis rights itself so it lands on its wheels. 0 = tumble freely. */
   airControl: 1,
+  /** In the air, full steering turns it at this rate (rad/s). 0 = no say in the matter. */
+  airYaw: 0.8,
+  /** In the air, full throttle tips the nose down by this much (rad), pulling back lifts it. */
+  airPitch: 0.3,
+  /** In the air, full steering pushes it sideways this hard (m/s²). */
+  airDrift: 2,
+  /** In the air, throttle and brake stretch or shorten the jump this hard (m/s²). */
+  airThrust: 1,
   /**
    * Height (m) at which cornering force pushes the chassis over. The physics engine
    * applies tyre forces almost at the centre of mass, so the roll is added by hand.

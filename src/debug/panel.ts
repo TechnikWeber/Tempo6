@@ -64,6 +64,10 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   h.add(HANDLING, 'driftHold', 0.1, 1, 0.05).name('Drift-Profile: Haltewinkel (rad)');
   h.add(HANDLING, 'driftAngle', 0, 0.5, 0.02).name('Driftwinkel (rad)');
   h.add(HANDLING, 'airControl', 0, 2, 0.1).name('Flug-Stabilisierung');
+  h.add(HANDLING, 'airYaw', 0, 4, 0.1).name('Luft: Drehen beim Lenken (rad/s)');
+  h.add(HANDLING, 'airPitch', 0, 0.8, 0.05).name('Luft: Nase kippen mit Gas (rad)');
+  h.add(HANDLING, 'airDrift', 0, 8, 0.25).name('Luft: seitlich versetzen (m/s²)');
+  h.add(HANDLING, 'airThrust', 0, 6, 0.25).name('Luft: Sprung strecken/kürzen (m/s²)');
   h.add(HANDLING, 'tipHeight', 0, 0.8, 0.02).name('Kippneigung');
   h.add(HANDLING, 'tipAssist', 0, 1, 0.05).name('Kipp-Assistent');
   h.add(HANDLING, 'tipAngle', 0.2, 1, 0.05).name('Assistent: Winkel');
