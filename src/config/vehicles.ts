@@ -594,10 +594,10 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
 /** Menu groups. The titles stay close to what the trade calls these things. */
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
-  { id: 'power', title: 'Vollpower Wheelchairs', vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
+  { id: 'power', title: 'Bordstein-Brecher', vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
   { id: 'folder', title: 'Falt(en)wunder', vehicles: ['arrivo'] },
   { id: 'push', title: 'Schubshilfen', vehicles: ['eskalation', 'enix', 'schubs'] },
-  { id: 'tractor', title: 'Zugmaschinen', vehicles: ['ekaptn'] },
+  { id: 'tractor', title: 'Vorderlader', vehicles: ['ekaptn'] },
   { id: 'scooter', title: 'Seniorenraketen', vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
 ];
 

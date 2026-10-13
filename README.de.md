@@ -14,15 +14,15 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange d
 
 | Modell | Kategorie | Charakter |
 | --- | --- | --- |
-| T-Rex | Vollpower Wheelchairs | Mittelradantrieb, sechs Räder, dreht auf der Stelle |
-| Avanti RX | Vollpower Wheelchairs | Heckantrieb, schnell, mag weite Bögen |
-| Avanti FX | Vollpower Wheelchairs | Frontantrieb, zieht um die Ecke, Heck wedelt |
-| Orkan 4 | Vollpower Wheelchairs | Schwerer Heckantrieb, sehr standfest |
+| T-Rex | Bordstein-Brecher | Mittelradantrieb, sechs Räder, dreht auf der Stelle |
+| Avanti RX | Bordstein-Brecher | Heckantrieb, schnell, mag weite Bögen |
+| Avanti FX | Bordstein-Brecher | Frontantrieb, zieht um die Ecke, Heck wedelt |
+| Orkan 4 | Bordstein-Brecher | Schwerer Heckantrieb, sehr standfest |
 | Arrivo Karton | Falt(en)wunder | Leichter faltbarer Elektrorollstuhl, flink |
 | e-skalation | Schubshilfen | Radnabenmotoren, Schub in Greifreifen-Stößen |
 | e-nix | Schubshilfen | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
 | Arschtritt 3000 | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
-| e-käpt'n | Zugmaschinen | Zuggerät vorn, drei Räder, am schnellsten |
+| e-käpt'n | Vorderlader | Zuggerät vorn, drei Räder, am schnellsten |
 | Piepmatz | Seniorenraketen | Winziges Seniorenmobil, wendig, kippelig |
 | Stubentiger | Seniorenraketen | Kompaktes Seniorenmobil |
 | Sternschnuppe 4 | Seniorenraketen | Der Klassiker mit Korb |
