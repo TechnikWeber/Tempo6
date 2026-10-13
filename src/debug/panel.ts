@@ -69,6 +69,9 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   h.add(HANDLING, 'tipInherent', 0, 0.6, 0.05).name('Kipp-Ausgleich bei Tempo');
   h.add(HANDLING, 'righting', 0, 0.3, 0.01).name('Aufricht-Moment');
   h.add(HANDLING, 'rollDamping', 0, 200, 5).name('Wank-Dämpfung');
+  h.add(HANDLING, 'pitchStop', 0, 4, 0.1).name('Nick-Anschlag (Bremsen/Anfahren)');
+  h.add(HANDLING, 'diveFree', 0, 0.3, 0.01).name('…frei beim Bremsen (rad)');
+  h.add(HANDLING, 'wheelieFree', 0, 0.3, 0.01).name('…frei beim Wheelie (rad)');
   h.add(HANDLING, 'motorGain', 1, 15, 0.5).name('Motor-Biss');
   h.add(HANDLING, 'yawGain', 2, 40, 1).name('Dreh-Biss (Rollstuhl)');
   h.add(HANDLING, 'fwdStability', 0, 1.2, 0.05).name('Frontantrieb: Heck-Ruhe');

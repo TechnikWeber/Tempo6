@@ -399,10 +399,19 @@ export class Vehicle {
     // Anti-tippers: past a good wheelie (or stoppie) angle something pushes the nose back,
     // so nobody ends up parked on the backrest or on their face.
     const tipStop = nose > 0 ? Math.min(0.45, 0.3 * rearUp) : 0.3;
-    if (onGround > 0 && Math.abs(nose) > tipStop) {
+    // Well before that the bump stops come in: a lightly loaded caster can carry no more
+    // than twice its share on its spring, so without them a short chair drops its nose
+    // (or sits on its tail) at the first touch of brake or motor, and the easing above
+    // leaves it with next to none of either.
+    const bump = nose > 0 ? HANDLING.wheelieFree * rearUp : HANDLING.diveFree;
+    if (onGround > 0 && Math.abs(nose) > bump) {
       const pitchRate = av.x * this.left.x + av.y * this.left.y + av.z * this.left.z;
-      const past = nose - tipStop * Math.sign(nose);
-      const down = (spec.mass * 9.81 * 2 * past - spec.mass * 0.4 * pitchRate) * dt;
+      // (Not while it is up on two wheels or leaning on a wall: there the chassis axes are
+      // no longer the ground's, and pushing on the pitch would turn it into the lean.)
+      const level = clamp(1 - (Math.abs(this.roll) - 0.15) / 0.2, 0, 1);
+      let down = spec.mass * 9.81 * HANDLING.pitchStop * level * (nose - bump * Math.sign(nose));
+      if (Math.abs(nose) > tipStop) down += spec.mass * 9.81 * 2 * (nose - tipStop * Math.sign(nose)) - spec.mass * 0.4 * pitchRate;
+      down *= dt;
       body.applyTorqueImpulse({ x: this.left.x * down, y: this.left.y * down, z: this.left.z * down }, true);
     }
 
@@ -412,13 +421,16 @@ export class Vehicle {
       // The engine's own tyre forces lean it a little too, and those do grow with the speed;
       // that share is taken out again.
       const scale = HANDLING.lateralAccel / fullLock;
-      const felt = clamp(this.latAccel, -grip * 9.81, grip * 9.81);
+      // (the jolt of hitting a wall is not cornering and must not throw it over)
+      const felt = wallTurn !== 0 ? 0 : clamp(this.latAccel, -grip * 9.81, grip * 9.81);
       const lateral = felt * scale;
       const inherent = spec.mass * felt * HANDLING.tipInherent * this.comHeight * (1 - scale);
       // The second term is the roll damper.
       // A trike balances happily on two of its three wheels and would ride on like that
       // for ever, so it gets a shove back towards level. The others only a hint of one.
-      const righting = spec.mass * 9.81 * (spec.wheels.length === 3 ? 0.16 : HANDLING.righting) * this.roll;
+      // Leaning on a wall it would stay wedged there on its tilted springs, so against a
+      // wall the shove is a firm one.
+      const righting = spec.mass * 9.81 * Math.max(spec.wheels.length === 3 ? 0.16 : HANDLING.righting, wallTurn !== 0 ? 0.8 : 0) * this.roll;
       const push = (spec.mass * lateral * HANDLING.tipHeight * spec.tipFactor * p.tip - inherent - HANDLING.rollDamping * rollRate - righting) * dt;
       body.applyTorqueImpulse({ x: this.fwd.x * push, y: this.fwd.y * push, z: this.fwd.z * push }, true);
     }

@@ -374,6 +374,32 @@ describe('slowing down', () => {
   });
 });
 
+describe('bump stops', () => {
+  // Short chairs used to hang on the nose or the tail, with next to no brake or motor left.
+  it.each(ALL)('%s pulls away, coasts down and brakes properly at the top tuning stage', (_id, spec) => {
+    const s = STAGES[STAGES.length - 1];
+    // (a fresh sim each time: the test floor is only so long)
+    const run = (throttle: number) => {
+      const sim = simAt(spec, s.topSpeedKmh, s.accel);
+      let steps = 0;
+      while (sim.vehicle.speed < sim.vehicle.topSpeed * 0.9 && steps++ < 60 * 20) sim.step({ throttle: 1, steer: 0, handbrake: false });
+      drive(sim, 2, 1);
+      const v = sim.vehicle.speed;
+      const z0 = sim.vehicle.body.translation().z;
+      let n = 0;
+      while (sim.vehicle.speed > 0.3 && n++ < 60 * 30) sim.step({ throttle, steer: 0, handbrake: false });
+      expect(sim.vehicle.upY).toBeGreaterThan(0.85);
+      const decel = (v * v) / 2 / (sim.vehicle.body.translation().z - z0);
+      sim.world.free();
+      return { toSpeed: steps / 60, decel };
+    };
+    const coasting = run(0);
+    expect(coasting.toSpeed).toBeLessThan(7);
+    expect(coasting.decel).toBeGreaterThan(4);
+    expect(run(-1).decel).toBeGreaterThan(8.5);
+  });
+});
+
 describe('boost battery', () => {
   const fitted = (spec: VehicleSpec, kmh: number, accel: number) => {
     const sim = simAt(spec, kmh / spec.speedFactor, accel);

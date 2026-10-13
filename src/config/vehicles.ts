@@ -664,6 +664,16 @@ export const HANDLING = {
   righting: 0.08,
   /** Damps the rocking from side to side (N·m·s/rad). Higher = leans over more slowly. */
   rollDamping: 110,
+  /**
+   * Bump stops fore and aft: push back against nose-diving and rearing up, as a share of
+   * the weight per rad beyond the free angle. This is what lets short chairs brake and
+   * pull away at all; 0 = they hang on the nose or the tail instead.
+   */
+  pitchStop: 1.5,
+  /** Nose-down angle (rad) the bump stop leaves alone. */
+  diveFree: 0.1,
+  /** The same nose-up, times the profile's `wheelie`. */
+  wheelieFree: 0.1,
   /** Proportional gain of the wheel speed controller (1/s). */
   motorGain: 6,
   /** Gain on the yaw rate error of differential drive (1/s). */
