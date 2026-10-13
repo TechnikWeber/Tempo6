@@ -1,5 +1,6 @@
 import {
-  AmbientLight, BoxGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight, Fog, Group,
+  AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
+  Float32BufferAttribute, Fog, Group,
   HemisphereLight, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Quaternion, RingGeometry, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
@@ -110,6 +111,29 @@ function buildDecor(d: DecorDef): Object3D {
     case 'label': {
       const m = new Mesh(new PlaneGeometry(hz * 2, hx * 2), new MeshStandardMaterial({ map: textTexture(d.text ?? '', '#3f4248', '#f4f4f4'), roughness: 1 }));
       m.rotation.x = -Math.PI / 2;
+      m.receiveShadow = true;
+      g.add(m);
+      break;
+    }
+    case 'path': {
+      // one flat band, two vertices per point
+      const pts = d.points ?? [];
+      const n = pts.length;
+      const vertices: number[] = [];
+      const index: number[] = [];
+      pts.forEach(([x, z], i) => {
+        const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n];
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        const nx = ((b[1] - a[1]) / len) * hx, nz = (-(b[0] - a[0]) / len) * hx;
+        vertices.push(x + nx, 0, z + nz, x - nx, 0, z - nz);
+        const j = ((i + 1) % n) * 2;
+        index.push(i * 2, i * 2 + 1, j, i * 2 + 1, j + 1, j);
+      });
+      const geo = new BufferGeometry();
+      geo.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+      geo.setIndex(index);
+      geo.computeVertexNormals();
+      const m = new Mesh(geo, mat(d.color ?? 0xffffff));
       m.receiveShadow = true;
       g.add(m);
       break;

@@ -683,6 +683,37 @@ describe('curve test ground', () => {
   });
 });
 
+describe.each(TRACKS.filter((t) => t.line).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
+  it('can be lapped at 30 km/h by following its centre line', () => {
+    const core = new GameCore(track, new Progress());
+    core.sim.vehicle.setMotor(30 / 3.6, 5);
+    const line = track.line!;
+    // start with the point nearest to the grid, then always aim a few metres ahead
+    const start = core.sim.vehicle.body.translation();
+    let at = 0;
+    line.forEach(([x, z], i) => {
+      if (Math.hypot(x - start.x, z - start.z) < Math.hypot(line[at][0] - start.x, line[at][1] - start.z)) at = i;
+    });
+    let minUp = 1;
+    let off = 0;
+    for (let i = 0; i < 60 * 400 && core.race.laps === 0; i++) {
+      const v = core.sim.vehicle;
+      const p = v.body.translation();
+      while (Math.hypot(line[at][0] - p.x, line[at][1] - p.z) < 5) at = (at + 1) % line.length;
+      let turn = Math.atan2(line[at][0] - p.x, line[at][1] - p.z) - v.yaw;
+      turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+      core.step({ ...idle, throttle: 1, steer: Math.max(-1, Math.min(1, -turn * 2)) });
+      minUp = Math.min(minUp, v.upY);
+      off = Math.max(off, Math.hypot(line[at][0] - p.x, line[at][1] - p.z));
+    }
+    expect(core.race.laps).toBe(1);
+    expect(minUp).toBeGreaterThan(0.9);
+    // never far from the line it was aiming at
+    expect(off).toBeLessThan(9);
+    core.dispose();
+  });
+});
+
 describe('game on the Parkplatz', () => {
   it('collects bottles on the start straight and tunes once the money is there', () => {
     const core = new GameCore(PARKPLATZ, new Progress());

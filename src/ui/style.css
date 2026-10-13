@@ -184,7 +184,10 @@ kbd {
 #menu .col:last-of-type { grid-area: right; }
 
 #menu .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-#menu .cards.tracks { grid-template-columns: 1fr; }
+#menu .cards.tracks { grid-template-columns: 1fr; overflow: hidden auto; min-height: 0; scrollbar-width: thin; }
+/* Only the chosen track spells itself out, or the list would push the start button off the screen. */
+#menu .cards.tracks .card:not(.on) span { display: none; }
+#menu .cards.tracks .card:not(.on) { flex-direction: row; justify-content: space-between; align-items: baseline; gap: 10px; }
 #menu .card {
   --tint: var(--accent);
   display: flex;

@@ -33,15 +33,18 @@ export interface PickupDef {
 export interface DecorDef {
   /**
    * `board` is an upright panel with `text` on both sides, `label` the same painted flat on
-   * the ground, `ring` a painted circle (`half` is radius, 0, half line width).
+   * the ground, `ring` a painted circle (`half` is radius, 0, half line width), `path` a
+   * painted closed band along `points` (`half[0]` is half its width).
    */
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring';
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path';
   pos: [number, number, number];
   half?: [number, number, number];
   color?: number;
   text?: string;
   /** Heading in rad, 0 = facing +Z. */
   yaw?: number;
+  /** Corners of a `path`, x and z. */
+  points?: [number, number][];
 }
 
 export type TrafficType = 'car' | 'van';
@@ -72,6 +75,8 @@ export interface TrackDef {
   pickups: PickupDef[];
   /** Visual only, no collision. */
   decor: DecorDef[];
+  /** Centre line of the lap as x and z, where the track has one. For laying things out along it. */
+  line?: [number, number][];
   traffic?: TrafficDef[];
 }
 
@@ -104,4 +109,34 @@ export function ramp(start: [number, number], yaw: number, length: number, width
     quat: [cy * sp, sy * cp, -sy * sp, cy * cp],
     color,
   };
+}
+
+/**
+ * A looping entered at ground level at `start`, driving along +X. It is a helix: one turn
+ * carries the vehicle `shift` metres to its left (towards -Z), so it comes out beside the way in.
+ * Just drive straight; it takes about √(5·g·radius) to get round.
+ */
+export function looping(start: [number, number], radius: number, lane: number, shift: number, color: number, pieces = 40): BoxDef[] {
+  const t = 0.1;
+  const alpha = Math.atan2(shift, 2 * Math.PI * radius);
+  const yaw = Math.PI / 2 - alpha;
+  const fx = Math.sin(yaw), fz = Math.cos(yaw);
+  const lx = Math.cos(yaw), lz = -Math.sin(yaw);
+  const sy = Math.sin(yaw / 2), cy = Math.cos(yaw / 2);
+  const out: BoxDef[] = [];
+  for (let i = 0; i < pieces; i++) {
+    const a = ((i + 0.5) / pieces) * 2 * Math.PI;
+    // along the loop's plane, up, and sideways
+    const u = radius * Math.sin(a) + t * Math.sin(a);
+    const y = radius - radius * Math.cos(a) - t * Math.cos(a);
+    const v = (shift * a) / (2 * Math.PI);
+    const sp = Math.sin(-a / 2), cp = Math.cos(-a / 2);
+    out.push({
+      pos: [start[0] + fx * u + lx * v, y, start[1] + fz * u + lz * v],
+      half: [lane / 2, t, radius * Math.sin(Math.PI / pieces) + 0.06],
+      quat: [cy * sp, sy * cp, -sy * sp, cy * cp],
+      color,
+    });
+  }
+  return out;
 }
