@@ -105,9 +105,10 @@ describe.each(ALL)('%s', (_name, spec) => {
     const v = sim.vehicle;
     expect(v.upY).toBeGreaterThan(0.6);
     expect(v.yawRate).toBeLessThan(-0.08);
-    // still travelling mostly nose first
+    // still travelling mostly nose first (full lock costs forward speed even at walking
+    // pace, while a front-driven chair's tail swings round as fast as ever)
     const lv = v.body.linvel();
-    expect(v.speed).toBeGreaterThan(Math.hypot(lv.x, lv.z) * 0.8);
+    expect(v.speed).toBeGreaterThan(Math.hypot(lv.x, lv.z) * 0.75);
   });
 
   it.each([0, 6, 12])('steers while accelerating flat out from a standstill (stage %i)', (stage) => {
@@ -202,6 +203,32 @@ describe.each(VARIANTS)('profile %s', (_name, spec, index) => {
     }
     expect(minUp).toBeGreaterThan(0.6);
     sim.world.free();
+  });
+});
+
+describe('nimble profiles', () => {
+  // More lean on top of sharper steering used to cancel out: on two wheels the tip assist
+  // took the steering away again and the "nimble" one ran wider than the standard one.
+  const NIMBLE = VARIANTS.filter(([, spec, index]) => spec.profiles[index].turn > 1);
+  it.each(NIMBLE)('%s turns at least as quickly as the standard profile at any tuning stage', (_name, spec, index) => {
+    const turnRate = (i: number, stage: number) => {
+      const p = spec.profiles[i];
+      const s = STAGES[stage];
+      const sim = new Sim(FLAT, spec);
+      sim.vehicle.profile = p;
+      sim.vehicle.setMotor((s.topSpeedKmh * spec.speedFactor * p.speed) / 3.6, s.accel * spec.accelFactor * p.accel);
+      drive(sim, 10, 1);
+      drive(sim, 6, 1, 1);
+      let rate = 0;
+      for (let k = 0; k < 180; k++) {
+        sim.step({ throttle: 1, steer: 1, handbrake: false });
+        rate += Math.abs(sim.vehicle.yawRate) / 180;
+      }
+      expect(sim.vehicle.upY).toBeGreaterThan(0.7);
+      sim.world.free();
+      return rate;
+    };
+    for (const stage of [0, 6, 12]) expect(turnRate(index, stage)).toBeGreaterThan(turnRate(0, stage) * 0.95);
   });
 });
 
@@ -310,6 +337,25 @@ describe('mario kart manners', () => {
 });
 
 describe('slowing down', () => {
+  // Rear-driven chairs used to be flung forward by their own turning and sped up at full lock.
+  it.each(ALL)('%s never gains speed at full lock, and loses some even at walking pace', (_id, spec) => {
+    for (const stage of [0, 3]) {
+      const s = STAGES[stage];
+      const sim = simAt(spec, s.topSpeedKmh, s.accel);
+      drive(sim, 8, 1);
+      const before = Math.hypot(sim.vehicle.body.linvel().x, sim.vehicle.body.linvel().z);
+      let fastest = 0;
+      for (let i = 0; i < 60 * 4; i++) {
+        sim.step({ throttle: 1, steer: 1, handbrake: false });
+        fastest = Math.max(fastest, Math.hypot(sim.vehicle.body.linvel().x, sim.vehicle.body.linvel().z));
+      }
+      const after = Math.hypot(sim.vehicle.body.linvel().x, sim.vehicle.body.linvel().z);
+      expect(fastest).toBeLessThan(before * 1.02);
+      expect(after).toBeLessThan(before * 0.97);
+      sim.world.free();
+    }
+  });
+
   it.each(ALL)('%s loses a good part of its speed at full lock and gets it back afterwards', (_id, spec) => {
     const sim = simAt(spec, 60 / spec.speedFactor, 9);
     drive(sim, 9, 1);

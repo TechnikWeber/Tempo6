@@ -54,12 +54,14 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   h.add(HANDLING, 'cornerYaw', 0, 2.5, 0.05).name('Drehrate bei Tempo (rad/s)');
   h.add(HANDLING, 'cornerMax', 12, 45, 1).name('…höchstens (m/s²)');
   h.add(HANDLING, 'cornerSlow', 0, 0.7, 0.05).name('Kurve kostet Tempo (Anteil)');
+  h.add(HANDLING, 'cornerSlowLow', 0, 1, 0.05).name('…davon schon im Schritttempo');
   h.add(HANDLING, 'cornerDrag', 0, 12, 0.5).name('Kurven-Bremswirkung (m/s²)');
   h.add(HANDLING, 'gripAtSpeed', 0, 0.15, 0.005).name('Grip-Zuwachs je m/s');
   h.add(HANDLING, 'gripUse', 0.5, 1.3, 0.05).name('Grip-Ausnutzung (>1 rutscht)');
   h.add(HANDLING, 'steerAssist', 0, 1, 0.05).name('Lenkhilfe (Rollstuhl)');
   h.add(HANDLING, 'handAssist', 0, 1, 0.05).name('Lenkhilfe (Greifreifen)');
   h.add(HANDLING, 'spinGuard', 0, 80, 5).name('Dreher-Bremse (Lenker)');
+  h.add(HANDLING, 'driftHold', 0.1, 1, 0.05).name('Drift-Profile: Haltewinkel (rad)');
   h.add(HANDLING, 'driftAngle', 0, 0.5, 0.02).name('Driftwinkel (rad)');
   h.add(HANDLING, 'airControl', 0, 2, 0.1).name('Flug-Stabilisierung');
   h.add(HANDLING, 'tipHeight', 0, 0.8, 0.02).name('Kippneigung');

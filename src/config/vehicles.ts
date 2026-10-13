@@ -67,6 +67,8 @@ export interface DriveProfile {
   handSteer?: number;
   /** Front-wheel drive: multiplier on the tail stability. */
   fwdStability?: number;
+  /** Multiplier on how much of the tyres' grip full lock asks for (`HANDLING.gripUse`). Above about 1.2 it drifts. */
+  slide?: number;
 }
 
 const BASE: DriveProfile = { name: 'Serie', blurb: 'So, wie es aus dem Karton kommt.', speed: 1, accel: 1, turn: 1, sharp: 1, tip: 1, assist: 1, grip: 1, brake: 1 };
@@ -159,7 +161,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     label: 'T-Rex',
     profiles: [
       BASE,
-      prof('Kreisel', 'Dreht sich schneller, als der Magen mitkommt. Kippelig.', { turn: 1.5, sharp: 1.3, accel: 1.2, tip: 1.3, assist: 0.8 }),
+      prof('Kreisel', 'Dreht sich schneller, als der Magen mitkommt. Kippelig.', { turn: 1.5, sharp: 1.3, accel: 1.2, tip: 1.05, assist: 0.8 }),
       prof('Sänfte', 'Weich, gutmütig, etwas schneller geradeaus.', { turn: 0.7, sharp: 0.75, tip: 0.6, accel: 0.8, speed: 1.1, brake: 0.8 }),
     ],
     category: 'power',
@@ -194,7 +196,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     profiles: [
       BASE,
       prof('Autobahn', 'Viel Endgeschwindigkeit, stur in der Spur.', { speed: 1.25, accel: 0.9, turn: 0.7, sharp: 0.8, tip: 0.7 }),
-      prof('Driftkönig', 'Wenig Grip, viel Lenkung: rutscht, statt zu kippen.', { grip: 0.55, turn: 1.3, sharp: 1.4, accel: 1.3, tip: 0.6 }),
+      prof('Driftkönig', 'Wenig Grip, viel Lenkung: rutscht, statt zu kippen.', { grip: 0.65, slide: 1.6, turn: 1.3, sharp: 1.4, accel: 1.3, tip: 0.6 }),
     ],
     category: 'power',
     kind: 'Elektrorollstuhl · Heckantrieb',
@@ -226,7 +228,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     label: 'Avanti FX',
     profiles: [
       BASE,
-      prof('Heckschleuder', 'Das Heck macht, was es will.', { fwdStability: 0.95, turn: 1.15, sharp: 1.2 }),
+      prof('Heckschleuder', 'Das Heck macht, was es will.', { fwdStability: 0.95, turn: 1.15, sharp: 1.2, tip: 0.85 }),
       prof('Zugpferd', 'Zieht wie ein Trecker, läuft ruhig.', { accel: 1.4, speed: 0.9, fwdStability: 1.2, turn: 0.85, tip: 0.8 }),
     ],
     category: 'power',
@@ -259,7 +261,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     label: 'Arrivo Karton',
     profiles: [
       BASE,
-      prof('Federgewicht', 'Springt los, dreht sofort, fällt gern um.', { accel: 1.4, turn: 1.3, tip: 1.4, assist: 0.8, brake: 1.2 }),
+      prof('Federgewicht', 'Springt los, dreht sofort, fällt gern um.', { accel: 1.4, turn: 1.3, sharp: 1.15, tip: 1.0, assist: 0.8, brake: 1.2 }),
       prof('Carbon-Renner', 'Steif, schnell, klebt in der Kurve.', { speed: 1.2, sharp: 1.2, grip: 1.2, tip: 0.8, turn: 0.9 }),
     ],
     category: 'folder',
@@ -361,7 +363,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     profiles: [
       BASE,
       prof('Begleitperson', 'Jemand anderes lenkt von hinten. Vorsichtig. Sehr vorsichtig.', { accel: 0.7, turn: 0.7, speed: 0.85, tip: 0.7, brake: 1.2 }),
-      prof('Joystick-Junkie', 'Daumen am Anschlag, immer.', { accel: 1.4, turn: 1.4, sharp: 1.3, tip: 1.2 }),
+      prof('Joystick-Junkie', 'Daumen am Anschlag, immer.', { accel: 1.4, turn: 1.4, sharp: 1.3, tip: 1.0 }),
     ],
     category: 'push',
     kind: 'Faltrollstuhl · Radnabenmotoren mit Joystick',
@@ -464,7 +466,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     label: 'Piepmatz',
     profiles: [
       BASE,
-      prof('Spatz auf Koffein', 'Zappelt los und schlägt Haken.', { accel: 1.5, turn: 1.2, sharp: 1.4, tip: 1.4, assist: 0.8 }),
+      prof('Spatz auf Koffein', 'Zappelt los und schlägt Haken.', { accel: 1.5, turn: 1.2, sharp: 1.25, tip: 1.05, assist: 0.8 }),
       prof('Brav', 'Kippt kaum noch, dafür gemütlicher.', { tip: 0.6, turn: 0.85, accel: 0.8, speed: 1.1 }),
     ],
     category: 'scooter',
@@ -627,12 +629,16 @@ export const HANDLING = {
   gripUse: 0.85,
   /** Full lock at speed costs this share of the top speed… */
   cornerSlow: 0.45,
+  /** Share of that cost that already applies at walking pace; it grows to all of it by about 25 km/h. */
+  cornerSlowLow: 0.4,
   /** …and it is shed at up to this rate (m/s²). */
   cornerDrag: 6,
   /** Differential steering: share of the turning force the motors cannot spare that is made up on the chassis. */
   steerAssist: 1,
   /** The same for steering by hand on the push rims, where being weak is part of the character. */
   handAssist: 0.5,
+  /** Sliding profiles (`slide`): slip angle (rad) at which the turn starts to ease off, to hold the drift. */
+  driftHold: 0.4,
   /** How far (rad) the model swings its tail out under full cornering load. Looks only. */
   driftAngle: 0.32,
   /** In the air the chassis rights itself so it lands on its wheels. 0 = tumble freely. */

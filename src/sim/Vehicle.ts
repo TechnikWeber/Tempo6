@@ -196,13 +196,18 @@ export class Vehicle {
     const fullLock = Math.max(HANDLING.lateralAccel, Math.min(HANDLING.cornerYaw * Math.abs(v), HANDLING.cornerMax));
     // Past the limit it even steers the other way a little, to catch the fall.
     // …but never for more than the tyres can hold, or slippery set-ups would just spin.
-    const aLat = Math.min(fullLock * p.sharp, grip * 9.81 * this.gripShare * HANDLING.gripUse) * Math.max(HANDLING.tipAssist > 0 ? -0.4 : 0, 1 - (HANDLING.tipAssist * p.assist * leaningOut) / Math.max(0.05, HANDLING.tipAngle - HANDLING.tipFree));
+    const aLatFull = Math.min(fullLock * p.sharp, grip * 9.81 * this.gripShare * HANDLING.gripUse * (p.slide ?? 1));
+    const aLat = aLatFull * Math.max(HANDLING.tipAssist > 0 ? -0.4 : 0, 1 - (HANDLING.tipAssist * p.assist * leaningOut) / Math.max(0.05, HANDLING.tipAngle - HANDLING.tipFree));
     // Positive yaw turns left, so steering right asks for a negative yaw rate / wheel angle.
     const v2 = Math.max(v * v, 0.01);
     let yawTarget = 0;
     let steerAngle = 0;
     if (this.turners > 0) {
-      yawTarget = -input.steer * Math.min(spec.maxYawRate * p.turn, aLat / Math.max(Math.abs(v), 0.5)) + wallTurn;
+      // A profile that slides: once the tail is out far enough the turn eases off (and past
+      // that steers back a little), so it holds the drift instead of spinning to a stop.
+      const out = -Math.sign(input.steer) * this.slip;
+      const hold = p.slide !== undefined ? clamp(1 - (out - HANDLING.driftHold) / 0.25, -0.3, 1) : 1;
+      yawTarget = -input.steer * hold * Math.min(spec.maxYawRate * p.turn, aLat / Math.max(Math.abs(v), 0.5)) + wallTurn;
     } else {
       if (wallTurn !== 0) {
         const t = wallTurn * spec.inertia[1] * 6 * dt;
@@ -231,7 +236,13 @@ export class Vehicle {
 
     // Cornering scrubs speed off: the harder it pulls sideways, the lower the speed the
     // motors will hold, and it eases down to that rather than braking for it.
-    const cornerLoad = clamp(Math.abs(this.latAccel) / fullLock, 0, 1) * clamp((Math.abs(v) - 3) / 4, 0, 1);
+    // How much of full lock is in use: by the sideways pull at speed, and by the rate of turn
+    // at walking pace, where full lock pulls next to nothing sideways and would cost nothing.
+    const yawFull = this.turners > 0
+      ? Math.min(spec.maxYawRate * p.turn, aLatFull / Math.max(Math.abs(v), 0.5))
+      : (Math.abs(v) * Math.tan(Math.min(0.95, spec.maxSteer * p.turn, Math.atan((spec.wheelbase * aLatFull) / v2)))) / spec.wheelbase;
+    const lockUsed = Math.max(Math.abs(this.latAccel) / fullLock, Math.abs(yawRate) / Math.max(yawFull, 0.2));
+    const cornerLoad = clamp(lockUsed, 0, 1) * clamp(HANDLING.cornerSlowLow + ((1 - HANDLING.cornerSlowLow) * (Math.abs(v) - 3)) / 4, HANDLING.cornerSlowLow, 1);
     const cornerV = targetV * (1 - HANDLING.cornerSlow * cornerLoad);
     // Stick pulled against the direction of travel: that is braking, not reversing yet.
     const braking = Math.abs(v) > 0.3 && throttle * v < 0;
@@ -392,8 +403,14 @@ export class Vehicle {
     // The cornering drag itself, on the chassis so that every kind of drive feels it alike.
     const tooFast = Math.abs(v) - Math.abs(cornerV);
     if (onGround > 0 && !slowing && tooFast > 0 && !input.handbrake) {
-      const drag = -Math.sign(v) * spec.mass * HANDLING.cornerDrag * cornerLoad * Math.min(1, tooFast) * dt;
-      body.applyImpulse({ x: this.fwd.x * drag, y: 0, z: this.fwd.z * drag }, true);
+      // (Measured against the speed it is going at: a rear-driven chair is flung forward by
+      // its own turning, about 1 m/s² at full lock, and at walking pace half a metre per
+      // second too fast is already a lot.)
+      // Against the way it is going rather than the way it points, or a tail that is already
+      // out would be pushed out further.
+      const going = Math.hypot(lv.x, lv.z);
+      const drag = (-spec.mass * HANDLING.cornerDrag * cornerLoad * Math.min(1, tooFast / (0.1 * Math.abs(cornerV) + 0.2)) * dt) / Math.max(going, 0.1);
+      body.applyImpulse({ x: lv.x * drag, y: 0, z: lv.z * drag }, true);
     }
 
     // Anti-tippers: past a good wheelie (or stoppie) angle something pushes the nose back,
