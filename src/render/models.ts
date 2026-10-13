@@ -188,42 +188,55 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
   const g = groundY(spec);
   const driveX = Math.max(...spec.wheels.filter((w) => w.drive).map((w) => Math.abs(w.x)));
   const baseW = (driveX - 0.07) * 2;
-  const seatY = heavy ? 0.12 : 0.06;
+  const seatY = heavy ? 0.12 : spec.look === 'mid' ? 0.08 : 0.06;
+  const driverZ = -0.14;
+  // The legs hang down into a well cut out of the front of the base; what is left of the
+  // base beside them are two rails.
+  const wellZ = driverZ + 0.29;
+  const wellHalf = 0.175;
+  const railW = baseW / 2 - wellHalf;
+  const railX = wellHalf + railW / 2;
+  const base = (h: number, zBack: number, zFront: number) => {
+    const solid = Math.min(zFront, wellZ);
+    box(root, baseW, h, solid - zBack, body, 0, -0.1, (zBack + solid) / 2);
+    if (zFront > wellZ) for (const s of [1, -1]) box(root, railW, h, zFront - wellZ, body, s * railX, -0.1, (zFront + wellZ) / 2);
+  };
 
   if (spec.look === 'mid') {
-    box(root, baseW, 0.2, 0.6, body, 0, -0.1, 0);
-    box(root, baseW - 0.04, 0.14, 0.04, accent, 0, -0.08, 0.31); // front panel
-    box(root, baseW - 0.04, 0.14, 0.04, accent, 0, -0.08, -0.31);
+    base(0.2, -0.3, 0.3);
+    box(root, baseW - 0.04, 0.14, 0.04, accent, 0, -0.08, -0.31); // rear panel
     for (const s of [1, -1]) {
+      box(root, railW, 0.14, 0.04, accent, s * railX, -0.08, 0.31); // front panels
       box(root, 0.11, 0.05, 0.44, accent, s * driveX, g + 0.37, 0); // fender over the drive wheel
       for (const z of [0.34, -0.34]) box(root, 0.05, 0.05, 0.22, body, s * 0.22, g + 0.2, z); // caster arms
     }
   } else if (heavy) {
-    box(root, baseW, 0.24, 0.8, body, 0, -0.1, -0.06);
+    base(0.24, -0.46, 0.34);
     box(root, baseW - 0.06, 0.05, 0.5, 0x1a1b1e, 0, 0.045, -0.2); // battery lid, flush with the base
     box(root, baseW - 0.1, 0.04, 0.02, 0xff2a2a, 0, -0.02, -0.465); // tail light
-    box(root, baseW + 0.2, 0.05, 0.05, STEEL, 0, -0.16, 0.38); // bumper
+    box(root, baseW + 0.2, 0.05, 0.05, STEEL, 0, -0.16, 0.43); // bumper, clear of the toes
     for (const s of [1, -1]) {
       box(root, 0.13, 0.05, 0.5, accent, s * driveX, g + 0.43, -0.28); // fender over the drive wheel
       box(root, 0.02, 0.16, 0.44, accent, s * (baseW / 2 + 0.005), -0.06, 0.12); // side panel
       box(root, 0.07, 0.2, 0.07, STEEL, s * 0.27, g + 0.26, 0.42); // caster fork
-      box(root, 0.07, 0.05, 0.05, 0xfff3b0, s * 0.18, -0.02, 0.35); // headlights
+      box(root, 0.07, 0.05, 0.05, 0xfff3b0, s * railX, -0.02, 0.35); // headlights
     }
   } else {
     // Same sleek base for both; front-wheel drive carries it at the other end.
     const d = spec.look === 'front' ? -1 : 1;
     const baseZ = -0.1 * d;
-    box(root, baseW, 0.18, 0.64, body, 0, -0.1, baseZ);
+    base(0.18, baseZ - 0.32, baseZ + 0.32);
     box(root, baseW - 0.1, 0.03, 0.02, 0xff2a2a, 0, -0.06, baseZ - 0.325); // tail light strip
     for (const s of [1, -1]) {
       box(root, 0.02, 0.035, 0.6, accent, s * (baseW / 2 + 0.005), -0.05, baseZ); // accent line
       box(root, 0.05, 0.05, 0.34, body, s * 0.24, g + 0.22, 0.26 * d); // caster arms
-      box(root, 0.05, 0.03, 0.03, 0xdff3ff, s * 0.14, -0.07, baseZ + 0.325); // LED lights
+      box(root, 0.05, 0.03, 0.03, 0xdff3ff, s * railX, -0.07, baseZ + 0.325); // LED lights
       if (d < 0) box(root, 0.11, 0.05, 0.4, accent, s * driveX, g + 0.37, 0.25); // fender over the front drive wheel
     }
   }
 
   // Seat
+  if (seatY > 0.06 && !heavy) box(root, 0.24, seatY - 0.04, 0.24, body, 0, (seatY - 0.04) / 2, -0.02); // seat post
   box(root, 0.46, 0.08, 0.46, seat, 0, seatY, -0.02);
   box(root, 0.46, 0.56, 0.08, seat, 0, seatY + 0.32, -0.27);
   box(root, 0.22, 0.14, 0.07, seat, 0, seatY + 0.7, -0.27); // headrest
@@ -233,8 +246,11 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
     box(root, 0.04, 0.2, 0.04, body, s * 0.27, seatY + 0.1, -0.18);
     box(root, 0.04, 0.3, 0.04, body, s * 0.21, seatY + 0.66, -0.31); // push handles
     box(root, 0.04, 0.04, 0.14, accent, s * 0.21, seatY + 0.8, -0.36);
-    box(root, 0.16, 0.03, 0.2, body, s * 0.11, g + 0.07, 0.5); // footrests
   }
+  // One-piece footplate right under the shoes, hung from the back wall of the well.
+  const plateY = seatY - 0.365;
+  box(root, 0.34, 0.02, 0.27, body, 0, plateY, wellZ + 0.135);
+  box(root, 0.06, -0.12 - (plateY - 0.01), 0.03, body, 0, (-0.12 + plateY - 0.01) / 2, wellZ + 0.015);
   // joystick on the right armrest (right is -X)
   box(root, 0.08, 0.05, 0.1, body, -0.27, seatY + 0.23, 0.19);
   cyl(root, 0.012, 0.09, STEEL, -0.27, seatY + 0.29, 0.19, 5);
@@ -243,7 +259,7 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
   badge(root, spec, 0, seatY + 0.7, -0.31);
 
   const d = driver(DRIVERS[spec.id]);
-  d.group.position.set(0, seatY + 0.04, -0.14);
+  d.group.position.set(0, seatY + 0.04, driverZ);
   root.add(d.group);
   const baseZ = spec.look === 'mid' ? 0 : heavy ? -0.06 : spec.look === 'front' ? 0.1 : -0.1;
   return {
