@@ -4,7 +4,7 @@
 
 Ein Rennspiel für den Browser mit Elektrorollstühlen und Seniorenmobilen. Du startest mit den erlaubten 6 km/h, sammelst auf einem Supermarktparkplatz Pfandflaschen und steckst das Geld in immer fragwürdigeres Tuning, bis 75 km/h.
 
-Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, dreizehn Fahrzeugen und Tuning-Leiter.
+Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, einer Kurven-Teststrecke, dreizehn Fahrzeugen und Tuning-Leiter.
 
 ## Fahrzeuge
 

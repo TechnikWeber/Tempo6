@@ -31,11 +31,17 @@ export interface PickupDef {
 }
 
 export interface DecorDef {
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign';
+  /**
+   * `board` is an upright panel with `text` on both sides, `label` the same painted flat on
+   * the ground, `ring` a painted circle (`half` is radius, 0, half line width).
+   */
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring';
   pos: [number, number, number];
   half?: [number, number, number];
   color?: number;
   text?: string;
+  /** Heading in rad, 0 = facing +Z. */
+  yaw?: number;
 }
 
 export type TrafficType = 'car' | 'van';

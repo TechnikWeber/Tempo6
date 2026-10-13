@@ -4,7 +4,7 @@
 
 A browser racing game with power wheelchairs and mobility scooters. You start at the legal 6 km/h, collect deposit bottles on a supermarket car park, and spend the money on increasingly questionable tuning until 75 km/h.
 
-Status: playable prototype with a start screen, two tracks, thirteen vehicles and a tuning ladder.
+Status: playable prototype with a start screen, two tracks, a curve test ground, thirteen vehicles and a tuning ladder.
 
 ## Vehicles
 

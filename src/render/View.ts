@@ -1,7 +1,7 @@
 import {
   AmbientLight, BoxGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight, Fog, Group,
   HemisphereLight, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
-  Quaternion, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
+  Quaternion, RingGeometry, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
 } from 'three';
 import { HANDLING, type VehicleSpec } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
@@ -69,6 +69,7 @@ function checkerTexture(): CanvasTexture {
 function buildDecor(d: DecorDef): Object3D {
   const g = new Group();
   g.position.set(...d.pos);
+  g.rotation.y = d.yaw ?? 0;
   const [hx, hy, hz] = d.half ?? [0.5, 0.5, 0.5];
   switch (d.type) {
     case 'box':
@@ -94,6 +95,27 @@ function buildDecor(d: DecorDef): Object3D {
       break;
     case 'finish': {
       const m = new Mesh(new PlaneGeometry(hx * 2, hz * 2), new MeshStandardMaterial({ map: checkerTexture(), roughness: 1 }));
+      m.rotation.x = -Math.PI / 2;
+      m.receiveShadow = true;
+      g.add(m);
+      break;
+    }
+    case 'board': {
+      const edge = mat(0x2a2c30);
+      const face = new MeshStandardMaterial({ map: textTexture(d.text ?? '', '#f4f4f4', '#1d1d1f'), roughness: 0.9 });
+      g.add(new Mesh(new BoxGeometry(hx * 2, hy * 2, hz * 2), [edge, edge, edge, edge, face, face]));
+      for (const s of [1, -1]) box(g, 0.1, d.pos[1], 0.1, 0x2a2c30, s * hx * 0.8, -d.pos[1] / 2, 0); // posts
+      break;
+    }
+    case 'label': {
+      const m = new Mesh(new PlaneGeometry(hz * 2, hx * 2), new MeshStandardMaterial({ map: textTexture(d.text ?? '', '#3f4248', '#f4f4f4'), roughness: 1 }));
+      m.rotation.x = -Math.PI / 2;
+      m.receiveShadow = true;
+      g.add(m);
+      break;
+    }
+    case 'ring': {
+      const m = new Mesh(new RingGeometry(hx - hz, hx + hz, 96), mat(d.color ?? 0xffffff));
       m.rotation.x = -Math.PI / 2;
       m.receiveShadow = true;
       g.add(m);

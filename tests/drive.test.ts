@@ -7,6 +7,7 @@ import { Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
 import type { TrackDef } from '../src/sim/Track';
 import { TRACKS } from '../src/tracks';
+import { KURVEN } from '../src/tracks/kurven';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 
 const FLAT: TrackDef = {
@@ -646,6 +647,38 @@ describe.each(TRACKS.map((t) => [t.id, t] as const))('track %s', (_id, track) =>
     for (let i = 0; i < 60 * 15; i++) core.step({ ...idle, throttle: 1 });
     expect(core.race.running).toBe(true);
     expect(core.sim.vehicle.upY).toBeGreaterThan(0.95);
+    core.dispose();
+  });
+});
+
+describe('curve test ground', () => {
+  it('lets a slow chair round all four corners of the circuit', () => {
+    const progress = new Progress();
+    const core = new GameCore(KURVEN, progress);
+    core.sim.vehicle.setMotor(10 / 3.6, 3.3);
+    const [south, east, north, west] = KURVEN.gates;
+    // gate, then a point a little inside the corner that follows it
+    const line: [number, number][] = [
+      [south.x, south.z], [east.x - 4, south.z + 4],
+      [east.x, east.z], [east.x - 2.5, north.z - 2.5],
+      [north.x, north.z], [west.x + 1.5, north.z - 1.5],
+      [west.x, west.z], [west.x + 1, south.z + 1],
+    ];
+    let next = 0;
+    let minUp = 1;
+    for (let i = 0; i < 60 * 150 && core.race.laps === 0; i++) {
+      const v = core.sim.vehicle;
+      const p = v.body.translation();
+      const [tx, tz] = line[next];
+      if (Math.hypot(tx - p.x, tz - p.z) < 3) next = (next + 1) % line.length;
+      let off = Math.atan2(tx - p.x, tz - p.z) - v.yaw;
+      off = Math.atan2(Math.sin(off), Math.cos(off));
+      // (positive yaw is to the left, positive steer to the right)
+      core.step({ ...idle, throttle: 1, steer: Math.max(-1, Math.min(1, -off * 2)) });
+      minUp = Math.min(minUp, v.upY);
+    }
+    expect(core.race.laps).toBe(1);
+    expect(minUp).toBeGreaterThan(0.9);
     core.dispose();
   });
 });
