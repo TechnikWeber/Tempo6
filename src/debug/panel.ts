@@ -51,6 +51,8 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
     .name('Einstellungen zurücksetzen');
   h.add(HANDLING, 'grip', 0.5, 4, 0.05).name('Reifengrip');
   h.add(HANDLING, 'lateralAccel', 2, 16, 0.5).name('Lenk-Schärfe (m/s²)');
+  h.add(HANDLING, 'driftAngle', 0, 0.5, 0.02).name('Driftwinkel (rad)');
+  h.add(HANDLING, 'airControl', 0, 2, 0.1).name('Flug-Stabilisierung');
   h.add(HANDLING, 'tipHeight', 0, 0.8, 0.02).name('Kippneigung');
   h.add(HANDLING, 'tipAssist', 0, 1, 0.05).name('Kipp-Assistent');
   h.add(HANDLING, 'tipAngle', 0.2, 1, 0.05).name('Assistent: Winkel');

@@ -18,7 +18,8 @@ export type GameEvent =
   | { type: 'lapStart' }
   | { type: 'lap'; time: number; best: boolean }
   | { type: 'tuned'; stage: TuningStage }
-  | { type: 'broke'; missing: number };
+  | { type: 'broke'; missing: number }
+  | { type: 'land'; speed: number };
 
 const PICKUP_RADIUS = 1.0;
 const PICKUP_RESPAWN = 15;
@@ -110,6 +111,10 @@ export class GameCore {
 
     const v = sim.vehicle;
     const p = v.body.translation();
+    if (v.landing > 0) {
+      this.events.push({ type: 'land', speed: v.landing });
+      v.landing = 0;
+    }
     this.flippedFor = v.upY < 0.35 ? this.flippedFor + STEP : 0;
 
     const ev = race.update(p.x, p.z, STEP);

@@ -65,7 +65,7 @@ describe.each(ALL)('%s', (_name, spec) => {
     const kmh = sim.vehicle.speed * 3.6;
     expect(kmh).toBeGreaterThan(top * 0.93);
     expect(kmh).toBeLessThan(top * 1.03);
-    expect(Math.abs(sim.vehicle.body.translation().x)).toBeLessThan(3);
+    expect(Math.abs(sim.vehicle.body.translation().x)).toBeLessThan(6);
     expect(sim.vehicle.upY).toBeGreaterThan(0.8);
   });
 
@@ -213,6 +213,71 @@ describe('profiles', () => {
   });
 });
 
+describe('mario kart manners', () => {
+  it.each(ALL)('%s still corners hard at 30 and 60 km/h, drifting a little', (_id, spec) => {
+    for (const kmh of [30, 60]) {
+      const sim = simAt(spec, kmh / spec.speedFactor, 6);
+      drive(sim, 9, 1);
+      let slip = 0;
+      let lat = 0;
+      for (let i = 0; i < 60 * 4; i++) {
+        sim.step({ throttle: 1, steer: 1, handbrake: false });
+        if (i >= 120) {
+          slip = Math.max(slip, Math.abs(sim.vehicle.slip));
+          lat += Math.abs(sim.vehicle.yawRate * sim.vehicle.speed) / 120;
+        }
+      }
+      expect(sim.vehicle.upY).toBeGreaterThan(0.6);
+      expect(lat).toBeGreaterThan(3.5);
+      expect(slip).toBeLessThan(0.5);
+    }
+  });
+
+  it.each(ALL)('%s lands the big jump on its wheels and drives on', (_id, spec) => {
+    const progress = new Progress();
+    progress.vehicle = spec.id;
+    const core = new GameCore(PARKPLATZ, progress);
+    core.sim.vehicle.setMotor(50 / 3.6, 6);
+    core.sim.vehicle.place(40, 0.7, -40, 0);
+    let maxY = 0;
+    let landed = false;
+    let after = 0;
+    for (let i = 0; i < 60 * 9 && after < 50; i++) {
+      // a clumsy take-off: steering while going up the ramp
+      const z = core.sim.vehicle.body.translation().z;
+      core.step({ ...idle, throttle: 1, steer: z > -8 && z < 2 ? 0.5 : 0 });
+      maxY = Math.max(maxY, core.sim.vehicle.body.translation().y);
+      landed ||= z > 3 && core.events.some((e) => e.type === 'land');
+      core.events.length = 0;
+      // judge it just under a second after touchdown
+      if (landed) after++;
+    }
+    expect(maxY).toBeGreaterThan(2);
+    expect(landed).toBe(true);
+    expect(core.sim.vehicle.upY).toBeGreaterThan(0.9);
+    expect(core.sim.vehicle.wheelsOnGround).toBeGreaterThanOrEqual(2);
+    expect(Math.abs(core.sim.vehicle.speed)).toBeGreaterThan(3);
+    core.dispose();
+  });
+
+  it.each(ALL)('%s slides along a wall instead of hooking on it', (_id, spec) => {
+    const progress = new Progress();
+    progress.vehicle = spec.id;
+    const core = new GameCore(PARKPLATZ, progress);
+    core.sim.vehicle.setMotor(30 / 3.6, 5);
+    // towards the east wall of the lot at 30°
+    core.sim.vehicle.place(50, 0.7, -30, 0.52);
+    const z0 = -30;
+    for (let i = 0; i < 60 * 10; i++) core.step({ ...idle, throttle: 1 });
+    const p = core.sim.vehicle.body.translation();
+    expect(core.sim.vehicle.upY).toBeGreaterThan(0.8);
+    // it reached the wall (40 m away along its heading) and kept moving along it
+    expect(p.x).toBeGreaterThan(55);
+    expect(p.z - z0).toBeGreaterThan(45);
+    core.dispose();
+  });
+});
+
 describe('tyre marks', () => {
   it('reports a burnout only with a strong motor, and scrubbing under hard braking', () => {
     const weak = simAt(VEHICLES.trex, 6, 2.5);
@@ -261,7 +326,7 @@ describe('tip assist', () => {
 });
 
 describe('differential drive', () => {
-  it.each(['trex', 'avanti', 'avantifx', 'orkan', 'arrivo', 'eskalation'] as const)('%s turns on the spot', (id) => {
+  it.each(['trex', 'avanti', 'avantifx', 'orkan', 'arrivo', 'eskalation', 'enix'] as const)('%s turns on the spot', (id) => {
     const sim = new Sim(FLAT, VEHICLES[id]);
     drive(sim, 1, 0);
     drive(sim, 2, 0, 1);

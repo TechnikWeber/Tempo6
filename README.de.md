@@ -4,7 +4,7 @@
 
 Ein Rennspiel für den Browser mit Elektrorollstühlen und Seniorenmobilen. Du startest mit den erlaubten 6 km/h, sammelst auf einem Supermarktparkplatz Pfandflaschen und steckst das Geld in immer fragwürdigeres Tuning, bis 75 km/h.
 
-Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, zwölf Fahrzeugen und Tuning-Leiter.
+Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, dreizehn Fahrzeugen und Tuning-Leiter.
 
 ## Fahrzeuge
 
@@ -20,6 +20,7 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange d
 | Orkan 4 | Vollpower Wheelchairs | Schwerer Heckantrieb, sehr standfest |
 | Arrivo Karton | One-Piece-Falter | Leichter faltbarer Elektrorollstuhl, flink |
 | e-skalation | Schubshilfen | Radnabenmotoren, Schub in Greifreifen-Stößen |
+| e-nix | Schubshilfen | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
 | schubs one | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
 | e-käpt'n | Zugmaschinen | Zuggerät vorn, drei Räder, am schnellsten |
 | Piepmatz | Rentnerblitze | Winziges Seniorenmobil, wendig, kippelig |

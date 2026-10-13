@@ -13,6 +13,7 @@ export interface DriveInput {
 
 const DOWN = { x: 0, y: -1, z: 0 };
 const AXLE = { x: -1, y: 0, z: 0 };
+const ROUND = 0.07;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /**
@@ -22,6 +23,10 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 export class Vehicle {
   readonly body: RAPIER.RigidBody;
   readonly tracked: Tracked;
+  private readonly collider: RAPIER.Collider;
+  /** Sideways acceleration actually felt, in m/s²; positive = pushed towards the driver's left. */
+  latAccel = 0;
+  private readonly lastVel = new Vector3();
   private readonly ctrl: RAPIER.DynamicRayCastVehicleController;
 
   /** Motor limits, set from the current tuning stage. */
@@ -59,6 +64,12 @@ export class Vehicle {
   readonly skid: number[];
   /** 0…1 while the drive wheels spin up under full power. */
   burnout = 0;
+  /** Seconds since the last wheel left the ground; 0 while driving. */
+  airTime = 0;
+  /** Sink rate in m/s at the moment of touchdown; consumed by the game. */
+  landing = 0;
+  /** Angle between where it points and where it goes, in rad; positive = nose to the left of travel. */
+  slip = 0;
   private readonly local = new Vector3();
 
   constructor(private readonly world: RAPIER.World, readonly spec: VehicleSpec, x: number, y: number, z: number, yaw: number) {
@@ -71,15 +82,17 @@ export class Vehicle {
         .setCcdEnabled(true)
         .setCanSleep(false),
     );
-    world.createCollider(
-      RAPIER.ColliderDesc.cuboid(hx, hy, hz)
+    this.collider = world.createCollider(
+      // Rounded and slippery, so it glances off walls and ramp edges instead of hooking on them.
+      RAPIER.ColliderDesc.roundCuboid(hx - ROUND, hy - ROUND, hz - ROUND, ROUND)
         .setMassProperties(
           spec.mass,
           { x: spec.com[0], y: spec.com[1], z: spec.com[2] },
           { x: spec.inertia[0], y: spec.inertia[1], z: spec.inertia[2] },
           { x: 0, y: 0, z: 0, w: 1 },
         )
-        .setFriction(0.25)
+        .setFriction(0.04)
+        .setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min)
         .setRestitution(0.15),
       this.body,
     );
@@ -125,6 +138,10 @@ export class Vehicle {
 
     const p = this.profile;
     const grip = HANDLING.grip * spec.gripFactor * p.grip;
+    // Measured, not derived from the yaw rate: in a slide the two are far apart.
+    const latNow = ((lv.x - this.lastVel.x) * this.left.x + (lv.y - this.lastVel.y) * this.left.y + (lv.z - this.lastVel.z) * this.left.z) / dt;
+    this.latAccel += (clamp(latNow, -25, 25) - this.latAccel) * Math.min(1, dt * 12);
+    this.lastVel.set(lv.x, lv.y, lv.z);
     // Nose up in a wheelie: ease off the motor so it hovers instead of flipping backwards.
     // How far the nose points away from the ground it stands on (not from the horizon,
     // or every ramp would count as a wheelie).
@@ -139,6 +156,9 @@ export class Vehicle {
     // Same on the brakes: nose down in a stoppie, let go a little.
     const stoppie = clamp(1 - (-nose - 0.22) / 0.2, 0, 1);
     const targetV = input.throttle >= 0 ? input.throttle * this.topSpeed : input.throttle * this.topSpeed * 0.5;
+    // Which way it is trying to go: by the stick if it is pushed, else by the motion.
+    const heading = Math.abs(targetV) > 0.3 ? Math.sign(targetV) : Math.abs(v) > 1 ? Math.sign(v) : 0;
+    const wallTurn = heading !== 0 ? this.wallTurn(heading) : 0;
     // Leaning out of the corner takes steering away, so full lock ends up balancing on two wheels.
     // Steering towards the lean stays untouched: that is how you catch it again.
     // Looking a little ahead (roll rate) keeps it from overshooting the balance point.
@@ -150,8 +170,12 @@ export class Vehicle {
     let yawTarget = 0;
     let steerAngle = 0;
     if (this.turners > 0) {
-      yawTarget = -input.steer * Math.min(spec.maxYawRate * p.turn, aLat / Math.max(Math.abs(v), 0.5));
+      yawTarget = -input.steer * Math.min(spec.maxYawRate * p.turn, aLat / Math.max(Math.abs(v), 0.5)) + wallTurn;
     } else {
+      if (wallTurn !== 0) {
+        const t = wallTurn * spec.inertia[1] * 6 * dt;
+        body.applyTorqueImpulse({ x: 0, y: t, z: 0 }, true);
+      }
       steerAngle = -input.steer * Math.min(Math.min(0.95, spec.maxSteer * p.turn), Math.atan((spec.wheelbase * aLat) / v2));
     }
 
@@ -172,6 +196,20 @@ export class Vehicle {
 
     // Velocity in chassis space, used for the caster swivel.
     this.local.set(lv.x, lv.y, lv.z).applyQuaternion(this.q.invert());
+    this.slip = this.local.z > 1 ? Math.atan2(-this.local.x, this.local.z) : 0;
+
+    if (this.wheelsOnGround === 0) {
+      this.airTime += dt;
+      // Like a kart in a certain racing game: in the air it levels out and stops spinning,
+      // so a jump ends on the wheels.
+      if (this.airTime > 0.06 && HANDLING.airControl > 0) {
+        const inertia = spec.inertia[0];
+        // axis and size of the rotation that would bring the chassis upright
+        const ax = -this.up.z, az = this.up.x;
+        const k = HANDLING.airControl * inertia * dt;
+        body.applyTorqueImpulse({ x: (ax * 45 - av.x * 9) * k, y: -av.y * 5 * k, z: (az * 45 - av.z * 9) * k }, true);
+      }
+    }
 
     // A wheel that has lifted off cannot push. For differential steering that would mean
     // no steering on two wheels, so whatever turning force the tyres failed to deliver in
@@ -264,10 +302,12 @@ export class Vehicle {
         }
         if (brake > 0 && Math.abs(v) > 1.5) scrub = 1;
         if (braking && Math.abs(v) > 2 && !w.caster) scrub = Math.max(scrub, 0.8);
-        if (!w.caster) scrub = Math.max(scrub, clamp((Math.abs(yawRate * v) - 3.8) / 2.5, 0, 1));
+        if (!w.caster) scrub = Math.max(scrub, clamp((Math.abs(this.latAccel) - 4.5) / 3, 0, 1), clamp((Math.abs(this.slip) - 0.1) / 0.1, 0, 1));
       }
       this.skid[i] = scrub;
     });
+    if (onGround > 0 && this.wheelsOnGround === 0 && this.airTime > 0.35) this.landing = Math.max(0, -lv.y);
+    if (onGround > 0) this.airTime = 0;
     this.wheelsOnGround = onGround;
     this.burnout = burnout;
 
@@ -283,14 +323,43 @@ export class Vehicle {
 
     // Cornering force pushes the top of the vehicle outwards (see HANDLING.tipHeight).
     if (onGround > 0) {
-      const lateral = clamp(yawRate * v, -grip * 9.81, grip * 9.81);
+      const lateral = clamp(this.latAccel, -grip * 9.81, grip * 9.81);
       // The second term is the roll damper.
-      const push = (spec.mass * lateral * HANDLING.tipHeight * spec.tipFactor * p.tip - HANDLING.rollDamping * rollRate) * dt;
+      // A trike balances happily on two of its three wheels and would ride on like that
+      // for ever, so it gets a shove back towards level. The others only a hint of one.
+      const righting = spec.mass * 9.81 * (spec.wheels.length === 3 ? 0.16 : 0.03) * this.roll;
+      const push = (spec.mass * lateral * HANDLING.tipHeight * spec.tipFactor * p.tip - HANDLING.rollDamping * rollRate - righting) * dt;
       body.applyTorqueImpulse({ x: this.fwd.x * push, y: this.fwd.y * push, z: this.fwd.z * push }, true);
     }
 
     // Wheels ride on the world only; loose props are handled by the chassis collider.
     ctrl.updateVehicle(dt, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC);
+  }
+
+  /**
+   * Glancing off walls: when the chassis touches something upright while driving into it,
+   * returns the yaw rate (rad/s) that swings the nose parallel to the wall.
+   */
+  private wallTurn(dir: number): number {
+    let turn = 0;
+    this.world.contactPairsWith(this.collider, (other) => {
+      const parent = other.parent();
+      if (parent && !parent.isFixed()) return;
+      this.world.contactPair(this.collider, other, (manifold) => {
+        const n = manifold.normal();
+        if (Math.abs(n.y) > 0.5) return;
+        // The way it wants to go, and the normal turned to face against that.
+        const gx = this.fwd.x * dir, gz = this.fwd.z * dir;
+        const s = n.x * gx + n.z * gz > 0 ? -1 : 1;
+        const nx = n.x * s, nz = n.z * s;
+        const into = -(gx * nx + gz * nz);
+        if (into <= 0.05) return;
+        // (go × n).y tells which way round is the short way to parallel.
+        const side = gz * nx - gx * nz;
+        turn = clamp(9 * Math.sign(side) * into, -3.5, 3.5);
+      });
+    });
+    return turn;
   }
 
   /** Wheel centre height offset below its mount, and spin angle, for the visuals. */
@@ -318,6 +387,8 @@ export class Vehicle {
     this.body.setRotation({ x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) }, true);
     this.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    this.lastVel.set(0, 0, 0);
+    this.latAccel = 0;
     this.tracked.teleport();
   }
 

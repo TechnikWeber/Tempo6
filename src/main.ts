@@ -111,6 +111,10 @@ function handleEvents(): void {
         sound.tuned();
         hud.toast(`${e.stage.name}! Jetzt ${core.topSpeedKmh.toFixed(1).replace('.', ',')} km/h`, e.stage.blurb, 3.5);
         break;
+      case 'land':
+        view.bump(e.speed);
+        sound.thud(e.speed);
+        break;
       case 'broke':
         sound.nope();
         hud.toast(`Es fehlen noch ${formatMoney(e.missing)} Pfand`, '', 1.5);

@@ -73,9 +73,10 @@ function wheel(w: WheelSpec, spec: VehicleSpec): WheelModel {
     axle(cyl(spin, r, 0.035, TYRE, 0, 0, 0, 14));
     axle(cyl(spin, r * 0.93, 0.02, 0xb8bcc2, 0, 0, 0, 14));
     axle(cyl(spin, r * 0.9, 0.012, STEEL, Math.sign(w.x) * 0.035, 0, 0, 14)); // push rim
-    if (spec.addon === 'hubs') {
-      axle(cyl(spin, r * 0.5, 0.07, spec.colors.accent, 0, 0, 0, 10));
-      axle(cyl(spin, r * 0.42, 0.1, spec.colors.hub, 0, 0, 0, 10));
+    if (spec.addon === 'hubs' || spec.addon === 'joystick') {
+      const big = spec.addon === 'hubs' ? 1 : 0.8;
+      axle(cyl(spin, r * 0.5 * big, 0.07, spec.colors.accent, 0, 0, 0, 10));
+      axle(cyl(spin, r * 0.42 * big, 0.1, spec.colors.hub, 0, 0, 0, 10));
     } else {
       axle(cyl(spin, r * 0.14, 0.09, spec.colors.hub, 0, 0, 0, 6));
     }
@@ -162,6 +163,7 @@ const DRIVERS: Record<VehicleSpec['id'], DriverStyle> = {
   avanti: { shirt: 0x1c1c1f, trousers: 0x2b2b30, hair: 0x3a2a1a, arms: 'rest', hat: 0x1e88e5 },
   orkan: { shirt: 0x5b6b3a, trousers: 0x4a4034, hair: 0x6b4a2b, arms: 'rest', hat: 0xb71c1c, beard: 0x6b4a2b },
   eskalation: { shirt: 0xf2f2f2, trousers: 0x25252a, hair: 0x2a2018, arms: 'rims', hat: 0x7b2d8e },
+  enix: { shirt: 0x4a7ab5, trousers: 0x55504a, hair: 0xcfcfcf, arms: 'rest', hat: 0x55504a },
   schubs: { shirt: 0xf0c020, trousers: 0x3c5a8a, hair: 0x8a5a2b, arms: 'rims', hat: 0x9ccc3c },
   ekaptn: { shirt: 0x5a3d2b, trousers: 0x2b2b30, hair: 0x4a3a2a, arms: 'forward', hat: 0x5a3d2b, scarf: 0xf2f2f2 },
   komet: { shirt: 0x3f8f5f, trousers: 0x8a6f4d, hair: 0xf0f0f0, arms: 'forward', hat: 0x8a8068 },
@@ -266,6 +268,18 @@ function buildManual(spec: VehicleSpec): VehicleModel {
   }
   box(root, 0.32, 0.02, 0.14, body, 0, g + 0.09, seatZ + 0.42); // footplate
 
+  if (spec.addon === 'joystick') {
+    box(root, 0.3, 0.1, 0.22, 0x1a1a1d, 0, seatY - 0.09, seatZ); // battery pack under the seat
+    box(root, 0.305, 0.02, 0.225, accent, 0, seatY - 0.05, seatZ);
+    for (const s of [1, -1]) box(root, 0.05, 0.03, 0.3, seat, s * 0.24, seatY + 0.2, seatZ); // armrest pads
+    // joystick on the right armrest (right is -X)
+    box(root, 0.07, 0.04, 0.09, 0x1a1a1d, -0.24, seatY + 0.22, seatZ + 0.19);
+    cyl(root, 0.011, 0.08, STEEL, -0.24, seatY + 0.28, seatZ + 0.19, 5);
+    box(root, 0.035, 0.035, 0.035, accent, -0.24, seatY + 0.33, seatZ + 0.19);
+    // attendant control on the left push handle
+    box(root, 0.06, 0.05, 0.08, 0x1a1a1d, 0.2, seatY + 0.58, seatZ - 0.32);
+    box(root, 0.03, 0.03, 0.03, accent, 0.2, seatY + 0.62, seatZ - 0.32);
+  }
   if (spec.addon === 'pusher') {
     // Drive unit hanging under the axle, with the little wheel trailing behind.
     const unit = spec.wheels.find((w) => w.drive)!;

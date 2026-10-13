@@ -119,6 +119,12 @@ export class View {
   /** Visual body sway on the springs: angle and angular velocity for roll and pitch. */
   private sway = { roll: 0, rollV: 0, pitch: 0, pitchV: 0, lastSpeed: 0, accel: 0 };
   private spinExtra: number[] = [];
+  private drift = 0;
+  /** Camera shake that dies away, e.g. after a landing. */
+  private shake = 0;
+  /** Body bouncing on the springs after a landing: offset and speed. */
+  private heave = { y: 0, v: 0 };
+  private restY = 0;
   private camYaw = 0;
   private camReady = false;
   private lean = 0;
@@ -203,6 +209,8 @@ export class View {
     if (this.model) this.scene.remove(this.model.root);
     this.model = buildVehicle(spec);
     this.scene.add(this.model.root);
+    this.restY = this.model.body.position.y;
+    this.heave = { y: 0, v: 0 };
     this.sway = { roll: 0, rollV: 0, pitch: 0, pitchV: 0, lastSpeed: 0, accel: 0 };
     this.camReady = false;
   }
@@ -219,6 +227,11 @@ export class View {
     this.time += dt;
 
     place(model.root, v.tracked, alpha);
+    // Drift look: under cornering load the model swings its tail out, so from behind
+    // you get to see a bit of its flank. The physics keeps going where it was going.
+    const load = Math.max(-1, Math.min(1, v.latAccel / 8)) * Math.min(1, Math.abs(v.speed) / 5);
+    this.drift += (load * HANDLING.driftAngle * (v.wheelsOnGround > 0 ? 1 : 0.3) - this.drift) * Math.min(1, dt * 5);
+    model.root.rotateY(this.drift);
     v.spec.wheels.forEach((w, i) => {
       const m = model.wheels[i];
       m.pivot.position.y = w.y - v.wheelSuspension(i);
@@ -227,10 +240,15 @@ export class View {
       if (w.drive) this.spinExtra[i] = (this.spinExtra[i] ?? 0) + v.burnout * dt * 45;
       m.spin.rotation.x = v.wheelSpin(i) + (this.spinExtra[i] ?? 0);
     });
-    this.swayBody(model, v.yawRate * v.speed, v.speed, v.wheelsOnGround > 0, dt);
+    this.swayBody(model, v.latAccel, v.speed, v.wheelsOnGround > 0, dt);
+    // Landing: the body slams down on the springs and bounces back.
+    const hh = Math.min(dt, 0.05);
+    this.heave.v += (-this.heave.y * 140 - this.heave.v * 9) * hh;
+    this.heave.y = Math.max(-0.12, this.heave.y + this.heave.v * hh);
+    model.body.position.y = this.restY + this.heave.y;
     this.skids.update(v, dt);
     // The driver leans out of the corner, a lot.
-    const target = Math.max(-0.45, Math.min(0.45, v.yawRate * v.speed * 0.05));
+    const target = Math.max(-0.45, Math.min(0.45, v.latAccel * 0.05));
     this.lean += (target - this.lean) * Math.min(1, dt * 6);
     model.driver.rotation.z = this.lean;
     // Pushing the rims: both arms swing with the stroke.
@@ -244,7 +262,7 @@ export class View {
     });
 
     if (showroom) this.showroomCamera(model.root.position, v.yaw);
-    else this.updateCamera(model.root.position, v.yaw, Math.abs(v.speed), dt);
+    else this.updateCamera(model.root.position, v.yaw, v, dt);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -286,7 +304,18 @@ export class View {
     this.camReady = false;
   }
 
-  private updateCamera(pos: Vector3, yaw: number, speed: number, dt: number): void {
+  /** A landing with this sink rate (m/s): shake the camera and slam the body down. */
+  bump(sinkRate: number): void {
+    const hit = Math.min(1, sinkRate / 9);
+    this.shake = Math.max(this.shake, hit);
+    this.heave.v -= 0.6 + hit * 1.6;
+  }
+
+  private updateCamera(pos: Vector3, heading: number, v: GameCore['sim']['vehicle'], dt: number): void {
+    const speed = Math.abs(v.speed);
+    // Follow where it is going rather than where it points: in a drift the vehicle
+    // then shows its flank.
+    const yaw = heading - v.slip * Math.min(1, speed / 4);
     if (!this.camReady) {
       this.camYaw = yaw;
       this.camReady = true;
@@ -299,8 +328,16 @@ export class View {
     const dist = 3.0 + speed * 0.14;
     const height = 1.7 + speed * 0.04;
     const sx = Math.sin(this.camYaw), cz = Math.cos(this.camYaw);
-    this.camera.position.set(pos.x - sx * dist, Math.max(0.5, pos.y + height), pos.z - cz * dist);
+    // A little life: a bob that grows with speed, a jolt after landings.
+    this.shake = Math.max(0, this.shake - dt * 2.2);
+    const grounded = v.wheelsOnGround > 0 ? 1 : 0.3;
+    const bob = Math.sin(this.time * (7 + speed * 0.5)) * Math.min(0.018, speed * 0.0016) * grounded;
+    const jx = Math.sin(this.time * 61) * this.shake * 0.07;
+    const jy = Math.sin(this.time * 47) * this.shake * 0.12;
+    this.camera.position.set(pos.x - sx * dist + cz * jx, Math.max(0.5, pos.y + height + bob + jy), pos.z - cz * dist - sx * jx);
     this.camera.lookAt(pos.x + sx * 1.5, pos.y + 0.55, pos.z + cz * 1.5);
+    // Bank into the corner a touch.
+    this.camera.rotateZ(Math.max(-0.06, Math.min(0.06, v.latAccel * 0.004)));
     // Wider lens at speed: 60 km/h in a wheelchair should look terrifying.
     const fov = 58 + Math.min(34, speed * 2);
     if (Math.abs(fov - this.camera.fov) > 0.05) {

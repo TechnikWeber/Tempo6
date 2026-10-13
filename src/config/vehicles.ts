@@ -1,7 +1,7 @@
 export type VehicleId =
   | 'trex' | 'avanti' | 'avantifx' | 'orkan'
   | 'arrivo'
-  | 'eskalation' | 'schubs'
+  | 'eskalation' | 'enix' | 'schubs'
   | 'ekaptn'
   | 'piepmatz' | 'tiger' | 'komet' | 'wagen';
 
@@ -121,7 +121,7 @@ export interface VehicleSpec {
   look: Look;
   colors: { body: number; accent: number; seat: number; hub: number };
   /** Add-on drive shown on a manual chair. */
-  addon?: 'hubs' | 'pusher' | 'tractor';
+  addon?: 'hubs' | 'joystick' | 'pusher' | 'tractor';
 }
 
 /** How far the springs sit compressed at rest. */
@@ -347,12 +347,46 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.47,
     speedFactor: 0.9,
     accelFactor: 1.25,
-    tipFactor: 1.25,
+    tipFactor: 0.95,
     gripFactor: 1,
     pushRhythm: true,
     look: 'manual',
     addon: 'hubs',
     colors: { body: 0x2a2a2e, accent: PURPLE, seat: 0x1b1b1f, hub: 0xf2f2f2 },
+  }),
+
+  enix: define({
+    id: 'enix',
+    label: 'e-nix',
+    profiles: [
+      BASE,
+      prof('Begleitperson', 'Jemand anderes lenkt von hinten. Vorsichtig. Sehr vorsichtig.', { accel: 0.7, turn: 0.7, speed: 0.85, tip: 0.7, brake: 1.2 }),
+      prof('Joystick-Junkie', 'Daumen am Anschlag, immer.', { accel: 1.4, turn: 1.4, sharp: 1.3, tip: 1.2 }),
+    ],
+    category: 'push',
+    kind: 'Faltrollstuhl · Radnabenmotoren mit Joystick',
+    blurb: 'Macht aus dem Faltrollstuhl einen Elektrorollstuhl. Fährt per Joystick, auf Wunsch lenkt die Begleitung von hinten.',
+    stats: { tempo: 2, antritt: 3, wendig: 4, standfest: 3 },
+    unlockPrice: 1500,
+    mass: 110,
+    half: [0.28, 0.2, 0.4],
+    clearance: 0.2,
+    com: [0, -0.08, 0],
+    inertia: [13, 11, 8],
+    wheels: [
+      ...pair(0.31, { z: -0.15, radius: 0.3, load: 0.34, drive: true, turn: true }),
+      ...pair(0.2, { z: 0.32, radius: 0.06, load: 0.16, caster: true }),
+    ],
+    maxYawRate: 2.6,
+    maxSteer: 0,
+    wheelbase: 0.47,
+    speedFactor: 0.95,
+    accelFactor: 1,
+    tipFactor: 1.1,
+    gripFactor: 1,
+    look: 'manual',
+    addon: 'joystick',
+    colors: { body: 0x2a2a2e, accent: PURPLE, seat: 0x1b1b1f, hub: 0x2a2a2e },
   }),
 
   schubs: define({
@@ -383,7 +417,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.47,
     speedFactor: 1,
     accelFactor: 1,
-    tipFactor: 1.2,
+    tipFactor: 0.95,
     gripFactor: 1,
     handSteer: 4,
     look: 'manual',
@@ -418,7 +452,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.95,
     speedFactor: 1.3,
     accelFactor: 1,
-    tipFactor: 0.55,
+    tipFactor: 0.3,
     gripFactor: 1,
     look: 'manual',
     addon: 'tractor',
@@ -452,7 +486,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.65,
     speedFactor: 0.85,
     accelFactor: 1.15,
-    tipFactor: 1.2,
+    tipFactor: 0.85,
     gripFactor: 1,
     look: 'scooter',
     colors: { body: 0x19b5a5, accent: 0xffd23f, seat: 0x24262b, hub: 0xd9d9d9 },
@@ -485,7 +519,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.78,
     speedFactor: 0.95,
     accelFactor: 1.05,
-    tipFactor: 1,
+    tipFactor: 0.8,
     gripFactor: 1,
     look: 'scooter',
     colors: { body: 0xd97a1e, accent: 0x1a1a1a, seat: 0x24262b, hub: 0xd9d9d9 },
@@ -518,7 +552,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.87,
     speedFactor: 1,
     accelFactor: 1,
-    tipFactor: 1,
+    tipFactor: 0.8,
     gripFactor: 1,
     look: 'scooter',
     colors: { body: 0xb3202a, accent: 0xff7a00, seat: 0x24262b, hub: 0xd9d9d9 },
@@ -562,7 +596,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
   { id: 'power', title: 'Vollpower Wheelchairs', vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
   { id: 'folder', title: 'One-Piece-Falter', vehicles: ['arrivo'] },
-  { id: 'push', title: 'Schubshilfen', vehicles: ['eskalation', 'schubs'] },
+  { id: 'push', title: 'Schubshilfen', vehicles: ['eskalation', 'enix', 'schubs'] },
   { id: 'tractor', title: 'Zugmaschinen', vehicles: ['ekaptn'] },
   { id: 'scooter', title: 'Rentnerblitze', vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
 ];
@@ -579,20 +613,24 @@ export const HANDLING = {
   /** Tyre grip (friction coefficient of the raycast wheels). */
   grip: 2.0,
   /** Full lock asks for this much lateral acceleration (m/s²). Above about g·0.3/tipHeight the inner wheels lift. */
-  lateralAccel: 10,
+  lateralAccel: 12,
+  /** How far (rad) the model swings its tail out under full cornering load. Looks only. */
+  driftAngle: 0.2,
+  /** In the air the chassis rights itself so it lands on its wheels. 0 = tumble freely. */
+  airControl: 1,
   /**
    * Height (m) at which cornering force pushes the chassis over. The physics engine
    * applies tyre forces almost at the centre of mass, so the roll is added by hand.
    * 0 = never leans, higher = tips earlier.
    */
-  tipHeight: 0.36,
+  tipHeight: 0.22,
   /**
    * Eases off the steering as the vehicle leans, which is what lets it balance on two
    * wheels instead of going straight over. 0 = no help, 1 = steering fully gone at tipAngle.
    */
   tipAssist: 1,
   /** Lean angle (rad) at which the assist has taken away all steering. */
-  tipAngle: 0.45,
+  tipAngle: 0.55,
   /** How far ahead (s) the assist extrapolates the lean. */
   tipLookahead: 0.25,
   /** Damps the rocking from side to side (N·m·s/rad). Higher = leans over more slowly. */

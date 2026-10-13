@@ -106,6 +106,22 @@ export class Sound {
     this.blip([659, 784, 1047], 0.12);
   }
 
+  /** Landing: a short low thump, louder the harder it comes down. */
+  thud(sinkRate: number): void {
+    if (!this.ctx || !this.master) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(110, t);
+    o.frequency.exponentialRampToValueAtTime(38, t + 0.18);
+    g.gain.setValueAtTime(Math.min(0.6, 0.15 + sinkRate * 0.05), t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g).connect(this.master);
+    o.start(t);
+    o.stop(t + 0.3);
+  }
+
   nope(): void {
     this.blip([180, 140], 0.12, 'sawtooth', 0.18);
   }

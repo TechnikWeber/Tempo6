@@ -199,7 +199,8 @@ kbd {
 #menu .card.on { border-color: var(--accent); border-left-color: var(--tint); background: rgb(40 44 52 / 0.92); }
 #menu .card.locked strong, #menu .card.locked small, #menu .card.locked span { opacity: 0.5; }
 
-#menu .garage { overflow-y: auto; min-height: 0; padding-right: 4px; }
+#menu .garage { overflow: hidden auto; min-height: 0; padding-right: 4px; }
+#menu .garage .card { min-width: 0; overflow-wrap: anywhere; }
 #menu .garage h2 { margin-top: 12px; }
 #menu .garage h2:first-child { margin-top: 0; }
 #menu .garage .card { padding: 7px 10px; }

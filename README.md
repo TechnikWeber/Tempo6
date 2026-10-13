@@ -4,7 +4,7 @@
 
 A browser racing game with power wheelchairs and mobility scooters. You start at the legal 6 km/h, collect deposit bottles on a supermarket car park, and spend the money on increasingly questionable tuning until 75 km/h.
 
-Status: playable prototype with a start screen, two tracks, twelve vehicles and a tuning ladder.
+Status: playable prototype with a start screen, two tracks, thirteen vehicles and a tuning ladder.
 
 ## Vehicles
 
@@ -20,6 +20,7 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 | Orkan 4 | Power wheelchairs | Heavy rear-wheel drive, very stable |
 | Arrivo Karton | One-piece folder | Light folding power chair, nimble |
 | e-skalation | Push assist | Hub motors, thrust in push strokes |
+| e-nix | Push assist | Hub motors with a joystick, optional attendant control |
 | schubs one | Push assist | Pusher wheel at the back, steered and braked by hand |
 | e-käpt'n | Tractor unit | Front-mounted drive, three wheels, fastest |
 | Piepmatz | Mobility scooters | Tiny, agile, tippy |
