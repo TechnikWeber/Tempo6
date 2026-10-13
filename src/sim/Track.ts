@@ -34,16 +34,17 @@ export interface DecorDef {
   /**
    * `board` is an upright panel with `text` on both sides, `label` the same painted flat on
    * the ground, `ring` a painted circle (`half` is radius, 0, half line width), `path` a
-   * painted closed band along `points` (`half[0]` is half its width).
+   * painted closed band along `points` (`half[0]` is half its width), `slab` a flat lid
+   * filling the outline `points` at the height of `pos`.
    */
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path';
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab';
   pos: [number, number, number];
   half?: [number, number, number];
   color?: number;
   text?: string;
   /** Heading in rad, 0 = facing +Z. */
   yaw?: number;
-  /** Corners of a `path`, x and z. */
+  /** Corners of a `path` or `slab`, x and z. */
   points?: [number, number][];
 }
 

@@ -2,7 +2,7 @@ import {
   AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
   Float32BufferAttribute, Fog, Group,
   HemisphereLight, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
-  Quaternion, RingGeometry, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
+  Quaternion, RingGeometry, Scene, Shape, ShapeGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
 } from 'three';
 import { HANDLING, type VehicleSpec } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
@@ -134,6 +134,13 @@ function buildDecor(d: DecorDef): Object3D {
       geo.setIndex(index);
       geo.computeVertexNormals();
       const m = new Mesh(geo, mat(d.color ?? 0xffffff));
+      m.receiveShadow = true;
+      g.add(m);
+      break;
+    }
+    case 'slab': {
+      const m = new Mesh(new ShapeGeometry(new Shape((d.points ?? []).map(([x, z]) => new Vector2(x, -z)))), mat(d.color ?? 0xffffff));
+      m.rotation.x = -Math.PI / 2;
       m.receiveShadow = true;
       g.add(m);
       break;
