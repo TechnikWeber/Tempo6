@@ -45,6 +45,7 @@ npm run build    # statischer Build in dist/
 | --- | --- | --- |
 | Fahren / lenken | WASD oder Pfeiltasten | Trigger / linker Stick |
 | Handbremse | Leertaste | A |
+| Boost (Kondensator) | Umschalt oder B | B / RB |
 | Nächste Tuning-Stufe kaufen | T | X |
 | Aufrichten | R | Y |
 | Level neu starten | Rücktaste | Back |

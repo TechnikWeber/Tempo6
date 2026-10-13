@@ -1,4 +1,4 @@
-import { formatMoney } from '../config/tuning';
+import { BOOST, formatMoney } from '../config/tuning';
 import type { GameCore } from '../sim/GameCore';
 
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -24,13 +24,31 @@ export class Hud {
   private readonly tune = el<HTMLButtonElement>('tune');
   private readonly toastEl = el('toast');
   private readonly flipped = el('flipped');
+  private readonly boostRow = el('boost-row');
+  private readonly boostBar = el('boost-bar');
+  private readonly buyBoost = el<HTMLButtonElement>('buy-boost');
+  private readonly fx = el('boost-fx');
+  private fxLevel = -1;
   private toastTimer = 0;
 
-  constructor(onTune: () => void) {
+  constructor(onTune: () => void, onBuyBoost: () => void) {
     this.tune.addEventListener('click', () => {
       onTune();
       this.tune.blur();
     });
+    this.buyBoost.addEventListener('click', () => {
+      onBuyBoost();
+      this.buyBoost.blur();
+    });
+  }
+
+  /** Speed streaks around the edge of the screen. @param level 0…1 */
+  boostFx(level: number): void {
+    const l = Math.round(level * 50) / 50;
+    if (l === this.fxLevel) return;
+    this.fxLevel = l;
+    this.fx.style.opacity = String(l);
+    this.fx.hidden = l === 0;
   }
 
   private set(e: HTMLElement, text: string): void {
@@ -82,5 +100,19 @@ export class Hud {
     }
     this.tune.classList.toggle('ready', progress.canTune);
     this.flipped.hidden = core.flippedFor < 1;
+
+    const v = sim.vehicle;
+    this.boostRow.hidden = !v.boostFitted;
+    if (v.boostFitted) {
+      this.boostBar.style.width = `${(v.boostCharge * 100).toFixed(0)}%`;
+      this.boostRow.classList.toggle('on', v.boosting);
+      this.boostRow.classList.toggle('low', !v.boosting && v.boostCharge < BOOST.minCharge);
+    }
+    this.buyBoost.hidden = v.boostFitted;
+    if (!v.boostFitted) {
+      const missing = BOOST.price - progress.money;
+      this.set(this.buyBoost, missing <= 0 ? `[K] Kondensator: Boost! (${formatMoney(BOOST.price)})` : `Kondensator (Boost) · noch ${formatMoney(missing)}`);
+      this.buyBoost.classList.toggle('ready', missing <= 0);
+    }
   }
 }

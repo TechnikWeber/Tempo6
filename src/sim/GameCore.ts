@@ -1,4 +1,4 @@
-import { PICKUP_VALUE, type TuningStage } from '../config/tuning';
+import { BOOST, PICKUP_VALUE, type TuningStage } from '../config/tuning';
 import { VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from './Progress';
 import { Race } from './Race';
@@ -11,6 +11,8 @@ export interface GameInput extends DriveInput {
   upright: boolean;
   respawn: boolean;
   tune: boolean;
+  /** Buy the boost capacitor. */
+  buyBoost?: boolean;
 }
 
 export type GameEvent =
@@ -19,6 +21,8 @@ export type GameEvent =
   | { type: 'lap'; time: number; best: boolean }
   | { type: 'tuned'; stage: TuningStage }
   | { type: 'broke'; missing: number }
+  | { type: 'boostBought' }
+  | { type: 'boost' }
   | { type: 'land'; speed: number };
 
 const PICKUP_RADIUS = 1.0;
@@ -47,6 +51,7 @@ export class GameCore {
     const v = this.sim.vehicle;
     const spec = v.spec;
     v.profile = spec.profiles[this.profileIndex] ?? spec.profiles[0];
+    v.boostFitted = this.progress.hasBoost;
     v.setMotor((s.topSpeedKmh * spec.speedFactor * v.profile.speed) / 3.6, s.accel * spec.accelFactor * v.profile.accel);
   }
 
@@ -107,9 +112,20 @@ export class GameCore {
       }
     }
 
+    if (input.buyBoost && !progress.hasBoost) {
+      if (progress.buyBoost()) {
+        this.applyStage();
+        this.events.push({ type: 'boostBought' });
+      } else {
+        this.events.push({ type: 'broke', missing: BOOST.price - progress.money });
+      }
+    }
+
+    const wasBoosting = sim.vehicle.boosting;
     sim.step(input);
 
     const v = sim.vehicle;
+    if (v.boosting && !wasBoosting) this.events.push({ type: 'boost' });
     const p = v.body.translation();
     if (v.landing > 0) {
       this.events.push({ type: 'land', speed: v.landing });

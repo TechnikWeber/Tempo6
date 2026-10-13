@@ -45,6 +45,7 @@ npm run build    # static build in dist/
 | --- | --- | --- |
 | Drive / steer | WASD or arrow keys | Triggers / left stick |
 | Handbrake | Space | A |
+| Boost (capacitor) | Shift or B | B / RB |
 | Buy next tuning stage | T | X |
 | Back on the wheels | R | Y |
 | Restart the level | Backspace | Back |

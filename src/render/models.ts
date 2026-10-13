@@ -1,4 +1,4 @@
-import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
+import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
 import { PROP_SHAPES, type PickupType, type PropType } from '../sim/Track';
 import { BRAND_COLORS, groundY, type VehicleSpec, type WheelSpec } from '../config/vehicles';
 
@@ -45,11 +45,19 @@ export interface VehicleModel {
   driver: Group;
   /** Shoulder pivots that swing when pushing the rims. */
   arms: Group[];
+  /** Where the battery sits. */
+  battery: [number, number, number];
+  /** Where a boost capacitor gets strapped on, on the driver's left. */
+  capacitor: [number, number, number];
 }
 
 /** A built model plus the sprung part: everything but the wheels, swaying on the suspension. */
-export interface VehicleRig extends VehicleModel {
+export interface VehicleRig extends Omit<VehicleModel, 'battery' | 'capacitor'> {
   body: Group;
+  /** Battery position inside `body`. */
+  battery: Vector3;
+  /** Where the capacitor's legs end, inside `body`; null if none is fitted. */
+  terminals: Vector3 | null;
 }
 
 /** Small plate in the maker's colour; the only branding there is. */
@@ -240,7 +248,12 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.04, -0.14);
   root.add(d.group);
-  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
+  const baseZ = spec.look === 'mid' ? 0 : heavy ? -0.06 : spec.look === 'front' ? 0.1 : -0.1;
+  return {
+    root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms,
+    battery: [0, -0.08, baseZ],
+    capacitor: [0.4, seatY + 0.07, -0.1],
+  };
 }
 
 /** Folding manual chair with one of the add-on drives. */
@@ -329,7 +342,17 @@ function buildManual(spec: VehicleSpec): VehicleModel {
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.02, seatZ - 0.1);
   root.add(d.group);
-  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
+  const drive = spec.wheels.find((w) => w.drive)!;
+  const battery: [number, number, number] =
+    spec.addon === 'tractor' ? [0, g + drive.radius + 0.42, drive.z - 0.14]
+    : spec.addon === 'pusher' ? [0, g + 0.2, drive.z + 0.06]
+    : [0, seatY - 0.09, seatZ];
+  return {
+    root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms,
+    battery,
+    // high on the back tube, clear of the big wheel and the pushing hand
+    capacitor: [0.3, seatY + 0.42, seatZ - 0.27],
+  };
 }
 
 function buildScooter(spec: VehicleSpec): VehicleModel {
@@ -368,7 +391,11 @@ function buildScooter(spec: VehicleSpec): VehicleModel {
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, 0.36, seatZ - 0.06);
   root.add(d.group);
-  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
+  return {
+    root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms,
+    battery: [0, -0.02, -L * 0.63],
+    capacitor: [w / 2 + 0.11, 0.12, -L * 0.6],
+  };
 }
 
 /** Slim folding power chair: carbon side frames instead of a battery base. */
@@ -408,7 +435,11 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.02, -0.1);
   root.add(d.group);
-  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
+  return {
+    root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms,
+    battery: [0, seatY - 0.08, -0.04],
+    capacitor: [0.37, seatY + 0.06, -0.06],
+  };
 }
 
 function buildModel(spec: VehicleSpec): VehicleModel {
@@ -418,8 +449,67 @@ function buildModel(spec: VehicleSpec): VehicleModel {
   return buildPowerchair(spec);
 }
 
-export function buildVehicle(spec: VehicleSpec): VehicleRig {
+const ROD_AXIS = new Vector3(0, 0, 1);
+
+/** A thin bar from `a` to `b`. */
+function rod(parent: Object3D, a: Vector3, b: Vector3, thick: number, color: number): void {
+  const m = box(parent, thick, thick, a.distanceTo(b), color);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.copy(new Quaternion().setFromUnitVectors(ROD_AXIS, b.clone().sub(a).normalize()));
+}
+
+/**
+ * The boost capacitor: an oversized electrolytic can, black with the white minus stripe,
+ * lying along the side with its two legs wired to the battery.
+ * @returns where the legs end
+ */
+function capacitor(root: Group, at: [number, number, number], battery: [number, number, number]): Vector3 {
+  const [x, y, z] = at;
+  const R = 0.085, LEN = 0.28;
+  const g = new Group();
+  g.position.set(x, y, z);
+  const can = cyl(g, R, LEN, 0x15151a, 0, 0, 0, 14);
+  can.rotation.x = Math.PI / 2;
+  const top = cyl(g, R * 0.86, 0.012, 0xb9bec6, 0, 0, -LEN / 2 - 0.004, 14); // aluminium end with the vent
+  top.rotation.x = Math.PI / 2;
+  box(g, 0.1, 0.008, 0.008, 0x6d727a, 0, 0, -LEN / 2 - 0.011);
+  box(g, 0.008, 0.1, 0.008, 0x6d727a, 0, 0, -LEN / 2 - 0.011);
+  const base = cyl(g, R * 0.9, 0.012, 0x2a2a30, 0, 0, LEN / 2 + 0.004, 14); // rubber bung
+  base.rotation.x = Math.PI / 2;
+  // The stripe faces up and out, where it can be seen; minus signs on it.
+  const stripe = new Group();
+  stripe.rotation.z = -0.75;
+  g.add(stripe);
+  box(stripe, 0.075, 0.012, LEN - 0.03, 0xf4f4f4, 0, R - 0.002, 0);
+  for (let i = -2; i <= 2; i++) box(stripe, 0.04, 0.014, 0.014, 0x15151a, 0, R - 0.002, i * 0.05);
+  // Straps holding it to the chair.
+  for (const sz of [-0.08, 0.08]) {
+    const band = cyl(g, R + 0.006, 0.025, STEEL, 0, 0, sz, 14);
+    band.rotation.x = Math.PI / 2;
+    box(g, 0.1, 0.03, 0.025, STEEL, -R - 0.03, 0, sz);
+  }
+  root.add(g);
+
+  // Two legs out of the front end, then a red and a black cable to the battery.
+  const legZ = z + LEN / 2 + 0.07;
+  const ends: Vector3[] = [];
+  for (const [dx, color] of [[0.03, 0xc62828], [-0.03, 0x111111]] as const) {
+    const a = new Vector3(x + dx, y, z + LEN / 2);
+    const b = new Vector3(x + dx, y, legZ);
+    rod(root, a, b, 0.014, 0xc9ced6);
+    const mid = new Vector3(battery[0] + Math.sign(x) * 0.18 + dx, (y + battery[1]) / 2 - 0.03, (legZ + battery[2]) / 2 + 0.04);
+    const end = new Vector3(battery[0] + Math.sign(x) * 0.1 + dx, battery[1] + 0.02, battery[2]);
+    rod(root, b, mid, 0.018, color);
+    rod(root, mid, end, 0.018, color);
+    ends.push(b);
+  }
+  return ends[0].add(ends[1]).multiplyScalar(0.5);
+}
+
+/** @param boost fit the boost capacitor */
+export function buildVehicle(spec: VehicleSpec, boost = false): VehicleRig {
   const m = buildModel(spec);
+  const terminals = boost ? capacitor(m.root, m.capacitor, m.battery) : null;
   // Everything except the wheels goes into one group that pivots near axle height.
   const body = new Group();
   const pivotY = groundY(spec) + 0.15;
@@ -431,7 +521,9 @@ export function buildVehicle(spec: VehicleSpec): VehicleRig {
     body.add(child);
   }
   m.root.add(body);
-  return { ...m, body };
+  terminals?.setY(terminals.y - pivotY);
+  const battery = new Vector3(m.battery[0], m.battery[1] - pivotY, m.battery[2]);
+  return { root: m.root, wheels: m.wheels, driver: m.driver, arms: m.arms, body, battery, terminals };
 }
 
 export function buildProp(type: PropType): Group {

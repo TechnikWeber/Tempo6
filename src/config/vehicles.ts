@@ -226,7 +226,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     label: 'Avanti FX',
     profiles: [
       BASE,
-      prof('Heckschleuder', 'Das Heck macht, was es will.', { fwdStability: 0.55, turn: 1.3, sharp: 1.3, grip: 0.85 }),
+      prof('Heckschleuder', 'Das Heck macht, was es will.', { fwdStability: 0.95, turn: 1.15, sharp: 1.2 }),
       prof('Zugpferd', 'Zieht wie ein Trecker, läuft ruhig.', { accel: 1.4, speed: 0.9, fwdStability: 1.2, turn: 0.85, tip: 0.8 }),
     ],
     category: 'power',
@@ -248,7 +248,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.63,
     speedFactor: 1,
     accelFactor: 1.05,
-    tipFactor: 1,
+    tipFactor: 0.8,
     gripFactor: 1,
     look: 'front',
     colors: { body: 0x17181c, accent: 0x29b6f6, seat: 0x101114, hub: 0x29b6f6 },
@@ -486,7 +486,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     wheelbase: 0.65,
     speedFactor: 0.85,
     accelFactor: 1.15,
-    tipFactor: 0.85,
+    tipFactor: 0.7,
     gripFactor: 1,
     look: 'scooter',
     colors: { body: 0x19b5a5, accent: 0xffd23f, seat: 0x24262b, hub: 0xd9d9d9 },
@@ -614,8 +614,23 @@ export const HANDLING = {
   grip: 2.0,
   /** Full lock asks for this much lateral acceleration (m/s²). Above about g·0.3/tipHeight the inner wheels lift. */
   lateralAccel: 12,
+  /**
+   * Full lock also asks for at least this rate of turn (rad/s), whatever the speed. This is
+   * what keeps the corners tight when it gets fast; 0 = radius grows with the square of the speed.
+   */
+  cornerYaw: 1.3,
+  /** …but for no more sideways pull than this (m/s²). Reached at about 80 km/h; faster than that the corners widen again. */
+  cornerMax: 28,
+  /** Extra tyre grip per m/s of speed, as a share. Has to keep up with `cornerYaw`. */
+  gripAtSpeed: 0.07,
+  /** Full lock uses at most this share of what the tyres can hold sideways. Above 1 it slides. */
+  gripUse: 0.85,
+  /** Differential steering: share of the turning force the motors cannot spare that is made up on the chassis. */
+  steerAssist: 1,
+  /** The same for steering by hand on the push rims, where being weak is part of the character. */
+  handAssist: 0.5,
   /** How far (rad) the model swings its tail out under full cornering load. Looks only. */
-  driftAngle: 0.2,
+  driftAngle: 0.32,
   /** In the air the chassis rights itself so it lands on its wheels. 0 = tumble freely. */
   airControl: 1,
   /**
@@ -623,22 +638,34 @@ export const HANDLING = {
    * applies tyre forces almost at the centre of mass, so the roll is added by hand.
    * 0 = never leans, higher = tips earlier.
    */
-  tipHeight: 0.22,
+  tipHeight: 0.1,
+  /**
+   * The physics engine leans the chassis a little by itself, with a lever of this share of
+   * the centre-of-mass height. Cancelled for the part of the cornering force that only
+   * comes from going fast.
+   */
+  tipInherent: 0.3,
   /**
    * Eases off the steering as the vehicle leans, which is what lets it balance on two
    * wheels instead of going straight over. 0 = no help, 1 = steering fully gone at tipAngle.
    */
   tipAssist: 1,
+  /** Lean (rad) the assist ignores: this much is the suspension doing its job. */
+  tipFree: 0.12,
   /** Lean angle (rad) at which the assist has taken away all steering. */
   tipAngle: 0.55,
   /** How far ahead (s) the assist extrapolates the lean. */
   tipLookahead: 0.25,
+  /** Pull back towards level, as a share of the weight per rad of lean. Trikes get more of their own. */
+  righting: 0.08,
   /** Damps the rocking from side to side (N·m·s/rad). Higher = leans over more slowly. */
   rollDamping: 110,
   /** Proportional gain of the wheel speed controller (1/s). */
   motorGain: 6,
   /** Gain on the yaw rate error of differential drive (1/s). */
   yawGain: 20,
+  /** Handlebar steering: how hard a spin is reined in (1/s). 0 = let it spin. */
+  spinGuard: 40,
   /** Front-wheel drive: share of the tail-happy yaw torque that gets cancelled. Below 1 the rear steps out. */
   fwdStability: 0.9,
   /** Deceleration when letting go of the stick: the magnetic brake bites (m/s²). */

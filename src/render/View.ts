@@ -8,6 +8,7 @@ import type { GameCore } from '../sim/GameCore';
 import type { DecorDef, TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
 import { box, buildPickup, buildProp, buildVehicle, mat, type VehicleRig } from './models';
+import { Sparks } from './Boost';
 import { SkidMarks } from './Skid';
 
 const SKY = 0x9fd3f0;
@@ -119,7 +120,11 @@ export class View {
   /** Visual body sway on the springs: angle and angular velocity for roll and pitch. */
   private sway = { roll: 0, rollV: 0, pitch: 0, pitchV: 0, lastSpeed: 0, accel: 0 };
   private spinExtra: number[] = [];
+  /** Tail-out angle of the model and how fast it is swinging. */
   private drift = 0;
+  private driftV = 0;
+  private sparks: Sparks | null = null;
+  private fitted = false;
   /** Camera shake that dies away, e.g. after a landing. */
   private shake = 0;
   /** Body bouncing on the springs after a landing: offset and speed. */
@@ -205,9 +210,13 @@ export class View {
     this.camera.updateProjectionMatrix();
   }
 
-  setVehicle(spec: VehicleSpec): void {
+  /** @param boost show the boost capacitor on it */
+  setVehicle(spec: VehicleSpec, boost: boolean): void {
     if (this.model) this.scene.remove(this.model.root);
-    this.model = buildVehicle(spec);
+    this.model = buildVehicle(spec, boost);
+    this.fitted = boost;
+    this.sparks = new Sparks(this.model.body, this.model.battery, this.model.terminals);
+    this.drift = this.driftV = 0;
     this.scene.add(this.model.root);
     this.restY = this.model.body.position.y;
     this.heave = { y: 0, v: 0 };
@@ -220,18 +229,25 @@ export class View {
    * @param showroom circle the camera around the parked vehicle (start screen)
    */
   render(core: GameCore, alpha: number, dt: number, showroom = false): void {
+    const v = core.sim.vehicle;
+    // The capacitor shows up on the vehicle the moment it is bought.
+    if (this.model && v.boostFitted !== this.fitted) this.setVehicle(v.spec, v.boostFitted);
     const model = this.model;
     const track = this.track;
     if (!model || !track) return;
-    const v = core.sim.vehicle;
     this.time += dt;
 
     place(model.root, v.tracked, alpha);
     // Drift look: under cornering load the model swings its tail out, so from behind
     // you get to see a bit of its flank. The physics keeps going where it was going.
-    const load = Math.max(-1, Math.min(1, v.latAccel / 8)) * Math.min(1, Math.abs(v.speed) / 5);
-    this.drift += (load * HANDLING.driftAngle * (v.wheelsOnGround > 0 ? 1 : 0.3) - this.drift) * Math.min(1, dt * 5);
+    // It swings out on a soft spring, so it wags back once when the corner is over.
+    const load = Math.max(-1, Math.min(1, v.latAccel / 9)) * Math.min(1, Math.abs(v.speed) / 4);
+    const driftTo = load * HANDLING.driftAngle * (v.wheelsOnGround > 0 ? 1 : 0.3);
+    const dh = Math.min(dt, 0.05);
+    this.driftV += ((driftTo - this.drift) * 60 - this.driftV * 7.5) * dh;
+    this.drift += this.driftV * dh;
     model.root.rotateY(this.drift);
+    this.sparks?.update(showroom ? 0 : v.boost, dt);
     v.spec.wheels.forEach((w, i) => {
       const m = model.wheels[i];
       m.pivot.position.y = w.y - v.wheelSuspension(i);
@@ -325,21 +341,22 @@ export class View {
     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
     this.camYaw += diff * (1 - Math.exp(-dt * 3.5));
 
-    const dist = 3.0 + speed * 0.14;
+    // Under boost the camera falls back a little, as if left behind.
+    const dist = 3.0 + speed * 0.14 + v.boost * 0.6;
     const height = 1.7 + speed * 0.04;
     const sx = Math.sin(this.camYaw), cz = Math.cos(this.camYaw);
     // A little life: a bob that grows with speed, a jolt after landings.
     this.shake = Math.max(0, this.shake - dt * 2.2);
     const grounded = v.wheelsOnGround > 0 ? 1 : 0.3;
     const bob = Math.sin(this.time * (7 + speed * 0.5)) * Math.min(0.018, speed * 0.0016) * grounded;
-    const jx = Math.sin(this.time * 61) * this.shake * 0.07;
-    const jy = Math.sin(this.time * 47) * this.shake * 0.12;
+    const jx = Math.sin(this.time * 61) * (this.shake * 0.07 + v.boost * 0.012);
+    const jy = Math.sin(this.time * 47) * (this.shake * 0.12 + v.boost * 0.016);
     this.camera.position.set(pos.x - sx * dist + cz * jx, Math.max(0.5, pos.y + height + bob + jy), pos.z - cz * dist - sx * jx);
     this.camera.lookAt(pos.x + sx * 1.5, pos.y + 0.55, pos.z + cz * 1.5);
     // Bank into the corner a touch.
     this.camera.rotateZ(Math.max(-0.06, Math.min(0.06, v.latAccel * 0.004)));
     // Wider lens at speed: 60 km/h in a wheelchair should look terrifying.
-    const fov = 58 + Math.min(34, speed * 2);
+    const fov = 58 + Math.min(34, speed * 2) + v.boost * 9;
     if (Math.abs(fov - this.camera.fov) > 0.05) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();

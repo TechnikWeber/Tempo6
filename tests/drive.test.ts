@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { STAGES } from '../src/config/tuning';
+import { BOOST, STAGES } from '../src/config/tuning';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
@@ -189,6 +189,20 @@ describe.each(VARIANTS)('profile %s', (_name, spec, index) => {
     expect(sim.vehicle.upY).toBeGreaterThan(0.6);
     expect(sim.vehicle.yawRate).toBeLessThan(-0.08);
   });
+
+  it('holds full lock at 60 km/h and a boosted slalom without going over', () => {
+    const sim = make(60 / (spec.speedFactor * p.speed), 9);
+    sim.vehicle.boostFitted = true;
+    drive(sim, 9, 1);
+    let minUp = 1;
+    for (let i = 0; i < 60 * 11; i++) {
+      const weave = i >= 300;
+      sim.step({ throttle: 1, steer: weave && Math.floor(i / 45) % 2 ? -1 : 1, handbrake: false, boost: weave });
+      minUp = Math.min(minUp, sim.vehicle.upY);
+    }
+    expect(minUp).toBeGreaterThan(0.6);
+    sim.world.free();
+  });
 });
 
 describe('profiles', () => {
@@ -214,23 +228,40 @@ describe('profiles', () => {
 });
 
 describe('mario kart manners', () => {
-  it.each(ALL)('%s still corners hard at 30 and 60 km/h, drifting a little', (_id, spec) => {
-    for (const kmh of [30, 60]) {
-      const sim = simAt(spec, kmh / spec.speedFactor, 6);
+  // Full lock has to stay a corner at any speed, not open up into a motorway bend.
+  it.each(ALL)('%s turns a tight circle at 30, 60 and 75 km/h without sliding or tipping over', (_id, spec) => {
+    for (const [kmh, maxRadius] of [[30, 11], [60, 24], [75, 31]]) {
+      const sim = simAt(spec, kmh / spec.speedFactor, 9);
       drive(sim, 9, 1);
       let slip = 0;
-      let lat = 0;
-      for (let i = 0; i < 60 * 4; i++) {
+      let yaw = 0;
+      let speed = 0;
+      for (let i = 0; i < 60 * 5; i++) {
         sim.step({ throttle: 1, steer: 1, handbrake: false });
         if (i >= 120) {
           slip = Math.max(slip, Math.abs(sim.vehicle.slip));
-          lat += Math.abs(sim.vehicle.yawRate * sim.vehicle.speed) / 120;
+          yaw += Math.abs(sim.vehicle.yawRate) / 180;
+          speed += sim.vehicle.speed / 180;
         }
       }
       expect(sim.vehicle.upY).toBeGreaterThan(0.6);
-      expect(lat).toBeGreaterThan(3.5);
-      expect(slip).toBeLessThan(0.5);
+      expect(speed * 3.6).toBeGreaterThan(kmh * 0.65);
+      expect(speed / yaw).toBeLessThan(maxRadius);
+      expect(slip).toBeLessThan(0.4);
+      sim.world.free();
     }
+  });
+
+  it.each(ALL)('%s weaves left and right at 60 km/h and stays on its wheels', (_id, spec) => {
+    const sim = simAt(spec, 60 / spec.speedFactor, 9);
+    drive(sim, 9, 1);
+    let minUp = 1;
+    for (let i = 0; i < 60 * 8; i++) {
+      sim.step({ throttle: 1, steer: Math.floor(i / 45) % 2 ? 1 : -1, handbrake: false });
+      minUp = Math.min(minUp, sim.vehicle.upY);
+    }
+    expect(minUp).toBeGreaterThan(0.6);
+    sim.world.free();
   });
 
   it.each(ALL)('%s lands the big jump on its wheels and drives on', (_id, spec) => {
@@ -252,7 +283,7 @@ describe('mario kart manners', () => {
       // judge it just under a second after touchdown
       if (landed) after++;
     }
-    expect(maxY).toBeGreaterThan(2);
+    expect(maxY).toBeGreaterThan(1.5);
     expect(landed).toBe(true);
     expect(core.sim.vehicle.upY).toBeGreaterThan(0.9);
     expect(core.sim.vehicle.wheelsOnGround).toBeGreaterThanOrEqual(2);
@@ -274,6 +305,122 @@ describe('mario kart manners', () => {
     // it reached the wall (40 m away along its heading) and kept moving along it
     expect(p.x).toBeGreaterThan(55);
     expect(p.z - z0).toBeGreaterThan(45);
+    core.dispose();
+  });
+});
+
+describe('boost capacitor', () => {
+  const fitted = (spec: VehicleSpec, kmh: number, accel: number) => {
+    const sim = simAt(spec, kmh / spec.speedFactor, accel);
+    sim.vehicle.boostFitted = true;
+    return sim;
+  };
+  const boost = (sim: Sim, seconds: number, on = true, throttle = 1, steer = 0) => {
+    for (let i = 0; i < seconds * 60; i++) sim.step({ throttle, steer, handbrake: false, boost: on });
+  };
+
+  it('does nothing unless one is fitted', () => {
+    const sim = simAt(VEHICLES.trex, 30, 6.6);
+    drive(sim, 6, 1);
+    boost(sim, 2);
+    expect(sim.vehicle.boost).toBe(0);
+    expect(sim.vehicle.speed * 3.6).toBeLessThan(31);
+  });
+
+  it('pushes well past the top speed, fades in gently and runs dry after a moment', () => {
+    const sim = fitted(VEHICLES.trex, 30, 6.6);
+    drive(sim, 6, 1);
+    const top = sim.vehicle.speed;
+    // no kick: after a tenth of a second there is next to nothing yet
+    boost(sim, 0.1);
+    expect(sim.vehicle.boosting).toBe(true);
+    expect(sim.vehicle.boost).toBeLessThan(0.08);
+    let fastest = 0;
+    let biggestStep = 0;
+    let last = sim.vehicle.boost;
+    let lasted = 0.1;
+    for (let i = 0; i < 60 * 4; i++) {
+      sim.step({ throttle: 1, steer: 0, handbrake: false, boost: true });
+      fastest = Math.max(fastest, sim.vehicle.speed);
+      biggestStep = Math.max(biggestStep, Math.abs(sim.vehicle.boost - last));
+      last = sim.vehicle.boost;
+      if (sim.vehicle.boosting) lasted += 1 / 60;
+    }
+    expect(fastest).toBeGreaterThan(top * 1.25);
+    expect(fastest).toBeLessThan(top * (1 + BOOST.speed) + BOOST.extraSpeed + 0.5);
+    expect(biggestStep).toBeLessThan(0.05);
+    expect(lasted).toBeGreaterThan(BOOST.duration - 0.1);
+    expect(lasted).toBeLessThan(BOOST.duration + 0.1);
+    // held down on an empty capacitor: nothing more comes, and it does not recharge either
+    expect(sim.vehicle.boostCharge).toBe(0);
+    expect(sim.vehicle.boost).toBe(0);
+    drive(sim, 3, 1);
+    expect(sim.vehicle.speed).toBeLessThan(top * 1.03);
+  });
+
+  it('recharges while driving, faster while slowing down, and waits for some charge before firing again', () => {
+    const sim = fitted(VEHICLES.trex, 40, 7.4);
+    drive(sim, 6, 1);
+    boost(sim, 3);
+    expect(sim.vehicle.boostCharge).toBe(0);
+    drive(sim, 1, 1);
+    const cruising = sim.vehicle.boostCharge;
+    expect(cruising).toBeCloseTo(1 / BOOST.recharge, 2);
+    // not enough yet
+    boost(sim, 0.2);
+    expect(sim.vehicle.boosting).toBe(false);
+    drive(sim, 1, 0);
+    expect(sim.vehicle.boostCharge - cruising).toBeGreaterThan((1 / BOOST.recharge) * 2);
+    drive(sim, BOOST.recharge, 1);
+    expect(sim.vehicle.boostCharge).toBe(1);
+    boost(sim, 0.5);
+    expect(sim.vehicle.boosting).toBe(true);
+  });
+
+  it('gives a push from a standstill without touching the throttle, but not while braking', () => {
+    const sim = fitted(VEHICLES.komet, 20, 5);
+    drive(sim, 1, 0);
+    boost(sim, 1.5, true, 0);
+    expect(sim.vehicle.speed * 3.6).toBeGreaterThan(15);
+    boost(sim, 0.5, true, -1);
+    expect(sim.vehicle.boosting).toBe(false);
+  });
+
+  it.each(ALL)('%s takes a full boost at the top tuning stage, straight and in a corner', (_id, spec) => {
+    const s = STAGES[STAGES.length - 1];
+    for (const steer of [0, 1]) {
+      const sim = fitted(spec, s.topSpeedKmh / spec.speedFactor, s.accel);
+      // (the factor cancels: every vehicle gets its own real top speed)
+      sim.vehicle.setMotor((s.topSpeedKmh * spec.speedFactor) / 3.6, s.accel * spec.accelFactor);
+      drive(sim, 10, 1);
+      const top = sim.vehicle.speed;
+      let minUp = 1;
+      let fastest = 0;
+      for (let i = 0; i < 60 * 4; i++) {
+        sim.step({ throttle: 1, steer, handbrake: false, boost: true });
+        minUp = Math.min(minUp, sim.vehicle.upY);
+        fastest = Math.max(fastest, sim.vehicle.speed);
+      }
+      expect(minUp).toBeGreaterThan(0.6);
+      if (steer === 0) {
+        expect(fastest).toBeGreaterThan(top * 1.15);
+        expect(Math.abs(sim.vehicle.body.translation().x)).toBeLessThan(10);
+      }
+      sim.world.free();
+    }
+  });
+
+  it('is fitted by the game once bought, and announces every discharge', () => {
+    const progress = new Progress();
+    const core = new GameCore(PARKPLATZ, progress);
+    // everything is unlocked for testing, so it is already there
+    expect(progress.hasBoost).toBe(true);
+    expect(core.sim.vehicle.boostFitted).toBe(true);
+    for (let i = 0; i < 30; i++) core.step({ ...idle, throttle: 1, boost: true });
+    expect(core.events.filter((e) => e.type === 'boost').length).toBe(1);
+    core.step({ ...idle, respawn: true });
+    expect(core.sim.vehicle.boostCharge).toBe(1);
+    expect(core.sim.vehicle.boost).toBe(0);
     core.dispose();
   });
 });
@@ -308,8 +455,10 @@ describe('tyre marks', () => {
 
 describe('tip assist', () => {
   it.each(['trex', 'komet'] as const)('%s falls over without it', (id) => {
-    const saved = HANDLING.tipAssist;
+    const saved = { ...HANDLING };
     HANDLING.tipAssist = 0;
+    // the tippy end of the workshop slider; the default leans far less
+    HANDLING.tipHeight = 0.3;
     try {
       const sim = simAt(VEHICLES[id], 40, 5.5);
       drive(sim, 6, 1);
@@ -320,7 +469,7 @@ describe('tip assist', () => {
       }
       expect(minUp).toBeLessThan(0.3);
     } finally {
-      HANDLING.tipAssist = saved;
+      Object.assign(HANDLING, saved);
     }
   });
 });

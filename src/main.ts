@@ -26,7 +26,7 @@ function loadTrack(id: string): void {
   progress.save();
   core = new GameCore(track, progress);
   view.setTrack(track);
-  view.setVehicle(core.sim.vehicle.spec);
+  view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
 }
 loadTrack(progress.track);
 
@@ -34,7 +34,7 @@ const input = new Input();
 const sound = new Sound();
 input.onFirstGesture = () => sound.unlock();
 installTouchControls(input);
-const hud = new Hud(() => input.trigger('tune'));
+const hud = new Hud(() => input.trigger('tune'), () => input.trigger('buyBoost'));
 const gui = createDebugPanel(() => core, () => {
   const p = core.sim.vehicle.profile;
   hud.toast(`Fahrprofil: ${p.name}`, p.blurb, 2.5);
@@ -64,7 +64,7 @@ let racing = false;
 const menu = new Menu(progress, {
   onVehicle(id) {
     core.setVehicle(id);
-    view.setVehicle(core.sim.vehicle.spec);
+    view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
   },
   onTrack: loadTrack,
   onStart() {
@@ -115,6 +115,13 @@ function handleEvents(): void {
         view.bump(e.speed);
         sound.thud(e.speed);
         break;
+      case 'boost':
+        sound.zap();
+        break;
+      case 'boostBought':
+        sound.tuned();
+        hud.toast('Kondensator montiert!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
+        break;
       case 'broke':
         sound.nope();
         hud.toast(`Es fehlen noch ${formatMoney(e.missing)} Pfand`, '', 1.5);
@@ -146,18 +153,21 @@ function frame(now: number): void {
     if (cmd.upright) input.trigger('upright');
     if (cmd.respawn) input.trigger('respawn');
     if (cmd.tune) input.trigger('tune');
+    if (cmd.buyBoost) input.trigger('buyBoost');
   }
   while (acc >= STEP) {
     core.step(cmd);
     acc -= STEP;
     // One-shot actions must only fire on the first step of a frame.
-    cmd.upright = cmd.respawn = cmd.tune = false;
+    cmd.upright = cmd.respawn = cmd.tune = cmd.buyBoost = false;
   }
 
   handleEvents();
   const v = core.sim.vehicle;
   sound.setMotor(racing ? v.speed : 0, racing && v.wheelsOnGround > 0 ? Math.abs(cmd.throttle) : 0);
   sound.setSqueal(racing ? Math.max(...v.skid) : 0);
+  sound.setBoost(racing ? v.boost : 0);
+  hud.boostFx(racing ? v.boost : 0);
   if (racing) hud.update(core);
   view.render(core, acc / STEP, dt, !racing);
   requestAnimationFrame(frame);

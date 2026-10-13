@@ -16,6 +16,7 @@
         <div><span id="speed">0,0</span><small>km/h</small></div>
         <div class="bar"><i id="speed-bar"></i></div>
         <div class="dim">max. <b id="top">6</b> km/h · <span id="vehicle"></span></div>
+        <div id="boost-row" hidden><span>⚡</span><div class="bar"><i id="boost-bar"></i></div><kbd>⇧</kbd></div>
       </div>
 
       <div class="panel" id="laps">
@@ -27,23 +28,27 @@
         <div class="money">Pfand <b id="money">0,00 €</b></div>
         <div class="dim">Stufe <span id="stage-no">0</span>: <span id="stage"></span></div>
         <button id="tune"></button>
+        <button id="buy-boost" hidden></button>
       </div>
 
       <div id="toast"></div>
       <div id="flipped" hidden>Umgekippt! <kbd>R</kbd> zum Aufrichten</div>
 
       <div class="panel dim" id="help">
-        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fahren · <kbd>Leertaste</kbd> Handbremse · <kbd>T</kbd> tunen ·
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fahren · <kbd>Leertaste</kbd> Handbremse · <kbd>⇧ Umschalt</kbd> Boost · <kbd>T</kbd> tunen ·
         <kbd>R</kbd> aufrichten · <kbd>⌫</kbd> Level neu · <kbd>Esc</kbd> Menü ·
         <kbd>M</kbd> Ton · <kbd>F2</kbd> Werkstatt
       </div>
     </div>
+
+    <div id="boost-fx" hidden></div>
 
     <div id="touch" hidden>
       <div id="touch-steer"><i></i></div>
       <button id="touch-menu">☰</button>
       <button id="touch-up">↻</button>
       <button id="touch-brake">■</button>
+      <button id="touch-boost">⚡</button>
       <button id="touch-back">▼</button>
       <button id="touch-gas">▲</button>
     </div>

@@ -1,5 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Quaternion, Vector3 } from 'three';
+import { BOOST } from '../config/tuning';
 import { HANDLING, type DriveProfile, type VehicleSpec } from '../config/vehicles';
 import { Tracked } from './Tracked';
 
@@ -9,6 +10,8 @@ export interface DriveInput {
   /** -1 (left) … 1 (right) */
   steer: number;
   handbrake: boolean;
+  /** Dump the capacitor into the motors, for as long as it lasts. */
+  boost?: boolean;
 }
 
 const DOWN = { x: 0, y: -1, z: 0 };
@@ -56,6 +59,10 @@ export class Vehicle {
   /** How far the differential axle sits ahead of the centre of mass (0 if it does not). */
   private readonly frontGripZ: number;
   private readonly handbraked: number;
+  /** Share of the weight on wheels that hold sideways (casters do not). */
+  private readonly gripShare: number;
+  /** Height of the centre of mass above the ground. */
+  private readonly comHeight: number;
   /** Phase of the push stroke for vehicles with `pushRhythm`, in rad. */
   pushPhase = 0;
   /** The driving character currently in use. */
@@ -70,6 +77,17 @@ export class Vehicle {
   landing = 0;
   /** Angle between where it points and where it goes, in rad; positive = nose to the left of travel. */
   slip = 0;
+  /** Whether a boost capacitor is fitted. */
+  boostFitted = false;
+  /** Charge of the capacitor, 0…1. */
+  boostCharge = 1;
+  /** How hard the boost is pushing right now, 0…1; eases in and out. */
+  boost = 0;
+  /** True while the capacitor is discharging. */
+  boosting = false;
+  private boostRamp = 0;
+  /** Share of the steering lock in use (handlebar vehicles), see `update`. */
+  private steerTrim = 1;
   private readonly local = new Vector3();
 
   constructor(private readonly world: RAPIER.World, readonly spec: VehicleSpec, x: number, y: number, z: number, yaw: number) {
@@ -111,6 +129,8 @@ export class Vehicle {
     const turnZ = spec.wheels.find((w) => w.turn)?.z ?? spec.com[2];
     this.frontGripZ = Math.max(0, turnZ - spec.com[2]);
     this.handbraked = spec.wheels.filter((w) => w.handbrake ?? !!w.drive).length;
+    this.gripShare = spec.wheels.reduce((sum, w) => sum + (w.caster ? 0 : w.load), 0);
+    this.comHeight = hy + spec.clearance + spec.com[1];
     this.tracked = new Tracked(this.body);
   }
 
@@ -137,10 +157,15 @@ export class Vehicle {
     this.roll = Math.asin(clamp(this.left.y, -1, 1));
 
     const p = this.profile;
-    const grip = HANDLING.grip * spec.gripFactor * p.grip;
+    // Tyres bite harder the faster it goes, or the tight lines at speed would be a slide.
+    const grip = HANDLING.grip * spec.gripFactor * p.grip * (1 + HANDLING.gripAtSpeed * Math.abs(v));
+    this.updateBoost(input, dt);
+    const topSpeed = this.topSpeed * (1 + BOOST.speed * this.boost) + BOOST.extraSpeed * this.boost;
+    const accel = this.accel * (1 + BOOST.accel * this.boost);
+    const throttle = this.boosting ? 1 : input.throttle;
     // Measured, not derived from the yaw rate: in a slide the two are far apart.
     const latNow = ((lv.x - this.lastVel.x) * this.left.x + (lv.y - this.lastVel.y) * this.left.y + (lv.z - this.lastVel.z) * this.left.z) / dt;
-    this.latAccel += (clamp(latNow, -25, 25) - this.latAccel) * Math.min(1, dt * 12);
+    this.latAccel += (clamp(latNow, -40, 40) - this.latAccel) * Math.min(1, dt * 12);
     this.lastVel.set(lv.x, lv.y, lv.z);
     // Nose up in a wheelie: ease off the motor so it hovers instead of flipping backwards.
     // How far the nose points away from the ground it stands on (not from the horizon,
@@ -155,7 +180,7 @@ export class Vehicle {
     const wheelie = clamp(1 - (nose - 0.1 * rearUp) / 0.25, 0, 1);
     // Same on the brakes: nose down in a stoppie, let go a little.
     const stoppie = clamp(1 - (-nose - 0.22) / 0.2, 0, 1);
-    const targetV = input.throttle >= 0 ? input.throttle * this.topSpeed : input.throttle * this.topSpeed * 0.5;
+    const targetV = throttle >= 0 ? throttle * topSpeed : throttle * topSpeed * 0.5;
     // Which way it is trying to go: by the stick if it is pushed, else by the motion.
     const heading = Math.abs(targetV) > 0.3 ? Math.sign(targetV) : Math.abs(v) > 1 ? Math.sign(v) : 0;
     const wallTurn = heading !== 0 ? this.wallTurn(heading) : 0;
@@ -163,8 +188,15 @@ export class Vehicle {
     // Steering towards the lean stays untouched: that is how you catch it again.
     // Looking a little ahead (roll rate) keeps it from overshooting the balance point.
     const rollRate = av.x * this.fwd.x + av.y * this.fwd.y + av.z * this.fwd.z;
-    const leaningOut = Math.max(0, -Math.sign(input.steer * v) * (this.roll + HANDLING.tipLookahead * rollRate));
-    const aLat = HANDLING.lateralAccel * p.sharp * Math.max(0, 1 - (HANDLING.tipAssist * p.assist * leaningOut) / HANDLING.tipAngle);
+    // The first bit of lean is just the springs and costs nothing.
+    const leaningOut = Math.max(0, -Math.sign(input.steer * v) * (this.roll + HANDLING.tipLookahead * rollRate) - HANDLING.tipFree);
+    // Full lock asks for a fixed sideways pull at low speed and for a fixed rate of turn
+    // above that, so the corners do not open up into motorway bends as it gets faster.
+    // (Up to a point: beyond `cornerMax` even this game admits that it is going too fast.)
+    const fullLock = Math.max(HANDLING.lateralAccel, Math.min(HANDLING.cornerYaw * Math.abs(v), HANDLING.cornerMax));
+    // Past the limit it even steers the other way a little, to catch the fall.
+    // …but never for more than the tyres can hold, or slippery set-ups would just spin.
+    const aLat = Math.min(fullLock * p.sharp, grip * 9.81 * this.gripShare * HANDLING.gripUse) * Math.max(HANDLING.tipAssist > 0 ? -0.4 : 0, 1 - (HANDLING.tipAssist * p.assist * leaningOut) / Math.max(0.05, HANDLING.tipAngle - HANDLING.tipFree));
     // Positive yaw turns left, so steering right asks for a negative yaw rate / wheel angle.
     const v2 = Math.max(v * v, 0.01);
     let yawTarget = 0;
@@ -177,10 +209,28 @@ export class Vehicle {
         body.applyTorqueImpulse({ x: 0, y: t, z: 0 }, true);
       }
       steerAngle = -input.steer * Math.min(Math.min(0.95, spec.maxSteer * p.turn), Math.atan((spec.wheelbase * aLat) / v2));
+      // At speed the tail helps the turn along and it comes round quicker than the front
+      // wheel alone would have it. Take lock off until the rate of turn is the one asked for.
+      const asked = (Math.abs(v) * Math.tan(Math.abs(steerAngle))) / spec.wheelbase;
+      const tooQuick = Math.abs(v) > 5 && Math.abs(yawRate) > asked * 1.05 && yawRate * steerAngle * v > 0;
+      this.steerTrim = clamp(this.steerTrim + (tooQuick ? -1.5 : 0.8) * dt, 0.4, 1);
+      steerAngle *= this.steerTrim;
+      // Nothing watches the rate of turn with handlebars, so a tyre that suddenly bites can
+      // spin it round. Whatever turns far faster than the front wheel says is reined in.
+      if (this.wheelsOnGround > 0 && !input.handbrake && wallTurn === 0 && HANDLING.spinGuard > 0) {
+        const want = (Math.sign(v * steerAngle) * asked);
+        // allowed on top: a share, plus what makes about 3 m/s² of extra sideways pull
+        const slack = 0.15 * Math.abs(want) + 3 / Math.max(Math.abs(v), 3);
+        const excess = yawRate - want;
+        if (Math.abs(excess) > slack) {
+          const t = -spec.inertia[1] * HANDLING.spinGuard * (excess - Math.sign(excess) * slack) * dt;
+          body.applyTorqueImpulse({ x: this.up.x * t, y: this.up.y * t, z: this.up.z * t }, true);
+        }
+      }
     }
 
     // Stick pulled against the direction of travel: that is braking, not reversing yet.
-    const braking = Math.abs(v) > 0.3 && input.throttle * v < 0;
+    const braking = Math.abs(v) > 0.3 && throttle * v < 0;
     const slowing = Math.abs(targetV) < Math.abs(v) || targetV * v < 0;
     const perDrive = spec.mass / this.drives;
     const footBrake = HANDLING.footBrake * p.brake;
@@ -190,7 +240,7 @@ export class Vehicle {
     // Power-assist wheels follow the strokes on the push rims.
     let surge = 1;
     if (spec.pushRhythm) {
-      if (input.throttle !== 0) this.pushPhase += dt * 2 * Math.PI * (1.1 + Math.abs(v) * 0.12);
+      if (throttle !== 0) this.pushPhase += dt * 2 * Math.PI * (1.1 + Math.abs(v) * 0.12);
       surge = 1 + (Math.max(0, Math.sin(this.pushPhase)) - 0.5) * (p.surge ?? 1);
     }
 
@@ -227,7 +277,9 @@ export class Vehicle {
     // every turn until the chair swaps ends. The real ones tame that with gyros; here the
     // extra yaw torque is simply taken out again.
     if (this.frontGripZ > 0 && this.wheelsOnGround > 0) {
-      const cancel = -this.frontGripZ * spec.mass * v * yawRate * HANDLING.fwdStability * (p.fwdStability ?? 1) * dt;
+      // The share left in is what makes the tail lively; it must not grow with the speed.
+      const loose = (1 - HANDLING.fwdStability * (p.fwdStability ?? 1)) * (HANDLING.lateralAccel / fullLock);
+      const cancel = -this.frontGripZ * spec.mass * v * yawRate * (1 - loose) * dt;
       body.applyTorqueImpulse({ x: this.up.x * cancel, y: this.up.y * cancel, z: this.up.z * cancel }, true);
     }
 
@@ -240,6 +292,7 @@ export class Vehicle {
       let side = w.caster ? 0 : 1;
       let force = 0;
       let brake = 0;
+      let assist = 0;
 
       // Steering by pushing one side harder than the other.
       let turn = 0;
@@ -256,20 +309,25 @@ export class Vehicle {
       } else if (w.drive && !input.handbrake) {
         // Slowing down may use the brake; speeding up is limited by the motor.
         const decel = braking ? footBrake : autoBrake;
-        const cap = perDrive * (slowing ? Math.max(this.accel, decel) * stoppie : this.accel * wheelie * surge);
+        const cap = perDrive * (slowing ? Math.max(accel, decel) * stoppie : accel * wheelie * surge);
         // Steering gets its share of the motor first; otherwise both wheels would sit at
         // the limit under full throttle and there would be nothing left to turn with.
+        const asked = turn;
         turn = clamp(turn, -cap * 0.8, cap * 0.8);
+        // What the motors cannot spare for turning is made up on the chassis (see the fill above).
+        assist = (asked - turn) * HANDLING.steerAssist;
         const room = cap - Math.abs(turn);
         force = turn + clamp(perDrive * HANDLING.motorGain * (targetV - v), -room, room);
         // With one drive wheel in the air the other one's steering force would act as
         // extra thrust, so fade out anything that pushes beyond the top speed.
-        const over = Math.abs(v) - this.topSpeed;
-        if (over > 0 && force * v > 0) force *= Math.max(0, 1 - over / (0.1 * this.topSpeed + 0.2));
+        const over = Math.abs(v) - topSpeed;
+        if (over > 0 && force * v > 0) force *= Math.max(0, 1 - over / (0.1 * topSpeed + 0.2));
       } else if (w.turn) {
         // Hands on the push rims: only so much force, whatever the motor can do.
-        const hand = (spec.mass / this.turners) * (p.handSteer ?? spec.handSteer ?? 4);
+        // (More of it at speed, in step with what full lock asks for there.)
+        const hand = ((spec.mass / this.turners) * (p.handSteer ?? spec.handSteer ?? 4) * fullLock) / HANDLING.lateralAccel;
         force = clamp(turn, -hand, hand);
+        assist = (turn - force) * HANDLING.steerAssist * HANDLING.handAssist;
         // The hands also do most of the braking; the little pusher wheel has no weight on it.
         if (Math.abs(v) > 0.2 && slowing) {
           force -= Math.sign(v) * (spec.mass / this.turners) * stoppie * (braking ? footBrake : autoBrake);
@@ -278,7 +336,7 @@ export class Vehicle {
         // The other wheels help: the drive wheels alone go light under hard braking.
         brake = brakeShare * dt;
       }
-      if (w.turn) this.wantedYawTorque -= w.x * force;
+      if (w.turn) this.wantedYawTorque -= w.x * (force + assist);
       ctrl.setWheelEngineForce(i, force);
       ctrl.setWheelBrake(i, brake);
       ctrl.setWheelSideFrictionStiffness(i, side);
@@ -296,13 +354,15 @@ export class Vehicle {
       if (ctrl.wheelIsInContact(i)) {
         onGround++;
         if (w.drive && !slowing && !input.handbrake) {
-          const spin = clamp((Math.abs(force) / perDrive - 4.2) / 2.5, 0, 1);
+          // Wheelspin is a low-speed thing; once it is rolling the tyres hook up.
+          const spin = clamp((Math.abs(force) / perDrive - 4.2) / 2.5, 0, 1) * clamp(1.7 - Math.abs(v) / 7, 0, 1);
           scrub = spin;
           burnout = Math.max(burnout, spin);
         }
         if (brake > 0 && Math.abs(v) > 1.5) scrub = 1;
         if (braking && Math.abs(v) > 2 && !w.caster) scrub = Math.max(scrub, 0.8);
-        if (!w.caster) scrub = Math.max(scrub, clamp((Math.abs(this.latAccel) - 4.5) / 3, 0, 1), clamp((Math.abs(this.slip) - 0.1) / 0.1, 0, 1));
+        // Near full lock the tyres howl, whatever that means in m/s² at this speed.
+        if (!w.caster) scrub = Math.max(scrub, clamp((Math.abs(this.latAccel) / fullLock - 0.5) / 0.3, 0, 1), clamp((Math.abs(this.slip) - 0.1) / 0.1, 0, 1));
       }
       this.skid[i] = scrub;
     });
@@ -323,17 +383,42 @@ export class Vehicle {
 
     // Cornering force pushes the top of the vehicle outwards (see HANDLING.tipHeight).
     if (onGround > 0) {
-      const lateral = clamp(this.latAccel, -grip * 9.81, grip * 9.81);
+      // Scaled to what full lock asks for at this speed: a fast corner leans it as far as a slow one.
+      // The engine's own tyre forces lean it a little too, and those do grow with the speed;
+      // that share is taken out again.
+      const scale = HANDLING.lateralAccel / fullLock;
+      const felt = clamp(this.latAccel, -grip * 9.81, grip * 9.81);
+      const lateral = felt * scale;
+      const inherent = spec.mass * felt * HANDLING.tipInherent * this.comHeight * (1 - scale);
       // The second term is the roll damper.
       // A trike balances happily on two of its three wheels and would ride on like that
       // for ever, so it gets a shove back towards level. The others only a hint of one.
-      const righting = spec.mass * 9.81 * (spec.wheels.length === 3 ? 0.16 : 0.03) * this.roll;
-      const push = (spec.mass * lateral * HANDLING.tipHeight * spec.tipFactor * p.tip - HANDLING.rollDamping * rollRate - righting) * dt;
+      const righting = spec.mass * 9.81 * (spec.wheels.length === 3 ? 0.16 : HANDLING.righting) * this.roll;
+      const push = (spec.mass * lateral * HANDLING.tipHeight * spec.tipFactor * p.tip - inherent - HANDLING.rollDamping * rollRate - righting) * dt;
       body.applyTorqueImpulse({ x: this.fwd.x * push, y: this.fwd.y * push, z: this.fwd.z * push }, true);
     }
 
     // Wheels ride on the world only; loose props are handled by the chassis collider.
     ctrl.updateVehicle(dt, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC);
+  }
+
+  /** Charge, discharge and the soft ramp of the boost capacitor. */
+  private updateBoost(input: DriveInput, dt: number): void {
+    const want = !!input.boost && this.boostFitted && input.throttle >= 0 && !input.handbrake;
+    // Once empty it has to recover a little before it fires again.
+    if (this.boosting) this.boosting = want && this.boostCharge > 0;
+    else this.boosting = want && this.boostCharge >= BOOST.minCharge;
+    if (this.boosting) {
+      this.boostCharge = Math.max(0, this.boostCharge - dt / BOOST.duration);
+    } else if (!input.boost) {
+      // Recuperation: slowing down charges it faster.
+      const slowing = Math.abs(this.speed) > 1 && input.throttle * this.speed <= 0;
+      this.boostCharge = Math.min(1, this.boostCharge + (dt / BOOST.recharge) * (slowing ? BOOST.recuperation : 1));
+    }
+    const step = dt / (this.boosting ? BOOST.rampUp : BOOST.rampDown);
+    this.boostRamp = clamp(this.boostRamp + (this.boosting ? step : -step), 0, 1);
+    // Smoothstep: no kick at either end.
+    this.boost = this.boostRamp * this.boostRamp * (3 - 2 * this.boostRamp);
   }
 
   /**
@@ -389,6 +474,10 @@ export class Vehicle {
     this.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     this.lastVel.set(0, 0, 0);
     this.latAccel = 0;
+    this.boostCharge = 1;
+    this.boostRamp = this.boost = 0;
+    this.steerTrim = 1;
+    this.boosting = false;
     this.tracked.teleport();
   }
 

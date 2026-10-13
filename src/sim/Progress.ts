@@ -1,4 +1,4 @@
-import { STAGES, type TuningStage } from '../config/tuning';
+import { BOOST, STAGES, type TuningStage } from '../config/tuning';
 import { UNLOCK_ALL, VEHICLES, type VehicleId } from '../config/vehicles';
 
 /** The slice of the Web Storage API we need, so tests can pass a stub. */
@@ -8,6 +8,8 @@ export interface Store {
 }
 
 const KEY = 'tempo6.save.v2';
+/** Unlock id of the boost capacitor; it shares the list with vehicles and tracks. */
+const BOOST_ID = 'kondensator';
 
 /** Player progress: Pfand money, tuning stage, unlocks, best laps. */
 export class Progress {
@@ -65,6 +67,15 @@ export class Progress {
     this.stageIndex++;
     this.save();
     return true;
+  }
+
+  /** Whether the boost capacitor has been bought. */
+  get hasBoost(): boolean {
+    return this.isUnlocked(BOOST_ID, BOOST.price);
+  }
+
+  buyBoost(): boolean {
+    return this.unlock(BOOST_ID, BOOST.price);
   }
 
   /** Vehicles and tracks share one unlock list; free items are always open. */

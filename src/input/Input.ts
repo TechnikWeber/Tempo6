@@ -1,19 +1,20 @@
 import type { GameInput } from '../sim/GameCore';
 
-type Action = 'upright' | 'respawn' | 'tune' | 'menu' | 'mute' | 'debug';
+type Action = 'upright' | 'respawn' | 'tune' | 'buyBoost' | 'menu' | 'mute' | 'debug';
 
 const KEY_ACTIONS: Record<string, Action> = {
   KeyR: 'upright',
   Backspace: 'respawn',
   KeyT: 'tune',
   KeyE: 'tune',
+  KeyK: 'buyBoost',
   Escape: 'menu',
   KeyM: 'mute',
   F2: 'debug',
 };
-const HELD = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+const HELD = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyB'];
 
-// Standard gamepad mapping: A = handbrake, X = tune, Y = upright, Back = respawn, triggers = gas/reverse.
+// Standard gamepad mapping: A = handbrake, B / RB = boost, X = tune, Y = upright, Back = respawn, triggers = gas/reverse.
 const PAD_ACTIONS: [number, Action][] = [[2, 'tune'], [3, 'upright'], [8, 'respawn'], [9, 'menu']];
 
 /**
@@ -26,7 +27,7 @@ export class Input {
   private readonly padHeld = new Set<number>();
   private keySteer = 0;
   /** Set by the touch controls. */
-  readonly touch = { steer: 0, throttle: 0, handbrake: false };
+  readonly touch = { steer: 0, throttle: 0, handbrake: false, boost: false };
   /** Called on the first user gesture, e.g. to unlock audio. */
   onFirstGesture: (() => void) | null = null;
 
@@ -68,6 +69,7 @@ export class Input {
     const k = (...codes: string[]) => codes.some((c) => this.held.has(c));
     let throttle = (k('KeyW', 'ArrowUp') ? 1 : 0) - (k('KeyS', 'ArrowDown') ? 1 : 0);
     let handbrake = k('Space');
+    let boost = k('ShiftLeft', 'ShiftRight', 'KeyB');
 
     // Keys are on/off, so ease the steering in; centring is quicker than turning.
     const want = (k('KeyD', 'ArrowRight') ? 1 : 0) - (k('KeyA', 'ArrowLeft') ? 1 : 0);
@@ -82,6 +84,7 @@ export class Input {
       const gas = (pad.buttons[7]?.value ?? 0) - (pad.buttons[6]?.value ?? 0);
       if (Math.abs(gas) > 0.05) throttle = gas;
       handbrake ||= !!pad.buttons[0]?.pressed;
+      boost ||= !!pad.buttons[1]?.pressed || !!pad.buttons[5]?.pressed;
       for (const [i, a] of PAD_ACTIONS) {
         const down = !!pad.buttons[i]?.pressed;
         if (down && !this.padHeld.has(i)) this.actions.add(a);
@@ -93,14 +96,17 @@ export class Input {
     if (this.touch.steer !== 0) steer = this.touch.steer;
     if (this.touch.throttle !== 0) throttle = this.touch.throttle;
     handbrake ||= this.touch.handbrake;
+    boost ||= this.touch.boost;
 
     return {
       throttle: Math.max(-1, Math.min(1, throttle)),
       steer: Math.max(-1, Math.min(1, steer)),
       handbrake,
+      boost,
       upright: this.take('upright'),
       respawn: this.take('respawn'),
       tune: this.take('tune'),
+      buyBoost: this.take('buyBoost'),
     };
   }
 }
