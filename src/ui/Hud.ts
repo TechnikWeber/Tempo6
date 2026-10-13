@@ -100,7 +100,7 @@ export class Hud {
     this.buyBoost.hidden = v.boostFitted;
     if (!v.boostFitted) {
       const missing = BOOST.price - progress.money;
-      this.set(this.buyBoost, missing <= 0 ? `[K] LKW-Batterie: Boost! (${formatMoney(BOOST.price)})` : `LKW-Batterie (Boost) · noch ${formatMoney(missing)}`);
+      this.set(this.buyBoost, missing <= 0 ? `[K] Autobatterie: Boost! (${formatMoney(BOOST.price)})` : `Autobatterie (Boost) · noch ${formatMoney(missing)}`);
       this.buyBoost.classList.toggle('ready', missing <= 0);
     }
   }

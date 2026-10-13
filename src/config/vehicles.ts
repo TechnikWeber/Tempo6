@@ -156,7 +156,7 @@ const PURPLE = 0x7b2d8e;
 export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   trex: define({
     id: 'trex',
-    label: 'T-Rex Mitteldreher',
+    label: 'T-Rex',
     profiles: [
       BASE,
       prof('Kreisel', 'Dreht sich schneller, als der Magen mitkommt. Kippelig.', { turn: 1.5, sharp: 1.3, accel: 1.2, tip: 1.3, assist: 0.8 }),

@@ -7,11 +7,19 @@ import { HANDLING, type VehicleSpec } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
 import type { DecorDef, TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
-import { box, buildPickup, buildProp, buildVehicle, mat, type VehicleRig } from './models';
+import { box, buildPickup, buildProp, buildTraffic, buildVehicle, mat, type VehicleRig } from './models';
 import { Sparks, SpeedLines } from './Boost';
 import { SkidMarks } from './Skid';
 
 const SKY = 0x9fd3f0;
+const SHADOW_HALF = 22;
+const SHADOW_MAP = 2048;
+// The sun's direction and the two axes of its shadow map.
+const SUN = new Vector3(18, 34, -12);
+const SUN_DIR = SUN.clone().normalize();
+const SUN_RIGHT = new Vector3(0, 1, 0).cross(SUN_DIR).normalize();
+const SUN_UP = SUN_DIR.clone().cross(SUN_RIGHT);
+const snapped = new Vector3();
 const qa = new Quaternion();
 const qb = new Quaternion();
 const va = new Vector3();
@@ -113,6 +121,7 @@ export class View {
   private readonly sun = new DirectionalLight(0xfff1d6, 2.6);
   private propMeshes: Object3D[] = [];
   private pickupMeshes: Object3D[] = [];
+  private trafficMeshes: Object3D[] = [];
   private level: Group | null = null;
   private track: TrackDef | null = null;
   private model: VehicleRig | null = null;
@@ -146,13 +155,14 @@ export class View {
     this.scene.fog = new Fog(SKY, 80, 320);
     this.scene.add(new HemisphereLight(0xcfe8ff, 0x5a5f55, 1.1), new AmbientLight(0xffffff, 0.25));
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
     const sc = this.sun.shadow.camera;
-    sc.left = sc.bottom = -28;
-    sc.right = sc.top = 28;
+    sc.left = sc.bottom = -SHADOW_HALF;
+    sc.right = sc.top = SHADOW_HALF;
     sc.near = 1;
     sc.far = 120;
-    this.sun.shadow.bias = -0.0005;
+    this.sun.shadow.bias = -0.0004;
+    this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun, this.sun.target);
 
     const lawn = new Mesh(new PlaneGeometry(900, 900), mat(0x6fa35a));
@@ -201,6 +211,11 @@ export class View {
       this.pickupMeshes.push(m);
       level.add(m);
     }
+    this.trafficMeshes = (track.traffic ?? []).map((t) => {
+      const m = buildTraffic(t);
+      level.add(m);
+      return m;
+    });
     this.scene.add(level);
     this.skids.clear();
     this.camReady = false;
@@ -275,6 +290,7 @@ export class View {
     for (const arm of model.arms) arm.rotation.x = -0.15 + Math.sin(v.pushPhase) * 0.45;
 
     core.sim.props.forEach((p, i) => place(this.propMeshes[i], p.tracked, alpha));
+    core.sim.traffic.cars.forEach((c, i) => place(this.trafficMeshes[i], c.tracked, alpha));
     this.pickupMeshes.forEach((m, i) => {
       m.visible = !showroom && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;
@@ -319,9 +335,21 @@ export class View {
       this.camera.fov = 42;
       this.camera.updateProjectionMatrix();
     }
-    this.sun.position.set(pos.x + 18, pos.y + 34, pos.z - 12);
-    this.sun.target.position.copy(pos);
+    this.aimSun(pos);
     this.camReady = false;
+  }
+
+  /**
+   * The shadow map follows the vehicle, but only in whole texels. Moving it smoothly makes
+   * every shadow edge crawl, which shows as flicker on the driver's back and cap.
+   */
+  private aimSun(pos: Vector3): void {
+    const texel = (SHADOW_HALF * 2) / SHADOW_MAP;
+    const r = Math.round(pos.dot(SUN_RIGHT) / texel) * texel;
+    const u = Math.round(pos.dot(SUN_UP) / texel) * texel;
+    snapped.copy(SUN_DIR).multiplyScalar(pos.dot(SUN_DIR)).addScaledVector(SUN_RIGHT, r).addScaledVector(SUN_UP, u);
+    this.sun.target.position.copy(snapped);
+    this.sun.position.copy(snapped).add(SUN);
   }
 
   /** A landing with this sink rate (m/s): shake the camera and slam the body down. */
@@ -346,8 +374,8 @@ export class View {
     this.camYaw += diff * (1 - Math.exp(-dt * 3.5));
 
     // Under boost the camera falls back a little, as if left behind.
-    const dist = 3.0 + speed * 0.14 + v.boost * 0.6;
-    const height = 1.7 + speed * 0.04;
+    const dist = 3.0 + Math.min(speed, 22) * 0.06 + v.boost * 0.15;
+    const height = 1.7 + Math.min(speed, 22) * 0.02;
     const sx = Math.sin(this.camYaw), cz = Math.cos(this.camYaw);
     // A little life: a bob that grows with speed, a jolt after landings.
     this.shake = Math.max(0, this.shake - dt * 2.2);
@@ -360,13 +388,12 @@ export class View {
     // Bank into the corner a touch.
     this.camera.rotateZ(Math.max(-0.06, Math.min(0.06, v.latAccel * 0.004)));
     // Wider lens at speed: 60 km/h in a wheelchair should look terrifying.
-    const fov = 58 + Math.min(34, speed * 2) + v.boost * 9;
+    const fov = 58 + Math.min(16, speed * 0.8) + v.boost * 4;
     if (Math.abs(fov - this.camera.fov) > 0.05) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();
     }
 
-    this.sun.position.set(pos.x + 18, pos.y + 34, pos.z - 12);
-    this.sun.target.position.copy(pos);
+    this.aimSun(pos);
   }
 }

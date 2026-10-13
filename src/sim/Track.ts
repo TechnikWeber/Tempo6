@@ -38,6 +38,20 @@ export interface DecorDef {
   text?: string;
 }
 
+export type TrafficType = 'car' | 'van';
+
+/** A vehicle that drives round a closed loop on its own. */
+export interface TrafficDef {
+  type: TrafficType;
+  color: number;
+  /** Corners of the loop, x and z. It must keep clear of anything fixed: traffic goes through walls. */
+  path: [number, number][];
+  /** Cruising speed in m/s. */
+  speed: number;
+  /** Metres along the loop where it starts. */
+  offset?: number;
+}
+
 export interface TrackDef {
   id: string;
   name: string;
@@ -52,6 +66,7 @@ export interface TrackDef {
   pickups: PickupDef[];
   /** Visual only, no collision. */
   decor: DecorDef[];
+  traffic?: TrafficDef[];
 }
 
 /** Collider dimensions per prop type, shared by physics and visuals. */
@@ -59,6 +74,12 @@ export const PROP_SHAPES = {
   cone: { halfHeight: 0.25, radius: 0.15, mass: 1.5 },
   carton: { half: [0.25, 0.25, 0.25] as [number, number, number], mass: 2 },
   cart: { half: [0.3, 0.45, 0.5] as [number, number, number], mass: 18 },
+};
+
+/** Collider half extents per kind of traffic, shared by physics and visuals. */
+export const TRAFFIC_SHAPES = {
+  car: { half: [0.85, 0.7, 2.0] as [number, number, number] },
+  van: { half: [0.95, 1.05, 2.5] as [number, number, number] },
 };
 
 /**

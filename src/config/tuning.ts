@@ -17,7 +17,7 @@ export const STAGES: TuningStage[] = [
   { name: 'Zweitakku vom Nachbarn', blurb: 'Er merkt es frühestens Dienstag.', topSpeedKmh: 15, accel: 4.2, price: 600 },
   { name: 'Rallyestreifen', blurb: 'Bringt nachweislich 3 km/h.', topSpeedKmh: 18, accel: 4.7, price: 900 },
   { name: 'Akkuschrauber-Motor', blurb: '18 Volt pure Gewalt.', topSpeedKmh: 22, accel: 5.3, price: 1300 },
-  { name: 'Autobatterie', blurb: 'Passt nicht rein. Fährt trotzdem mit.', topSpeedKmh: 27, accel: 5.9, price: 1800 },
+  { name: 'Rasenmäher-Akku', blurb: 'Der Rasen kann warten.', topSpeedKmh: 27, accel: 5.9, price: 1800 },
   { name: 'Waschmaschinenmotor', blurb: 'Schleudergang: 1400 Umdrehungen.', topSpeedKmh: 33, accel: 6.6, price: 2500 },
   { name: 'Chiptuning aus dem Internet', blurb: 'Das Forum sagt, das hält.', topSpeedKmh: 40, accel: 7.4, price: 3500 },
   { name: 'Starkstrom', blurb: 'Die rote Dose im Keller.', topSpeedKmh: 50, accel: 8.3, price: 5000 },

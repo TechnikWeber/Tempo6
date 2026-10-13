@@ -110,4 +110,10 @@ export const FLUGPLATZ: TrackDef = {
   ],
   pickups,
   decor,
+  traffic: [
+    // follow-me car on the perimeter road, and a van that got lost on the apron
+    { type: 'car', color: 0xf2c230, speed: 11, path: [[-200, -50], [200, -50], [200, 50], [-200, 50]] },
+    { type: 'car', color: 0x4a8f5a, speed: 9, offset: 500, path: [[-200, -50], [200, -50], [200, 50], [-200, 50]] },
+    { type: 'van', color: 0xd9dde2, speed: 6, path: [[-190, -60], [-190, -80], [-30, -80], [-30, -60]] },
+  ],
 };

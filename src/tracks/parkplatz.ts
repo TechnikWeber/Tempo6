@@ -103,4 +103,11 @@ export const PARKPLATZ: TrackDef = {
   ],
   pickups,
   decor,
+  traffic: [
+    // someone looking for a space, round the outside behind the parking bays
+    { type: 'car', color: 0xb23a3a, speed: 6, path: [[-64, -40], [64, -40], [64, 40], [-64, 40]] },
+    { type: 'car', color: 0x3a6ea5, speed: 5, offset: 200, path: [[-64, -40], [64, -40], [64, 40], [-64, 40]] },
+    // the delivery van takes the aisles, the other way round
+    { type: 'van', color: 0xe8e4d8, speed: 4.5, offset: 40, path: [[-58, 27.5], [-58, -27.5], [58, -27.5], [58, 27.5]] },
+  ],
 };

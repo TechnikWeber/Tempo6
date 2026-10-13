@@ -1,5 +1,5 @@
 import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
-import { PROP_SHAPES, type PickupType, type PropType } from '../sim/Track';
+import { PROP_SHAPES, TRAFFIC_SHAPES, type PickupType, type PropType, type TrafficDef } from '../sim/Track';
 import { BRAND_COLORS, groundY, type VehicleSpec, type WheelSpec } from '../config/vehicles';
 
 const materials = new Map<number, MeshStandardMaterial>();
@@ -265,14 +265,15 @@ function buildManual(spec: VehicleSpec): VehicleModel {
   const seatZ = axleZ + 0.14;
 
   box(root, 0.42, 0.04, 0.42, seat, 0, seatY, seatZ);
-  box(root, 0.42, 0.4, 0.04, seat, 0, seatY + 0.24, seatZ - 0.22);
+  // (behind the driver's back, not in it: coinciding faces flicker)
+  box(root, 0.42, 0.4, 0.04, seat, 0, seatY + 0.24, seatZ - 0.27);
   box(root, 0.56, 0.035, 0.035, STEEL, 0, axleY, axleZ); // axle tube
   for (const s of [1, -1]) {
     box(root, 0.03, 0.03, 0.46, accent, s * 0.2, seatY - 0.03, seatZ); // seat rail
     box(root, 0.03, seatY - axleY, 0.03, body, s * 0.2, (seatY + axleY) / 2, axleZ);
     const down = box(root, 0.03, 0.46, 0.03, accent, s * 0.17, seatY - 0.22, seatZ + 0.3); // front tube
     down.rotation.x = 0.35;
-    box(root, 0.03, 0.5, 0.03, body, s * 0.2, seatY + 0.3, seatZ - 0.23); // back tube
+    box(root, 0.03, 0.5, 0.03, body, s * 0.2, seatY + 0.3, seatZ - 0.27); // back tube
     box(root, 0.03, 0.03, 0.12, 0x111111, s * 0.2, seatY + 0.54, seatZ - 0.28); // push handle
     box(root, 0.02, 0.16, 0.26, 0x1b1b1f, s * 0.225, seatY + 0.1, seatZ - 0.02); // side guard
   }
@@ -334,7 +335,7 @@ function buildManual(spec: VehicleSpec): VehicleModel {
     for (const w of spec.wheels) if (w.caster) box(root, 0.03, 0.14, 0.03, STEEL, w.x, g + w.radius + 0.1, w.z); // caster forks
   }
 
-  badge(root, spec, 0, seatY + 0.32, seatZ - 0.245);
+  badge(root, spec, 0, seatY + 0.32, seatZ - 0.295);
 
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.02, seatZ - 0.1);
@@ -378,9 +379,6 @@ function buildScooter(spec: VehicleSpec): VehicleModel {
   cyl(root, 0.035, 0.22, 0x888888, 0, 0.18, seatZ, 6);
   box(root, 0.44, 0.08, 0.42, DARK, 0, 0.32, seatZ);
   box(root, 0.44, 0.44, 0.08, DARK, 0, 0.56, seatZ - 0.2);
-  // safety flag
-  cyl(root, 0.01, 1.3, 0xdddddd, -w * 0.44, 0.75, -L + 0.04, 4);
-  box(root, 0.01, 0.16, 0.24, spec.colors.accent, -w * 0.44, 1.32, -L - 0.08);
   badge(root, spec, 0, 0, -L * 0.98 - 0.006);
 
   const d = driver(DRIVERS[spec.id]);
@@ -401,7 +399,7 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
   const axleY = g + drive.radius;
   const seatY = 0.06;
   box(root, 0.42, 0.04, 0.42, seat, 0, seatY, 0);
-  box(root, 0.42, 0.46, 0.035, seat, 0, seatY + 0.27, -0.22);
+  box(root, 0.42, 0.46, 0.035, seat, 0, seatY + 0.27, -0.27);
   box(root, 0.3, 0.08, 0.2, 0x25252a, 0, seatY - 0.08, -0.04); // battery under the seat
   box(root, 0.305, 0.02, 0.205, accent, 0, seatY - 0.045, -0.04);
   for (const s of [1, -1]) {
@@ -412,7 +410,7 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
     front.rotation.x = 0.7;
     box(root, 0.035, 0.035, 0.44, body, s * 0.22, seatY - 0.02, 0); // seat rail
     box(root, 0.012, 0.02, 0.44, accent, s * 0.24, seatY - 0.02, 0); // pinstripe
-    box(root, 0.035, 0.52, 0.035, body, s * 0.22, seatY + 0.28, -0.235); // back tube
+    box(root, 0.035, 0.52, 0.035, body, s * 0.22, seatY + 0.28, -0.27); // back tube
     box(root, 0.035, 0.035, 0.12, 0x111111, s * 0.22, seatY + 0.54, -0.29); // push handle
     box(root, 0.05, 0.035, 0.32, seat, s * 0.25, seatY + 0.2, 0); // armrest
     box(root, 0.03, 0.2, 0.03, body, s * 0.25, seatY + 0.1, -0.14);
@@ -424,7 +422,7 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
   cyl(root, 0.011, 0.08, STEEL, -0.25, seatY + 0.28, 0.2, 5);
   box(root, 0.035, 0.035, 0.035, accent, -0.25, seatY + 0.33, 0.2);
 
-  badge(root, spec, 0, seatY + 0.32, -0.245);
+  badge(root, spec, 0, seatY + 0.32, -0.293);
 
   const d = driver(DRIVERS[spec.id]);
   d.group.position.set(0, seatY + 0.02, -0.1);
@@ -452,7 +450,7 @@ function rod(parent: Object3D, a: Vector3, b: Vector3, thick: number, color: num
 }
 
 /**
- * The boost battery: a truck battery on the driver's lap, jump leads down to the chair.
+ * The boost battery: a car battery on the driver's lap, jump leads down to the chair.
  * It is part of the driver, so it leans along in corners.
  * @param to where the chair's own battery is, in the driver's space
  * @returns where the terminals are, in the driver's space
@@ -498,6 +496,39 @@ export function buildVehicle(spec: VehicleSpec, boost = false): VehicleRig {
   terminals?.setY(terminals.y - pivotY);
   const battery = new Vector3(m.battery[0], m.battery[1] - pivotY, m.battery[2]);
   return { root: m.root, wheels: m.wheels, driver: m.driver, arms: m.arms, body, battery, terminals };
+}
+
+/** A blocky car or van. The origin is the centre of its collider. */
+export function buildTraffic(def: TrafficDef): Group {
+  const g = new Group();
+  const [hx, hy, hz] = TRAFFIC_SHAPES[def.type].half;
+  const floor = -hy;
+  const GLASS = 0x26323d;
+  const r = 0.32;
+  if (def.type === 'van') {
+    box(g, hx * 2, hy * 2 - 0.45, hz * 2 - 1.0, def.color, 0, 0.2, -0.5); // load space
+    box(g, hx * 2, 0.75, 1.0, def.color, 0, floor + 0.3 + 0.375, hz - 0.5); // bonnet
+    box(g, hx * 2 - 0.1, 0.7, 0.9, GLASS, 0, floor + 1.35, hz - 0.95); // cab glass
+    box(g, hx * 2, 0.08, 0.95, def.color, 0, floor + 1.74, hz - 0.95);
+    box(g, hx * 2 + 0.01, 0.5, 1.6, 0xc22a2a, 0, 0.3, -0.6); // a stripe, not a logo
+  } else {
+    box(g, hx * 2, 0.6, hz * 2, def.color, 0, floor + 0.55, 0);
+    box(g, hx * 2 - 0.16, 0.5, hz * 1.05, GLASS, 0, floor + 1.1, -0.2); // windows
+    box(g, hx * 2 - 0.14, 0.06, hz * 1.0, def.color, 0, floor + 1.37, -0.2); // roof
+  }
+  for (const s of [1, -1]) {
+    for (const z of [hz - 0.75, -hz + 0.75]) {
+      const w = cyl(g, r, 0.22, TYRE, s * (hx - 0.08), floor + r - 0.02, z, 10);
+      w.rotation.z = Math.PI / 2;
+      const hub = cyl(g, r * 0.5, 0.24, 0xb8bcc2, s * (hx - 0.08), floor + r - 0.02, z, 6);
+      hub.rotation.z = Math.PI / 2;
+    }
+    box(g, 0.3, 0.14, 0.05, 0xfff3b0, s * (hx - 0.3), floor + 0.65, hz + 0.01); // headlights
+    box(g, 0.3, 0.12, 0.05, 0xff2a2a, s * (hx - 0.3), floor + 0.7, -hz - 0.01); // tail lights
+  }
+  box(g, hx * 2 + 0.06, 0.14, 0.12, 0x2a2a2e, 0, floor + 0.32, hz + 0.02); // bumpers
+  box(g, hx * 2 + 0.06, 0.14, 0.12, 0x2a2a2e, 0, floor + 0.32, -hz - 0.02);
+  return g;
 }
 
 export function buildProp(type: PropType): Group {

@@ -98,6 +98,12 @@ export class Sound {
     this.boostToneGain.gain.setTargetAtTime(level * 0.035, t, 0.08);
   }
 
+  /** A car that had to brake for a wheelchair. */
+  honk(): void {
+    this.blip([392, 392], 0.22, 'square', 0.12);
+    this.blip([494, 494], 0.22, 'square', 0.1);
+  }
+
   /** The battery pack lets go. */
   zap(): void {
     this.blip([2400, 1500, 900, 1900], 0.035, 'sawtooth', 0.1);

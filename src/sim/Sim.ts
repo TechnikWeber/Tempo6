@@ -2,6 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { VehicleSpec } from '../config/vehicles';
 import { PROP_SHAPES, type PropDef, type TrackDef } from './Track';
 import { Tracked } from './Tracked';
+import { Traffic } from './Traffic';
 import { Vehicle, type DriveInput } from './Vehicle';
 
 /** Fixed physics step. Rendering interpolates between steps. */
@@ -20,6 +21,7 @@ export interface Prop {
 export class Sim {
   readonly world: RAPIER.World;
   readonly props: Prop[] = [];
+  readonly traffic: Traffic;
   vehicle: Vehicle;
 
   constructor(readonly track: TrackDef, spec: VehicleSpec) {
@@ -33,6 +35,7 @@ export class Sim {
     }
     for (const def of track.props) this.props.push({ def, tracked: new Tracked(this.createProp(def)) });
 
+    this.traffic = new Traffic(this.world, track.traffic ?? []);
     this.vehicle = this.spawnVehicle(spec);
   }
 
@@ -91,8 +94,11 @@ export class Sim {
 
   step(input: DriveInput): void {
     this.vehicle.update(input, STEP);
+    const at = this.vehicle.body.translation();
+    this.traffic.update(STEP, at.x, at.z);
     this.world.step();
     this.vehicle.tracked.snap();
+    for (const c of this.traffic.cars) c.tracked.snap();
     for (const p of this.props) p.tracked.snap();
   }
 }

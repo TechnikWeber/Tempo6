@@ -14,7 +14,7 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 
 | Model | Category | Character |
 | --- | --- | --- |
-| T-Rex Mitteldreher | Power wheelchairs | Mid-wheel drive, six wheels, turns on the spot |
+| T-Rex | Power wheelchairs | Mid-wheel drive, six wheels, turns on the spot |
 | Avanti RX | Power wheelchairs | Rear-wheel drive, fast, prefers wide arcs |
 | Avanti FX | Power wheelchairs | Front-wheel drive, pulls round corners, tail-happy |
 | Orkan 4 | Power wheelchairs | Heavy rear-wheel drive, very stable |
@@ -45,7 +45,7 @@ npm run build    # static build in dist/
 | --- | --- | --- |
 | Drive / steer | WASD or arrow keys | Triggers / left stick |
 | Handbrake | Space | A |
-| Boost (truck battery on the lap) | Shift or B | B / RB |
+| Boost (car battery on the lap) | Shift or B | B / RB |
 | Buy next tuning stage | T | X |
 | Back on the wheels | R | Y |
 | Restart the level | Backspace | Back |

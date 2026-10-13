@@ -115,12 +115,15 @@ function handleEvents(): void {
         view.bump(e.speed);
         sound.thud(e.speed);
         break;
+      case 'honk':
+        sound.honk();
+        break;
       case 'boost':
         sound.zap();
         break;
       case 'boostBought':
         sound.tuned();
-        hud.toast('LKW-Batterie auf dem Schoß!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
+        hud.toast('Autobatterie auf dem Schoß!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
         break;
       case 'broke':
         sound.nope();

@@ -23,6 +23,7 @@ export type GameEvent =
   | { type: 'broke'; missing: number }
   | { type: 'boostBought' }
   | { type: 'boost' }
+  | { type: 'honk' }
   | { type: 'land'; speed: number };
 
 const PICKUP_RADIUS = 1.0;
@@ -89,6 +90,7 @@ export class GameCore {
   restart(): void {
     this.sim.respawn();
     this.sim.resetProps();
+    this.sim.traffic.reset();
     this.race.reset();
     this.pickupTimers.fill(0);
     this.flippedFor = 0;
@@ -126,6 +128,10 @@ export class GameCore {
 
     const v = sim.vehicle;
     if (v.boosting && !wasBoosting) this.events.push({ type: 'boost' });
+    if (sim.traffic.honk) {
+      sim.traffic.honk = false;
+      this.events.push({ type: 'honk' });
+    }
     const p = v.body.translation();
     if (v.landing > 0) {
       this.events.push({ type: 'land', speed: v.landing });

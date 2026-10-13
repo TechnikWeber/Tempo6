@@ -601,6 +601,83 @@ describe('game on the Parkplatz', () => {
   });
 });
 
+describe('traffic', () => {
+  const LOOP: TrackDef = {
+    ...FLAT,
+    spawn: { pos: [100, 0.7, 100], yaw: 0 },
+    gates: [{ x: 500, z: 500, hx: 1, hz: 1 }],
+    traffic: [{ type: 'car', color: 0, speed: 6, path: [[0, 0], [0, 40], [20, 40], [20, 0]] }],
+  };
+
+  it('drives round its loop at its own speed and comes back to the start', () => {
+    const sim = new Sim(LOOP, VEHICLES.trex);
+    const car = sim.traffic.cars[0];
+    drive(sim, 5, 0);
+    const p = car.tracked.body.translation();
+    expect(p.z).toBeCloseTo(30, 0);
+    expect(Math.abs(p.x)).toBeLessThan(0.1);
+    // 120 m round: 20 s
+    drive(sim, 15, 0);
+    const q = car.tracked.body.translation();
+    expect(Math.hypot(q.x, q.z)).toBeLessThan(1.5);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.99);
+  });
+
+  it('brakes and honks for a wheelchair in its way, then drives on', () => {
+    const progress = new Progress();
+    const core = new GameCore(LOOP, progress);
+    core.sim.vehicle.place(0, 0.7, 20, Math.PI / 2);
+    let honks = 0;
+    for (let i = 0; i < 60 * 8; i++) {
+      core.step(idle);
+      honks += core.events.filter((e) => e.type === 'honk').length;
+      core.events.length = 0;
+    }
+    const car = core.sim.traffic.cars[0];
+    expect(honks).toBe(1);
+    expect(car.speed).toBe(0);
+    expect(car.tracked.body.translation().z).toBeLessThan(17.5);
+    // nobody got run over
+    const p = core.sim.vehicle.body.translation();
+    expect(Math.hypot(p.x, p.z - 20)).toBeLessThan(0.3);
+    core.sim.vehicle.place(100, 0.7, 100, 0);
+    for (let i = 0; i < 60 * 4; i++) core.step(idle);
+    expect(car.speed).toBeCloseTo(6);
+    core.step({ ...idle, respawn: true });
+    expect(car.tracked.body.translation().z).toBeLessThan(2);
+    core.dispose();
+  });
+
+  it('shoves a wheelchair aside that comes in from the side', () => {
+    const sim = new Sim(LOOP, VEHICLES.trex);
+    // it turns up against the car's flank as that goes past: no braking for that
+    drive(sim, 3, 0);
+    sim.vehicle.place(1.0, 0.7, 18.5, 0);
+    drive(sim, 4, 0);
+    const p = sim.vehicle.body.translation();
+    expect(Math.hypot(p.x - 1.0, p.z - 18.5)).toBeGreaterThan(0.2);
+    expect(sim.traffic.cars[0].tracked.body.translation().z).toBeGreaterThan(35);
+  });
+
+  it.each(TRACKS.map((t) => [t.id, t] as const))('on %s keeps clear of everything fixed', (_id, track) => {
+    const boxes = track.statics.filter((b) => b.pos[1] + b.half[1] > 0.05);
+    for (const t of track.traffic ?? []) {
+      t.path.forEach(([x, z], i) => {
+        const [nx, nz] = t.path[(i + 1) % t.path.length];
+        const steps = Math.ceil(Math.hypot(nx - x, nz - z));
+        for (let k = 0; k <= steps; k++) {
+          const px = x + ((nx - x) * k) / steps, pz = z + ((nz - z) * k) / steps;
+          for (const b of boxes) {
+            // distance to the box's footprint; 1.3 m is half a van and a bit
+            const dx = Math.max(0, Math.abs(px - b.pos[0]) - b.half[0]), dz = Math.max(0, Math.abs(pz - b.pos[2]) - b.half[2]);
+            expect(Math.hypot(dx, dz) > 1.3, `traffic at ${px},${pz} hits the box at ${b.pos}`).toBe(true);
+          }
+        }
+      });
+    }
+  });
+});
+
 describe('unlocking', () => {
   it('buys a vehicle with Pfand when not everything is open', () => {
     const p = new Progress();

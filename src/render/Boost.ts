@@ -1,4 +1,4 @@
-import { AdditiveBlending, BoxGeometry, type Group, Mesh, MeshBasicMaterial, type Object3D, Quaternion, Vector3 } from 'three';
+import { BoxGeometry, type Group, Mesh, MeshBasicMaterial, type Object3D, Quaternion, Vector3 } from 'three';
 
 const SEGMENTS = 16;
 const PER_BOLT = 4;
@@ -11,12 +11,11 @@ const rnd = (spread: number) => (Math.random() - 0.5) * 2 * spread;
 
 /**
  * Lightning around the battery while the battery pack discharges: a handful of jagged
- * bolts that are thrown anew many times a second, plus a cold flicker of glow. All unlit
+ * bolts that are thrown anew many times a second. All unlit
  * meshes: a real light here would make every material in the scene more expensive.
  */
 export class Sparks {
   private readonly segs: Mesh[] = [];
-  private readonly glow: Mesh;
   private on = false;
   private timer = 0;
 
@@ -34,10 +33,6 @@ export class Sparks {
       parent.add(m);
       this.segs.push(m);
     }
-    this.glow = new Mesh(geo, new MeshBasicMaterial({ color: 0x4fc3ff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false }));
-    this.glow.position.copy(terminals ?? battery);
-    this.glow.visible = false;
-    parent.add(this.glow);
   }
 
   /** @param level 0…1, how hard the boost is pushing */
@@ -45,7 +40,6 @@ export class Sparks {
     if (level < 0.04) {
       if (this.on) {
         this.on = false;
-        this.glow.visible = false;
         for (const s of this.segs) s.visible = false;
       }
       return;
@@ -54,9 +48,6 @@ export class Sparks {
     if (this.timer > 0) return;
     this.timer = 0.04;
     this.on = true;
-    this.glow.visible = true;
-    this.glow.scale.setScalar(0.25 + Math.random() * 0.25);
-    (this.glow.material as MeshBasicMaterial).opacity = level * (0.15 + Math.random() * 0.3);
 
     const bolts = Math.min(SEGMENTS / PER_BOLT, 1 + Math.round(level * 3));
     let n = 0;

@@ -14,7 +14,7 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange d
 
 | Modell | Kategorie | Charakter |
 | --- | --- | --- |
-| T-Rex Mitteldreher | Vollpower Wheelchairs | Mittelradantrieb, sechs Räder, dreht auf der Stelle |
+| T-Rex | Vollpower Wheelchairs | Mittelradantrieb, sechs Räder, dreht auf der Stelle |
 | Avanti RX | Vollpower Wheelchairs | Heckantrieb, schnell, mag weite Bögen |
 | Avanti FX | Vollpower Wheelchairs | Frontantrieb, zieht um die Ecke, Heck wedelt |
 | Orkan 4 | Vollpower Wheelchairs | Schwerer Heckantrieb, sehr standfest |
@@ -45,7 +45,7 @@ npm run build    # statischer Build in dist/
 | --- | --- | --- |
 | Fahren / lenken | WASD oder Pfeiltasten | Trigger / linker Stick |
 | Handbremse | Leertaste | A |
-| Boost (LKW-Batterie auf dem Schoß) | Umschalt oder B | B / RB |
+| Boost (Autobatterie auf dem Schoß) | Umschalt oder B | B / RB |
 | Nächste Tuning-Stufe kaufen | T | X |
 | Aufrichten | R | Y |
 | Level neu starten | Rücktaste | Back |
