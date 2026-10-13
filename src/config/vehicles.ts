@@ -158,7 +158,7 @@ const PURPLE = 0x7b2d8e;
 export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   trex: define({
     id: 'trex',
-    label: 'T-Rex',
+    label: 'TDFiX',
     profiles: [
       BASE,
       prof('Kreisel', 'Dreht sich schneller, als der Magen mitkommt. Kippelig.', { turn: 1.5, sharp: 1.3, accel: 1.2, tip: 1.05, assist: 0.8 }),
@@ -291,7 +291,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   orkan: define({
     id: 'orkan',
-    label: 'Orkan 4',
+    label: 'Strom4',
     profiles: [
       BASE,
       prof('Panzer', 'Noch träger, unkippbar, bremst wie ein Anker.', { speed: 0.9, accel: 0.7, turn: 0.7, tip: 0.4, grip: 1.3, brake: 1.3 }),
@@ -359,7 +359,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   enix: define({
     id: 'enix',
-    label: 'e-nix',
+    label: 'E-six(7)',
     profiles: [
       BASE,
       prof('Begleitperson', 'Jemand anderes lenkt von hinten. Vorsichtig. Sehr vorsichtig.', { accel: 0.7, turn: 0.7, speed: 0.85, tip: 0.7, brake: 1.2 }),
@@ -429,7 +429,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   ekaptn: define({
     id: 'ekaptn',
-    label: "e-käpt'n",
+    label: 'e-kapitän',
     profiles: [
       BASE,
       prof('Chopper', 'Lang, stabil, cruist. Enge Kurven sind nicht sein Ding.', { speed: 1.15, turn: 0.7, sharp: 0.8, tip: 0.6, accel: 0.9 }),
