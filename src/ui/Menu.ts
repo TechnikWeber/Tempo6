@@ -12,6 +12,8 @@ interface MenuHandlers {
   onStart(): void;
 }
 
+/** Smallest scale of the vehicle list that is still readable and tappable. */
+const MIN_ZOOM = 0.7;
 const STAT_LABELS = { tempo: 'Tempo', antritt: 'Antritt', wendig: 'Wendigkeit', standfest: 'Standfest' } as const;
 
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
@@ -27,6 +29,8 @@ export class Menu {
   private readonly money = h('b');
   private readonly detail = h('div', 'detail');
   private readonly vehicleList = h('div', 'garage');
+  /** Zoomed wrapper inside the list, so the whole garage fits without scrolling. */
+  private readonly vehicleCards = h('div');
   private readonly trackList = h('div', 'cards tracks');
   private readonly start = h('button', 'start');
   /** What the cursor is on; may be locked, unlike the progress selection. */
@@ -44,6 +48,7 @@ export class Menu {
     head.append(purse);
 
     const left = h('section', 'col');
+    this.vehicleList.append(this.vehicleCards);
     left.append(this.vehicleList);
     const right = h('section', 'col');
     right.append(h('h2', '', 'Strecke'), this.trackList, this.start);
@@ -53,6 +58,7 @@ export class Menu {
     this.root.append(head, left, this.detail, right);
 
     this.start.addEventListener('click', () => this.go());
+    new ResizeObserver(() => this.fit()).observe(this.root);
     window.addEventListener('keydown', (e) => {
       if (this.root.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
       const step = (list: readonly string[], cur: string, d: number) => list[(list.indexOf(cur) + d + list.length) % list.length];
@@ -128,10 +134,20 @@ export class Menu {
     this.start.classList.add('nope');
   }
 
+  /** Shrink the vehicle list until it fits its column; below MIN_ZOOM it scrolls instead. */
+  private fit(): void {
+    const s = this.vehicleCards.style;
+    s.zoom = '1';
+    const natural = this.vehicleCards.offsetHeight;
+    const room = this.vehicleList.clientHeight;
+    if (natural > room && room > 0) s.zoom = String(Math.max(MIN_ZOOM, (room - 1) / natural));
+    this.vehicleList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+  }
+
   private render(): void {
     this.money.textContent = formatMoney(this.progress.money);
 
-    this.vehicleList.replaceChildren(
+    this.vehicleCards.replaceChildren(
       ...CATEGORIES.flatMap((cat) => {
         const cards = h('div', 'cards');
         for (const id of cat.vehicles) {
@@ -147,8 +163,6 @@ export class Menu {
         return [h('h2', '', cat.title), cards];
       }),
     );
-    this.vehicleList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
-
     const v = VEHICLES[this.vehicle];
     const stats = h('dl');
     for (const key of Object.keys(STAT_LABELS) as (keyof typeof STAT_LABELS)[]) {
@@ -187,5 +201,6 @@ export class Menu {
         ? `${t.name} freischalten (${formatMoney(t.unlockPrice)})`
         : 'Los!';
     this.start.classList.toggle('buy', lockedV || lockedT);
+    this.fit();
   }
 }
