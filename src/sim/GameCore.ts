@@ -11,7 +11,7 @@ export interface GameInput extends DriveInput {
   upright: boolean;
   respawn: boolean;
   tune: boolean;
-  /** Buy the boost capacitor. */
+  /** Buy the boost battery. */
   buyBoost?: boolean;
 }
 

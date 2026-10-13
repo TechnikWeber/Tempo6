@@ -1,4 +1,4 @@
-import { BoxGeometry, type Group, Mesh, MeshBasicMaterial, PointLight, Quaternion, Vector3 } from 'three';
+import { AdditiveBlending, BoxGeometry, type Group, Mesh, MeshBasicMaterial, type Object3D, Quaternion, Vector3 } from 'three';
 
 const SEGMENTS = 16;
 const PER_BOLT = 4;
@@ -10,18 +10,20 @@ const q = new Quaternion();
 const rnd = (spread: number) => (Math.random() - 0.5) * 2 * spread;
 
 /**
- * Lightning around the battery while the capacitor discharges: a handful of jagged
- * bolts that are thrown anew many times a second, plus a cold flicker of light.
+ * Lightning around the battery while the battery pack discharges: a handful of jagged
+ * bolts that are thrown anew many times a second, plus a cold flicker of glow. All unlit
+ * meshes: a real light here would make every material in the scene more expensive.
  */
 export class Sparks {
   private readonly segs: Mesh[] = [];
-  private readonly light = new PointLight(0x7fd4ff, 0, 5, 2);
+  private readonly glow: Mesh;
+  private on = false;
   private timer = 0;
 
   /**
    * @param parent the sprung body of the vehicle, so the bolts ride along
    * @param battery where the battery sits, in `parent` space
-   * @param terminals where the capacitor's legs end, or null if none is fitted
+   * @param terminals where the battery pack's legs end, or null if none is fitted
    */
   constructor(parent: Group, private readonly battery: Vector3, private readonly terminals: Vector3 | null) {
     const geo = new BoxGeometry(1, 1, 1);
@@ -32,15 +34,18 @@ export class Sparks {
       parent.add(m);
       this.segs.push(m);
     }
-    this.light.position.copy(battery);
-    parent.add(this.light);
+    this.glow = new Mesh(geo, new MeshBasicMaterial({ color: 0x4fc3ff, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false }));
+    this.glow.position.copy(terminals ?? battery);
+    this.glow.visible = false;
+    parent.add(this.glow);
   }
 
   /** @param level 0…1, how hard the boost is pushing */
   update(level: number, dt: number): void {
     if (level < 0.04) {
-      if (this.light.intensity !== 0) {
-        this.light.intensity = 0;
+      if (this.on) {
+        this.on = false;
+        this.glow.visible = false;
         for (const s of this.segs) s.visible = false;
       }
       return;
@@ -48,13 +53,16 @@ export class Sparks {
     this.timer -= dt;
     if (this.timer > 0) return;
     this.timer = 0.04;
-    this.light.intensity = level * (4 + Math.random() * 10);
+    this.on = true;
+    this.glow.visible = true;
+    this.glow.scale.setScalar(0.25 + Math.random() * 0.25);
+    (this.glow.material as MeshBasicMaterial).opacity = level * (0.15 + Math.random() * 0.3);
 
     const bolts = Math.min(SEGMENTS / PER_BOLT, 1 + Math.round(level * 3));
     let n = 0;
     for (let b = 0; b < SEGMENTS / PER_BOLT; b++) {
       const live = b < bolts;
-      // The first bolt jumps across from the capacitor, the others crawl out of the battery.
+      // The first bolt jumps across from the battery pack, the others crawl out of the battery.
       const jump = b === 0 && this.terminals;
       if (jump) {
         from.copy(this.terminals!);
@@ -83,6 +91,53 @@ export class Sparks {
         from.copy(to);
         if (!jump) dir.set(dir.x + rnd(0.6), dir.y + rnd(0.6), dir.z + rnd(0.6)).normalize();
       }
+    }
+  }
+}
+
+const LINES = 44;
+
+/**
+ * Speed streaks while boosting: thin bright bars that rush past the camera, around the
+ * edge of the view. They hang on the camera, so there is nothing to lay out or mask.
+ */
+export class SpeedLines {
+  private readonly lines: Mesh[] = [];
+  private readonly mat = new MeshBasicMaterial({ color: 0xdff4ff, transparent: true, opacity: 0, depthWrite: false, depthTest: false });
+
+  constructor(camera: Object3D) {
+    const geo = new BoxGeometry(1, 1, 1);
+    for (let i = 0; i < LINES; i++) {
+      const m = new Mesh(geo, this.mat);
+      m.visible = false;
+      m.frustumCulled = false;
+      m.renderOrder = 10;
+      this.place(m, -Math.random() * 26);
+      camera.add(m);
+      this.lines.push(m);
+    }
+  }
+
+  private place(m: Mesh, z: number): void {
+    const a = Math.random() * Math.PI * 2;
+    const r = 1.5 + Math.random() * 2.6;
+    // wider than high, like the screen
+    m.position.set(Math.cos(a) * r * 1.5, Math.sin(a) * r, z);
+    const t = 0.008 + Math.random() * 0.014;
+    m.scale.set(t, t, 1.5 + Math.random() * 3.5);
+  }
+
+  /** @param level 0…1 @param speed m/s */
+  update(level: number, speed: number, dt: number): void {
+    const show = level > 0.03;
+    if (!show && this.mat.opacity === 0) return;
+    this.mat.opacity = show ? level * 0.55 : 0;
+    const rush = (25 + speed * 2.5) * dt;
+    for (const m of this.lines) {
+      m.visible = show;
+      if (!show) continue;
+      m.position.z += rush;
+      if (m.position.z > 1) this.place(m, -26);
     }
   }
 }

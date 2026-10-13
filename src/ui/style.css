@@ -53,26 +53,6 @@ html, body {
 #boost-row.on .bar i { background: #fff; box-shadow: 0 0 8px #6fd3ff; }
 #boost-row.low .bar i { background: #8a96a0; }
 
-/* Speed streaks while boosting: thin rays around the edge, the middle stays clear. */
-#boost-fx {
-  position: fixed;
-  inset: -20%;
-  pointer-events: none;
-  background:
-    repeating-conic-gradient(from 0deg, transparent 0deg 3.4deg, rgb(210 240 255 / 0.5) 3.7deg 4deg, transparent 4.3deg 9deg),
-    repeating-conic-gradient(from 2deg, transparent 0deg 6.1deg, rgb(255 255 255 / 0.4) 6.3deg 6.5deg, transparent 6.8deg 13deg),
-    radial-gradient(circle, transparent 45%, rgb(80 190 255 / 0.22) 100%);
-  -webkit-mask-image: radial-gradient(circle, transparent 30%, #000 62%);
-  mask-image: radial-gradient(circle, transparent 30%, #000 62%);
-  animation: streaks 0.24s steps(4) infinite;
-}
-@keyframes streaks {
-  0% { transform: rotate(0deg) scale(1); }
-  25% { transform: rotate(3.1deg) scale(1.03); }
-  50% { transform: rotate(-2.3deg) scale(1.01); }
-  75% { transform: rotate(5.2deg) scale(1.04); }
-}
-
 #laps { left: 16px; top: 16px; font-size: 18px; }
 
 #shop { right: 16px; top: 16px; max-width: 290px; text-align: right; }

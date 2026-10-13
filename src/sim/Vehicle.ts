@@ -10,7 +10,7 @@ export interface DriveInput {
   /** -1 (left) … 1 (right) */
   steer: number;
   handbrake: boolean;
-  /** Dump the capacitor into the motors, for as long as it lasts. */
+  /** Dump the battery pack into the motors, for as long as it lasts. */
   boost?: boolean;
 }
 
@@ -77,13 +77,13 @@ export class Vehicle {
   landing = 0;
   /** Angle between where it points and where it goes, in rad; positive = nose to the left of travel. */
   slip = 0;
-  /** Whether a boost capacitor is fitted. */
+  /** Whether a boost battery is fitted. */
   boostFitted = false;
-  /** Charge of the capacitor, 0…1. */
+  /** Charge of the battery pack, 0…1. */
   boostCharge = 1;
   /** How hard the boost is pushing right now, 0…1; eases in and out. */
   boost = 0;
-  /** True while the capacitor is discharging. */
+  /** True while the battery pack is discharging. */
   boosting = false;
   private boostRamp = 0;
   /** Share of the steering lock in use (handlebar vehicles), see `update`. */
@@ -229,6 +229,10 @@ export class Vehicle {
       }
     }
 
+    // Cornering scrubs speed off: the harder it pulls sideways, the lower the speed the
+    // motors will hold, and it eases down to that rather than braking for it.
+    const cornerLoad = clamp(Math.abs(this.latAccel) / fullLock, 0, 1) * clamp((Math.abs(v) - 3) / 4, 0, 1);
+    const cornerV = targetV * (1 - HANDLING.cornerSlow * cornerLoad);
     // Stick pulled against the direction of travel: that is braking, not reversing yet.
     const braking = Math.abs(v) > 0.3 && throttle * v < 0;
     const slowing = Math.abs(targetV) < Math.abs(v) || targetV * v < 0;
@@ -317,7 +321,10 @@ export class Vehicle {
         // What the motors cannot spare for turning is made up on the chassis (see the fill above).
         assist = (asked - turn) * HANDLING.steerAssist;
         const room = cap - Math.abs(turn);
-        force = turn + clamp(perDrive * HANDLING.motorGain * (targetV - v), -room, room);
+        let thrust = clamp(perDrive * HANDLING.motorGain * (cornerV - v), -room, room);
+        // (too fast only for the corner: a drag, not the brake)
+        if (!slowing && thrust * v < 0) thrust = 0;
+        force = turn + thrust;
         // With one drive wheel in the air the other one's steering force would act as
         // extra thrust, so fade out anything that pushes beyond the top speed.
         const over = Math.abs(v) - topSpeed;
@@ -371,6 +378,13 @@ export class Vehicle {
     this.wheelsOnGround = onGround;
     this.burnout = burnout;
 
+    // The cornering drag itself, on the chassis so that every kind of drive feels it alike.
+    const tooFast = Math.abs(v) - Math.abs(cornerV);
+    if (onGround > 0 && !slowing && tooFast > 0 && !input.handbrake) {
+      const drag = -Math.sign(v) * spec.mass * HANDLING.cornerDrag * cornerLoad * Math.min(1, tooFast) * dt;
+      body.applyImpulse({ x: this.fwd.x * drag, y: 0, z: this.fwd.z * drag }, true);
+    }
+
     // Anti-tippers: past a good wheelie (or stoppie) angle something pushes the nose back,
     // so nobody ends up parked on the backrest or on their face.
     const tipStop = nose > 0 ? Math.min(0.45, 0.3 * rearUp) : 0.3;
@@ -402,7 +416,7 @@ export class Vehicle {
     ctrl.updateVehicle(dt, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC);
   }
 
-  /** Charge, discharge and the soft ramp of the boost capacitor. */
+  /** Charge, discharge and the soft ramp of the boost battery. */
   private updateBoost(input: DriveInput, dt: number): void {
     const want = !!input.boost && this.boostFitted && input.throttle >= 0 && !input.handbrake;
     // Once empty it has to recover a little before it fires again.

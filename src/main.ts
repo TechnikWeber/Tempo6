@@ -120,7 +120,7 @@ function handleEvents(): void {
         break;
       case 'boostBought':
         sound.tuned();
-        hud.toast('Kondensator montiert!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
+        hud.toast('LKW-Batterie auf dem Schoß!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
         break;
       case 'broke':
         sound.nope();
@@ -167,7 +167,6 @@ function frame(now: number): void {
   sound.setMotor(racing ? v.speed : 0, racing && v.wheelsOnGround > 0 ? Math.abs(cmd.throttle) : 0);
   sound.setSqueal(racing ? Math.max(...v.skid) : 0);
   sound.setBoost(racing ? v.boost : 0);
-  hud.boostFx(racing ? v.boost : 0);
   if (racing) hud.update(core);
   view.render(core, acc / STEP, dt, !racing);
   requestAnimationFrame(frame);

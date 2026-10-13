@@ -245,7 +245,7 @@ describe('mario kart manners', () => {
         }
       }
       expect(sim.vehicle.upY).toBeGreaterThan(0.6);
-      expect(speed * 3.6).toBeGreaterThan(kmh * 0.65);
+      expect(speed * 3.6).toBeGreaterThan(kmh * 0.45);
       expect(speed / yaw).toBeLessThan(maxRadius);
       expect(slip).toBeLessThan(0.4);
       sim.world.free();
@@ -309,7 +309,36 @@ describe('mario kart manners', () => {
   });
 });
 
-describe('boost capacitor', () => {
+describe('slowing down', () => {
+  it.each(ALL)('%s loses a good part of its speed at full lock and gets it back afterwards', (_id, spec) => {
+    const sim = simAt(spec, 60 / spec.speedFactor, 9);
+    drive(sim, 9, 1);
+    const before = sim.vehicle.speed;
+    drive(sim, 1, 1, 1);
+    // a drag, not an emergency stop
+    expect(sim.vehicle.speed).toBeLessThan(before * 0.92);
+    expect(sim.vehicle.speed).toBeGreaterThan(before * 0.6);
+    drive(sim, 2, 1, 1);
+    expect(sim.vehicle.speed).toBeLessThan(before * 0.88);
+    expect(sim.vehicle.speed).toBeGreaterThan(before * 0.5);
+    drive(sim, 4, 1);
+    expect(sim.vehicle.speed).toBeGreaterThan(before * 0.93);
+    sim.world.free();
+  });
+
+  it.each(ALL)('%s stops from 60 km/h within 19 m on the brake', (_id, spec) => {
+    const sim = simAt(spec, 60 / spec.speedFactor, 9);
+    drive(sim, 9, 1);
+    const z0 = sim.vehicle.body.translation().z;
+    let steps = 0;
+    while (sim.vehicle.speed > 0.3 && steps++ < 600) sim.step({ throttle: -1, steer: 0, handbrake: false });
+    expect(sim.vehicle.body.translation().z - z0).toBeLessThan(19);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.8);
+    sim.world.free();
+  });
+});
+
+describe('boost battery', () => {
   const fitted = (spec: VehicleSpec, kmh: number, accel: number) => {
     const sim = simAt(spec, kmh / spec.speedFactor, accel);
     sim.vehicle.boostFitted = true;
@@ -351,7 +380,7 @@ describe('boost capacitor', () => {
     expect(biggestStep).toBeLessThan(0.05);
     expect(lasted).toBeGreaterThan(BOOST.duration - 0.1);
     expect(lasted).toBeLessThan(BOOST.duration + 0.1);
-    // held down on an empty capacitor: nothing more comes, and it does not recharge either
+    // held down on an empty battery: nothing more comes, and it does not recharge either
     expect(sim.vehicle.boostCharge).toBe(0);
     expect(sim.vehicle.boost).toBe(0);
     drive(sim, 3, 1);

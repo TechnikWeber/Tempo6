@@ -8,8 +8,8 @@ export interface Store {
 }
 
 const KEY = 'tempo6.save.v2';
-/** Unlock id of the boost capacitor; it shares the list with vehicles and tracks. */
-const BOOST_ID = 'kondensator';
+/** Unlock id of the boost battery; it shares the list with vehicles and tracks. */
+const BOOST_ID = 'boost';
 
 /** Player progress: Pfand money, tuning stage, unlocks, best laps. */
 export class Progress {
@@ -69,7 +69,7 @@ export class Progress {
     return true;
   }
 
-  /** Whether the boost capacitor has been bought. */
+  /** Whether the boost battery has been bought. */
   get hasBoost(): boolean {
     return this.isUnlocked(BOOST_ID, BOOST.price);
   }

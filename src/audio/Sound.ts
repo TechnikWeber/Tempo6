@@ -98,7 +98,7 @@ export class Sound {
     this.boostToneGain.gain.setTargetAtTime(level * 0.035, t, 0.08);
   }
 
-  /** The capacitor lets go. */
+  /** The battery pack lets go. */
   zap(): void {
     this.blip([2400, 1500, 900, 1900], 0.035, 'sawtooth', 0.1);
   }

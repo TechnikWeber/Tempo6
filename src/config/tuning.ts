@@ -25,7 +25,7 @@ export const STAGES: TuningStage[] = [
   { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 10000 },
 ];
 
-/** The boost capacitor: a short shove that fades in and out instead of kicking. */
+/** The boost battery: a short shove that fades in and out instead of kicking. */
 export const BOOST = {
   /** Pfand in cents. */
   price: 1500,

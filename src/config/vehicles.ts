@@ -625,6 +625,10 @@ export const HANDLING = {
   gripAtSpeed: 0.07,
   /** Full lock uses at most this share of what the tyres can hold sideways. Above 1 it slides. */
   gripUse: 0.85,
+  /** Full lock at speed costs this share of the top speed… */
+  cornerSlow: 0.35,
+  /** …and it is shed at up to this rate (m/s²). */
+  cornerDrag: 5,
   /** Differential steering: share of the turning force the motors cannot spare that is made up on the chassis. */
   steerAssist: 1,
   /** The same for steering by hand on the push rims, where being weak is part of the character. */
@@ -671,7 +675,7 @@ export const HANDLING = {
   /** Deceleration when letting go of the stick: the magnetic brake bites (m/s²). */
   brakeDecel: 5,
   /** Deceleration when actively braking against the direction of travel, on all wheels (m/s²). */
-  footBrake: 10,
+  footBrake: 16,
   /** Rear side grip multiplier while the handbrake is held. */
   handbrakeSlide: 0.35,
   suspensionCompression: 3.0,

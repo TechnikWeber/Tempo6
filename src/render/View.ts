@@ -8,7 +8,7 @@ import type { GameCore } from '../sim/GameCore';
 import type { DecorDef, TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
 import { box, buildPickup, buildProp, buildVehicle, mat, type VehicleRig } from './models';
-import { Sparks } from './Boost';
+import { Sparks, SpeedLines } from './Boost';
 import { SkidMarks } from './Skid';
 
 const SKY = 0x9fd3f0;
@@ -124,6 +124,7 @@ export class View {
   private drift = 0;
   private driftV = 0;
   private sparks: Sparks | null = null;
+  private readonly speedLines: SpeedLines;
   private fitted = false;
   /** Camera shake that dies away, e.g. after a landing. */
   private shake = 0;
@@ -160,6 +161,8 @@ export class View {
     this.scene.add(lawn);
 
     this.skids = new SkidMarks(this.scene);
+    this.scene.add(this.camera);
+    this.speedLines = new SpeedLines(this.camera);
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -210,7 +213,7 @@ export class View {
     this.camera.updateProjectionMatrix();
   }
 
-  /** @param boost show the boost capacitor on it */
+  /** @param boost show the boost battery on it */
   setVehicle(spec: VehicleSpec, boost: boolean): void {
     if (this.model) this.scene.remove(this.model.root);
     this.model = buildVehicle(spec, boost);
@@ -230,7 +233,7 @@ export class View {
    */
   render(core: GameCore, alpha: number, dt: number, showroom = false): void {
     const v = core.sim.vehicle;
-    // The capacitor shows up on the vehicle the moment it is bought.
+    // The battery pack shows up on the vehicle the moment it is bought.
     if (this.model && v.boostFitted !== this.fitted) this.setVehicle(v.spec, v.boostFitted);
     const model = this.model;
     const track = this.track;
@@ -248,6 +251,7 @@ export class View {
     this.drift += this.driftV * dh;
     model.root.rotateY(this.drift);
     this.sparks?.update(showroom ? 0 : v.boost, dt);
+    this.speedLines.update(showroom ? 0 : v.boost, Math.abs(v.speed), dt);
     v.spec.wheels.forEach((w, i) => {
       const m = model.wheels[i];
       m.pivot.position.y = w.y - v.wheelSuspension(i);

@@ -27,8 +27,6 @@ export class Hud {
   private readonly boostRow = el('boost-row');
   private readonly boostBar = el('boost-bar');
   private readonly buyBoost = el<HTMLButtonElement>('buy-boost');
-  private readonly fx = el('boost-fx');
-  private fxLevel = -1;
   private toastTimer = 0;
 
   constructor(onTune: () => void, onBuyBoost: () => void) {
@@ -40,15 +38,6 @@ export class Hud {
       onBuyBoost();
       this.buyBoost.blur();
     });
-  }
-
-  /** Speed streaks around the edge of the screen. @param level 0…1 */
-  boostFx(level: number): void {
-    const l = Math.round(level * 50) / 50;
-    if (l === this.fxLevel) return;
-    this.fxLevel = l;
-    this.fx.style.opacity = String(l);
-    this.fx.hidden = l === 0;
   }
 
   private set(e: HTMLElement, text: string): void {
@@ -111,7 +100,7 @@ export class Hud {
     this.buyBoost.hidden = v.boostFitted;
     if (!v.boostFitted) {
       const missing = BOOST.price - progress.money;
-      this.set(this.buyBoost, missing <= 0 ? `[K] Kondensator: Boost! (${formatMoney(BOOST.price)})` : `Kondensator (Boost) · noch ${formatMoney(missing)}`);
+      this.set(this.buyBoost, missing <= 0 ? `[K] LKW-Batterie: Boost! (${formatMoney(BOOST.price)})` : `LKW-Batterie (Boost) · noch ${formatMoney(missing)}`);
       this.buyBoost.classList.toggle('ready', missing <= 0);
     }
   }
