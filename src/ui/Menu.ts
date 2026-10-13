@@ -174,7 +174,7 @@ export class Menu {
     const top = this.progress.stage.topSpeedKmh * v.speedFactor * profile.speed;
     this.detail.replaceChildren(
       h('h3', '', v.label),
-      h('p', 'kind', v.kind),
+      h('p', 'kind', `${v.kind} · Fahrprofile: ${v.profiles.map((p) => p.name).join(', ')}`),
       h('p', '', v.blurb),
       stats,
       h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${this.progress.stageIndex}: ${this.progress.stage.name} · Fahrprofil: ${profile.name}`),

@@ -626,9 +626,9 @@ export const HANDLING = {
   /** Full lock uses at most this share of what the tyres can hold sideways. Above 1 it slides. */
   gripUse: 0.85,
   /** Full lock at speed costs this share of the top speed… */
-  cornerSlow: 0.35,
+  cornerSlow: 0.45,
   /** …and it is shed at up to this rate (m/s²). */
-  cornerDrag: 5,
+  cornerDrag: 6,
   /** Differential steering: share of the turning force the motors cannot spare that is made up on the chassis. */
   steerAssist: 1,
   /** The same for steering by hand on the push rims, where being weak is part of the character. */
