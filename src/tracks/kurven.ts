@@ -20,7 +20,7 @@ const PX = 68;
 const RINGS = [5, 7.5, 10, 12.5, 15, 20, 25, 30];
 
 /** The corners in driving order, with the radius of the inside line. */
-const CORNERS = [
+export const CORNERS = [
   { sx: 1, sz: -1, r: 12, name: 'WEIT' },
   { sx: 1, sz: 1, r: 7, name: 'ENG' },
   { sx: -1, sz: 1, r: 4, name: 'ENGER' },
@@ -77,6 +77,29 @@ for (const c of CORNERS) {
 }
 // The straights between them, inside and outside line.
 const [se, ne, nw, sw] = CORNERS;
+// The middle of the lane, a point every metre or so, from the finish line round.
+const middle: [number, number][] = [];
+const run = (x0: number, z0: number, x1: number, z1: number) => {
+  const n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0)));
+  for (let i = 0; i < n; i++) middle.push([x0 + ((x1 - x0) * i) / n, z0 + ((z1 - z0) * i) / n]);
+};
+const bend = (c: (typeof CORNERS)[number], from: number, to: number) => {
+  const r = c.r + WIDTH / 2;
+  const n = Math.max(6, Math.round(Math.abs(to - from) * r));
+  for (let i = 0; i < n; i++) {
+    const a = from + ((to - from) * i) / n;
+    middle.push([c.x + r * Math.cos(a), c.z + r * Math.sin(a)]);
+  }
+};
+run(CX, -B, se.x, -B);
+bend(se, -Math.PI / 2, 0);
+run(CX + A, se.z, CX + A, ne.z);
+bend(ne, 0, Math.PI / 2);
+run(ne.x, B, nw.x, B);
+bend(nw, Math.PI / 2, Math.PI);
+run(CX - A, nw.z, CX - A, sw.z);
+bend(sw, Math.PI, (3 * Math.PI) / 2);
+run(sw.x, -B, CX, -B);
 for (const o of [-WIDTH / 2, WIDTH / 2]) {
   decor.push(
     line(sw.x, -B + o, se.x, -B + o, PAINT),
@@ -111,4 +134,5 @@ export const KURVEN: TrackDef = {
   ],
   pickups: [],
   decor,
+  line: middle,
 };
