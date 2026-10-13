@@ -100,6 +100,21 @@ html, body {
 #toast.show { opacity: 1; transition: none; }
 #toast small { display: block; font-size: 17px; font-weight: 600; margin-top: 4px; }
 
+#lights {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #15161a;
+  box-shadow: 0 4px 0 #000;
+}
+#lights i { width: 46px; height: 46px; border-radius: 50%; background: #33363c; }
+#lights i.on { background: #e2513c; box-shadow: 0 0 18px #e2513c; }
+#lights.go i { background: #58d06a; box-shadow: 0 0 18px #58d06a; }
 #pending { font-size: 14px; color: var(--accent); font-weight: 700; }
 #stunt {
   position: absolute;
@@ -200,8 +215,12 @@ kbd {
 #menu header { grid-area: head; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
 #menu h1 { margin: 0; font-size: 56px; font-weight: 900; letter-spacing: -2px; color: var(--accent); text-shadow: 0 3px 0 #000; }
 #menu .tagline { margin: 0; font-size: 17px; opacity: 0.9; text-shadow: 0 1px 0 #000; }
-#menu .purse { margin: 0 0 0 auto; font-size: 20px; background: var(--panel); padding: 6px 14px; border-radius: 10px; }
+#menu header label:first-of-type { margin-left: auto; }
+#menu .purse { margin: 0; font-size: 20px; background: var(--panel); padding: 6px 14px; border-radius: 10px; }
 #menu .purse b { color: var(--accent); }
+#menu .who { font-size: 14px; background: var(--panel); padding: 6px 10px; border-radius: 10px; display: flex; align-items: center; gap: 6px; }
+#menu .who input:not([type]) , #menu .who input[type='text'] { width: 7em; font: inherit; color: var(--ink); background: rgb(255 255 255 / 0.12); border: 0; border-radius: 6px; padding: 3px 6px; }
+#menu .board { margin: 4px 0 0; padding-left: 20px; font-size: 12px; line-height: 1.5; opacity: 0.9; }
 #menu h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.75; }
 #menu .col { display: flex; flex-direction: column; min-height: 0; }
 #menu .col:first-of-type { grid-area: left; }
@@ -211,7 +230,8 @@ kbd {
 #menu .cards.tracks { grid-template-columns: 1fr; overflow: hidden auto; min-height: 0; scrollbar-width: thin; }
 /* Only the chosen track spells itself out, or the list would push the start button off the screen. */
 #menu .cards.tracks .card:not(.on) span { display: none; }
-#menu .cards.tracks .card:not(.on) { flex-direction: row; justify-content: space-between; align-items: baseline; gap: 10px; }
+#menu .cards.tracks .card:not(.on) { flex-direction: row; justify-content: space-between; align-items: baseline; gap: 10px; padding-block: 5px; }
+#menu .cards.tracks { gap: 6px; }
 #menu .card {
   --tint: var(--accent);
   display: flex;

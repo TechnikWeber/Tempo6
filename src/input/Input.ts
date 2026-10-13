@@ -1,6 +1,6 @@
 import type { GameInput } from '../sim/GameCore';
 
-type Action = 'upright' | 'respawn' | 'tune' | 'buyBoost' | 'menu' | 'mute' | 'debug';
+type Action = 'upright' | 'respawn' | 'tune' | 'buyBoost' | 'menu' | 'mute' | 'debug' | 'ghost';
 
 const KEY_ACTIONS: Record<string, Action> = {
   KeyR: 'upright',
@@ -10,6 +10,7 @@ const KEY_ACTIONS: Record<string, Action> = {
   KeyK: 'buyBoost',
   Escape: 'menu',
   KeyM: 'mute',
+  KeyG: 'ghost',
   F2: 'debug',
 };
 const HELD = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyB'];

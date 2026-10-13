@@ -4,7 +4,8 @@ import {
   HemisphereLight, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Quaternion, RingGeometry, Scene, Shape, ShapeGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
 } from 'three';
-import { HANDLING, type VehicleSpec } from '../config/vehicles';
+import { HANDLING, VEHICLES, type VehicleSpec } from '../config/vehicles';
+import { GHOST_RATE, type GhostLap } from '../sim/Progress';
 import type { GameCore } from '../sim/GameCore';
 import { SPINNER_HALF } from '../sim/Sim';
 import { heightAt, type DecorDef, type TrackDef } from '../sim/Track';
@@ -15,6 +16,8 @@ import { SkidMarks } from './Skid';
 import { Wreckage } from './Wreckage';
 
 const SKY = 0x9fd3f0;
+/** What the shadow of the best lap is made of. */
+const GHOST = new MeshStandardMaterial({ color: 0xdfe9f5, transparent: true, opacity: 0.32, depthWrite: false, roughness: 1 });
 const SHADOW_HALF = 22;
 const SHADOW_MAP = 2048;
 // The sun's direction and the two axes of its shadow map.
@@ -199,6 +202,8 @@ export class View {
   private readonly speedLines: SpeedLines;
   private fitted = false;
   private wreckage: Wreckage | null = null;
+  /** The best lap driving along: a see-through copy of the vehicle it was set with. */
+  private ghost: { lap: GhostLap; root: Group } | null = null;
   /** Damage the model on screen shows; when the vehicle has less, it has been repaired. */
   private shownDamage = 0;
   /** Camera shake that dies away, e.g. after a landing. */
@@ -256,6 +261,8 @@ export class View {
         if (o instanceof Mesh) o.geometry.dispose();
       });
     }
+    if (this.ghost) this.scene.remove(this.ghost.root);
+    this.ghost = null;
     const level = new Group();
     this.level = level;
     this.track = track;
@@ -319,6 +326,36 @@ export class View {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Show the recorded best lap at the point the lap in progress has reached, if that is wanted. */
+  private placeGhost(core: GameCore, showroom: boolean): void {
+    const lap = core.ghost;
+    if (this.ghost && this.ghost.lap !== lap) {
+      this.scene.remove(this.ghost.root);
+      this.ghost = null;
+    }
+    if (lap && !this.ghost) {
+      const root = buildVehicle(VEHICLES[lap.vehicle]).root;
+      root.traverse((o) => {
+        if (!(o instanceof Mesh)) return;
+        o.material = GHOST;
+        o.castShadow = o.receiveShadow = false;
+      });
+      this.scene.add(root);
+      this.ghost = { lap, root };
+    }
+    if (!this.ghost) return;
+    const s = this.ghost.lap.samples;
+    const at = core.race.lapTime * GHOST_RATE;
+    const i = Math.floor(at), count = s.length / 7;
+    this.ghost.root.visible = !showroom && core.progress.showGhost && core.race.running && i + 1 < count;
+    if (!this.ghost.root.visible) return;
+    const a = i * 7, b = a + 7, f = at - i;
+    this.ghost.root.position.set(s[a] + (s[b] - s[a]) * f, s[a + 1] + (s[b + 1] - s[a + 1]) * f, s[a + 2] + (s[b + 2] - s[a + 2]) * f);
+    qa.set(s[a + 3], s[a + 4], s[a + 5], s[a + 6]);
+    qb.set(s[b + 3], s[b + 4], s[b + 5], s[b + 6]);
+    this.ghost.root.quaternion.slerpQuaternions(qa, qb, f);
   }
 
   /** @param boost show the boost battery on it */
@@ -391,6 +428,7 @@ export class View {
     // Pushing the rims: both arms swing with the stroke.
     for (const arm of model.arms) arm.rotation.x = -0.15 + Math.sin(v.pushPhase) * 0.45;
 
+    this.placeGhost(core, showroom);
     core.sim.props.forEach((p, i) => place(this.propMeshes[i], p.tracked, alpha));
     core.sim.traffic.cars.forEach((c, i) => place(this.trafficMeshes[i], c.tracked, alpha));
     core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));

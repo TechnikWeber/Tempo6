@@ -35,6 +35,8 @@ export class Hud {
   private readonly pending = el('pending');
   private readonly stuntEl = el('stunt');
   private stuntTimer = 0;
+  private readonly lightsEl = el('lights');
+  private lightsTimer = 0;
 
   constructor(onTune: () => void, onBuyBoost: () => void) {
     this.tune.addEventListener('click', () => {
@@ -63,6 +65,21 @@ export class Hud {
     this.toastEl.classList.add('show');
     clearTimeout(this.toastTimer);
     this.toastTimer = window.setTimeout(() => this.toastEl.classList.remove('show'), seconds * 1000);
+  }
+
+  /** The start lights: `n` seconds to go, 0 = green. */
+  lights(n: number): void {
+    clearTimeout(this.lightsTimer);
+    this.lightsEl.hidden = false;
+    this.lightsEl.classList.toggle('go', n === 0);
+    [...this.lightsEl.children].forEach((lamp, i) => lamp.classList.toggle('on', n > 0 && i <= 3 - n));
+    if (n === 0) this.lightsTimer = window.setTimeout(() => (this.lightsEl.hidden = true), 900);
+  }
+
+  /** Put the lights away, e.g. when leaving for the menu mid-countdown. */
+  lightsOff(): void {
+    clearTimeout(this.lightsTimer);
+    this.lightsEl.hidden = true;
   }
 
   /** A short line for a stunt just done; it does not get in the way like a toast. */

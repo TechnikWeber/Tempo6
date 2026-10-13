@@ -1036,6 +1036,85 @@ describe('stunts', () => {
   });
 });
 
+describe('start lights, leaderboard and ghost', () => {
+  it('holds the vehicle for three lights and then lets it go', () => {
+    const core = new GameCore(PARKPLATZ, new Progress());
+    core.restart(true);
+    const counts: number[] = [];
+    for (let i = 0; i < 60 * 2.9; i++) {
+      core.step({ ...idle, throttle: 1 });
+      for (const e of core.events) if (e.type === 'count') counts.push(e.n);
+      core.events.length = 0;
+    }
+    expect(counts).toEqual([3, 2, 1]);
+    expect(Math.abs(core.sim.vehicle.speed)).toBeLessThan(0.05);
+    for (let i = 0; i < 60 * 2; i++) {
+      core.step({ ...idle, throttle: 1 });
+      for (const e of core.events) if (e.type === 'count') counts.push(e.n);
+      core.events.length = 0;
+    }
+    expect(counts).toEqual([3, 2, 1, 0]);
+    expect(core.sim.vehicle.speed).toBeGreaterThan(1);
+    // without lights (the menu, the workshop) a restart holds nothing
+    core.restart();
+    expect(core.countdown).toBe(0);
+    core.dispose();
+  });
+
+  it('keeps the ten best laps of a track in order, and across sessions', () => {
+    const saved = new Map<string, string>();
+    const store = { getItem: (k: string) => saved.get(k) ?? null, setItem: (k: string, v: string) => void saved.set(k, v) };
+    const p = new Progress(store);
+    p.name = 'Erika';
+    const lap = (time: number) => p.addTime('parkplatz', { time, name: p.name, vehicle: 'trex', stage: 2, date: 0 });
+    expect(lap(50)).toBe(1);
+    expect(lap(40)).toBe(1);
+    expect(lap(45)).toBe(2);
+    for (let i = 0; i < 12; i++) lap(60 + i);
+    expect(lap(999)).toBe(0);
+    expect(p.boards.parkplatz.length).toBe(10);
+    const again = new Progress(store);
+    expect(again.boards.parkplatz.map((e) => e.time).slice(0, 3)).toEqual([40, 45, 50]);
+    expect(again.boards.parkplatz[0].name).toBe('Erika');
+    expect(again.name).toBe('Erika');
+  });
+
+  it('records the best lap as a ghost and finds it again next time', () => {
+    const saved = new Map<string, string>();
+    const store = { getItem: (k: string) => saved.get(k) ?? null, setItem: (k: string, v: string) => void saved.set(k, v) };
+    const progress = new Progress(store);
+    const core = new GameCore(KURVEN, progress);
+    expect(core.ghost).toBeNull();
+    core.sim.vehicle.setMotor(12 / 3.6, 4);
+    const line = KURVEN.line!;
+    let at = 0;
+    for (let i = 0; i < 60 * 200 && core.race.laps === 0; i++) {
+      const v = core.sim.vehicle;
+      const p = v.body.translation();
+      while (Math.hypot(line[at][0] - p.x, line[at][1] - p.z) < 4) at = (at + 1) % line.length;
+      let turn = Math.atan2(line[at][0] - p.x, line[at][1] - p.z) - v.yaw;
+      turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+      core.step({ ...idle, throttle: 1, steer: Math.max(-1, Math.min(1, -turn * 2)) });
+    }
+    expect(core.race.laps).toBe(1);
+    const ghost = core.ghost!;
+    expect(ghost.vehicle).toBe('trex');
+    expect(ghost.time).toBeCloseTo(core.race.best!, 5);
+    // ten samples a second, seven numbers each, for the whole lap
+    expect(ghost.samples.length % 7).toBe(0);
+    expect(Math.abs(ghost.samples.length / 7 - ghost.time * 10)).toBeLessThan(3);
+    // it starts at the finish line and is back near it at the end
+    const [gate] = KURVEN.gates;
+    expect(Math.hypot(ghost.samples[0] - gate.x, ghost.samples[2] - gate.z)).toBeLessThan(4);
+    expect(progress.boards.kurven[0].time).toBeCloseTo(ghost.time, 5);
+    expect(core.events.some((e) => e.type === 'ranked' && e.place === 1)).toBe(true);
+    core.dispose();
+    const next = new GameCore(KURVEN, new Progress(store));
+    expect(next.ghost?.samples.length).toBe(ghost.samples.length);
+    next.dispose();
+  });
+});
+
 describe('game on the Parkplatz', () => {
   it('collects screws on the start straight and tunes once the money is there', () => {
     const core = new GameCore(PARKPLATZ, new Progress());

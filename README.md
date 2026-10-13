@@ -28,7 +28,7 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 | Covid Pro | Mobility scooters | The classic with a basket |
 | Olivion | Mobility scooters | Long, heavy, fast, huge turning circle |
 
-Vehicles and tracks are unlocked with deposit money; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
+Vehicles and tracks are unlocked with Schrauben; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
 
 ## Run
 

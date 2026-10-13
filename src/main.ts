@@ -69,7 +69,7 @@ const menu = new Menu(progress, {
   onTrack: loadTrack,
   onStart() {
     sound.unlock();
-    core.restart();
+    core.restart(true);
     setRacing(true);
     const v = core.sim.vehicle.spec;
     hud.toast(core.track.name, `${v.label} · ${core.sim.vehicle.profile.name}`, 2.5);
@@ -85,14 +85,16 @@ function setRacing(on: boolean): void {
     menu.hide();
   } else {
     core.restart();
+    hud.lightsOff();
     view.clearMarks();
     menu.show();
   }
 }
 setRacing(false);
 
-/** Lap message waiting for its payout line. */
+/** Lap message waiting for its payout line, and the place the lap took on the board. */
 let lastLap = '';
+let ranked = 0;
 function handleEvents(): void {
   for (const e of core.events) {
     if (!racing) continue;
@@ -129,10 +131,19 @@ function handleEvents(): void {
         const parts = [e.lap && `Runde ${e.lap}`, e.best && `Bestzeit ${e.best}`, e.clean && `unfallfrei ${e.clean}`, e.stunts && `Stunts ${e.stunts}`].filter(Boolean);
         sound.crate();
         // (the lap time comes with it, or the two toasts would cover each other)
+        if (ranked) parts.unshift(`Platz ${ranked} der Bestenliste`);
         hud.toast(lastLap ? `${lastLap} · +${formatMoney(e.total)}` : `+${formatMoney(e.total)}`, parts.join(' · '), 3.5);
         lastLap = '';
+        ranked = 0;
         break;
       }
+      case 'count':
+        hud.lights(e.n);
+        sound.count(e.n === 0);
+        break;
+      case 'ranked':
+        ranked = e.place;
+        break;
       case 'crash':
         view.bump(e.impact * 0.6);
         sound.thud(e.impact * 0.6);
@@ -174,6 +185,11 @@ function frame(now: number): void {
 
   let cmd = input.poll(dt);
   if (input.take('mute')) sound.toggleMute();
+  if (input.take('ghost')) {
+    progress.showGhost = !progress.showGhost;
+    progress.save();
+    if (racing) hud.toast(progress.showGhost ? 'Schatten an' : 'Schatten aus', 'Die Bestzeit fährt mit.', 1.5);
+  }
   if (input.take('debug')) gui.show(gui._hidden);
   if (input.take('menu') && racing) setRacing(false);
   // On the start screen the vehicle just stands there and gets looked at.

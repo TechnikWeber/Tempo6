@@ -33,6 +33,7 @@ export class Menu {
   private readonly vehicleCards = h('div');
   private readonly trackList = h('div', 'cards tracks');
   private readonly start = h('button', 'start');
+  private readonly ghost = h('input');
   /** What the cursor is on; may be locked, unlike the progress selection. */
   private vehicle: VehicleId;
   private track: string;
@@ -45,7 +46,26 @@ export class Menu {
     head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', 'Verdien dir Schrauben. Tune dein Gefährt. Werde zu schnell.'));
     const purse = h('p', 'purse', '🔩 ');
     purse.append(this.money);
-    head.append(purse);
+    // who the laps are entered under, and whether the best one drives along
+    const who = h('label', 'who', 'Name ');
+    const name = h('input');
+    name.maxLength = 16;
+    name.value = progress.name;
+    name.addEventListener('change', () => {
+      progress.name = name.value.trim() || 'Du';
+      name.value = progress.name;
+      progress.save();
+    });
+    who.append(name);
+    const shadow = h('label', 'who');
+    this.ghost.type = 'checkbox';
+    this.ghost.addEventListener('change', () => {
+      progress.showGhost = this.ghost.checked;
+      progress.save();
+    });
+    shadow.append(this.ghost, ' Schatten');
+    shadow.title = 'Die Bestzeit fährt als Schatten mit (Taste G)';
+    head.append(who, shadow, purse);
 
     const left = h('section', 'col');
     this.vehicleList.append(this.vehicleCards);
@@ -60,7 +80,8 @@ export class Menu {
     this.start.addEventListener('click', () => this.go());
     new ResizeObserver(() => this.fit()).observe(this.root);
     window.addEventListener('keydown', (e) => {
-      if (this.root.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+      // (typing a name is not steering the menu)
+      if (this.root.hidden || e.ctrlKey || e.metaKey || e.altKey || e.target instanceof HTMLInputElement) return;
       const step = (list: readonly string[], cur: string, d: number) => list[(list.indexOf(cur) + d + list.length) % list.length];
       const tracks = TRACKS.map((t) => t.id);
       switch (e.code) {
@@ -146,6 +167,7 @@ export class Menu {
 
   private render(): void {
     this.money.textContent = formatMoney(this.progress.money);
+    this.ghost.checked = this.progress.showGhost;
 
     this.vehicleCards.replaceChildren(
       ...CATEGORIES.flatMap((cat) => {
@@ -187,6 +209,14 @@ export class Menu {
         b.append(h('strong', '', t.name), h('span', '', t.blurb));
         const best = this.progress.bestLaps[t.id];
         b.append(h('em', '', open ? `Bestzeit ${formatTime(best ?? null)}` : `🔒 ${formatMoney(t.unlockPrice)}`));
+        // the chosen track shows who is fastest on it
+        if (t.id === this.track && open) {
+          const board = h('ol', 'board');
+          for (const e of (this.progress.boards[t.id] ?? []).slice(0, 3)) {
+            board.append(h('li', '', `${formatTime(e.time)} · ${e.name} · ${VEHICLES[e.vehicle].label} · Stufe ${e.stage}`));
+          }
+          if (board.children.length) b.append(board);
+        }
         b.addEventListener('click', () => this.pickTrack(t.id));
         return b;
       }),

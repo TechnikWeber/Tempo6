@@ -104,6 +104,11 @@ export class Sound {
     this.blip([494, 494], 0.22, 'square', 0.1);
   }
 
+  /** A beep per start light, and a higher, longer one for go. */
+  count(go: boolean): void {
+    this.blip(go ? [1320, 1320, 1320] : [660], go ? 0.14 : 0.12, 'square', 0.14);
+  }
+
   /** The battery pack lets go. */
   zap(): void {
     this.blip([2400, 1500, 900, 1900], 0.035, 'sawtooth', 0.1);

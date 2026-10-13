@@ -1,6 +1,6 @@
 import { BONUS, BOOST, PICKUP_VALUE, type TuningStage } from '../config/tuning';
 import { VEHICLES, type VehicleId } from '../config/vehicles';
-import type { Progress } from './Progress';
+import { GHOST_RATE, type GhostLap, type Progress } from './Progress';
 import { Race } from './Race';
 import { Sim, STEP } from './Sim';
 import { Stunts, type StuntKind } from './Stunts';
@@ -30,10 +30,16 @@ export type GameEvent =
   | { type: 'crash'; impact: number; damage: number }
   | { type: 'wreck' }
   | { type: 'stunt'; kind: StuntKind; points: number; multiplier: number }
+  /** The start lights: 3, 2, 1, and 0 for go. */
+  | { type: 'count'; n: number }
+  /** A lap made the board of the track; `place` 1 is the fastest. */
+  | { type: 'ranked'; place: number }
   /** Schrauben paid out at the finish line, and what for. */
   | { type: 'payout'; total: number; lap: number; best: number; clean: number; stunts: number };
 
 const PICKUP_RADIUS = 1.0;
+/** Seconds the start lights take. */
+const START_LIGHTS = 3;
 const PICKUP_RESPAWN = 15;
 
 /** Everything that makes up a running game except rendering, input devices and audio. */
@@ -52,11 +58,20 @@ export class GameCore {
   private scratched = false;
   /** Whether the write-off has been announced; however it came about, it is announced once. */
   private wreckSeen = false;
+  /** Seconds until the start lights go out; while they are on, nothing moves. */
+  countdown = 0;
+  /** The best lap of this track, to drive against. */
+  ghost: GhostLap | null;
+  /** The lap in progress, recorded like a ghost. */
+  private recording: number[] = [];
+  private steps = 0;
+  private lastLight = 0;
 
   constructor(readonly track: TrackDef, readonly progress: Progress) {
     this.sim = new Sim(track, VEHICLES[progress.vehicle]);
     this.race = new Race(track.gates, progress.bestLaps[track.id] ?? null);
     this.pickupTimers = track.pickups.map(() => 0);
+    this.ghost = progress.loadGhost(track.id);
     this.applyStage();
   }
 
@@ -99,8 +114,14 @@ export class GameCore {
     this.sim.world.free();
   }
 
-  /** Level back to its initial state: vehicle at the start, props and pickups restored. Progress stays. */
-  restart(): void {
+  /**
+   * Level back to its initial state: vehicle at the start, props and pickups restored. Progress stays.
+   * @param lights hold the vehicle on the grid for the start lights
+   */
+  restart(lights = false): void {
+    this.countdown = lights ? START_LIGHTS : 0;
+    this.lastLight = 0;
+    this.recording = [];
     this.sim.respawn();
     this.sim.resetProps();
     this.sim.traffic.reset();
@@ -115,7 +136,7 @@ export class GameCore {
     const { sim, progress, race } = this;
 
     if (input.respawn) {
-      this.restart();
+      this.restart(true);
     } else if (input.upright) {
       sim.vehicle.upright();
     }
@@ -139,6 +160,18 @@ export class GameCore {
     }
 
     const wasBoosting = sim.vehicle.boosting;
+    if (this.countdown > 0) {
+      // three lights, one a second, then go
+      const light = Math.max(1, Math.ceil(this.countdown - 1e-9));
+      if (light !== this.lastLight) this.events.push({ type: 'count', n: light });
+      this.lastLight = light;
+      this.countdown = Math.max(0, this.countdown - STEP);
+      if (this.countdown === 0) {
+        this.events.push({ type: 'count', n: 0 });
+        this.lastLight = 0;
+      }
+      input = { ...input, throttle: 0, steer: 0, handbrake: true, boost: false };
+    }
     sim.step(input);
 
     const v = sim.vehicle;
@@ -167,6 +200,11 @@ export class GameCore {
     }
     this.flippedFor = v.upY < 0.35 ? this.flippedFor + STEP : 0;
 
+    // Ten times a second, where it is: the lap as a ghost for later.
+    if (race.running && this.steps++ % Math.round(1 / STEP / GHOST_RATE) === 0) {
+      const r = v.body.rotation();
+      this.recording.push(...[p.x, p.y, p.z].map((n) => Math.round(n * 100) / 100), ...[r.x, r.y, r.z, r.w].map((n) => Math.round(n * 1000) / 1000));
+    }
     const ev = race.update(p.x, p.z, STEP);
     if (ev === 'start') this.events.push({ type: 'lapStart' });
     if (ev === 'lap') {
@@ -176,6 +214,16 @@ export class GameCore {
         progress.save();
       }
       this.events.push({ type: 'lap', time: race.lastLap!, best });
+      const place = progress.addTime(this.track.id, { time: race.lastLap!, name: progress.name, vehicle: v.spec.id, stage: progress.stageIndex, date: Date.now() });
+      if (place > 0) this.events.push({ type: 'ranked', place });
+      if (best) {
+        this.ghost = { time: race.lastLap!, vehicle: v.spec.id, samples: this.recording };
+        progress.saveGhost(this.track.id, this.ghost);
+      }
+    }
+    if (ev) {
+      this.recording = [];
+      this.steps = 0;
     }
     // The finish line is the till: lap money and bonuses, and the stunts of the lap are safe.
     if (ev) {
