@@ -234,7 +234,6 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
     box(root, 0.04, 0.3, 0.04, body, s * 0.21, seatY + 0.66, -0.31); // push handles
     box(root, 0.04, 0.04, 0.14, accent, s * 0.21, seatY + 0.8, -0.36);
     box(root, 0.16, 0.03, 0.2, body, s * 0.11, g + 0.07, 0.5); // footrests
-    box(root, 0.03, seatY - g - 0.1, 0.03, body, s * 0.11, (seatY + g) / 2, 0.42);
   }
   // joystick on the right armrest (right is -X)
   box(root, 0.08, 0.05, 0.1, body, -0.27, seatY + 0.23, 0.19);
@@ -263,21 +262,26 @@ function buildManual(spec: VehicleSpec): VehicleModel {
   const axleY = g + big.radius;
   const seatY = 0.08;
   const seatZ = axleZ + 0.14;
+  // The front frame tubes run straight down into the caster swivels. (With the tractor
+  // clamped on, the chair's own casters hang in the air, see below.)
+  const caster = spec.wheels.find((w) => w.caster);
+  const frontZ = caster ? caster.z : seatZ + 0.36;
+  const swivelY = caster ? g + caster.radius + 0.17 : g + 0.26;
+  const railY = seatY - 0.03;
 
   box(root, 0.42, 0.04, 0.42, seat, 0, seatY, seatZ);
   // (behind the driver's back, not in it: coinciding faces flicker)
   box(root, 0.42, 0.4, 0.04, seat, 0, seatY + 0.24, seatZ - 0.27);
   box(root, 0.56, 0.035, 0.035, STEEL, 0, axleY, axleZ); // axle tube
   for (const s of [1, -1]) {
-    box(root, 0.03, 0.03, 0.46, accent, s * 0.2, seatY - 0.03, seatZ); // seat rail
+    box(root, 0.03, 0.03, frontZ + 0.015 - (seatZ - 0.23), accent, s * 0.2, railY, (frontZ + 0.015 + seatZ - 0.23) / 2); // seat rail
     box(root, 0.03, seatY - axleY, 0.03, body, s * 0.2, (seatY + axleY) / 2, axleZ);
-    const down = box(root, 0.03, 0.46, 0.03, accent, s * 0.17, seatY - 0.22, seatZ + 0.3); // front tube
-    down.rotation.x = 0.35;
+    box(root, 0.03, railY - 0.015 - swivelY, 0.03, accent, s * 0.2, (railY - 0.015 + swivelY) / 2, frontZ); // front tube
     box(root, 0.03, 0.5, 0.03, body, s * 0.2, seatY + 0.3, seatZ - 0.27); // back tube
     box(root, 0.03, 0.03, 0.12, 0x111111, s * 0.2, seatY + 0.54, seatZ - 0.28); // push handle
     box(root, 0.02, 0.16, 0.26, 0x1b1b1f, s * 0.225, seatY + 0.1, seatZ - 0.02); // side guard
   }
-  box(root, 0.32, 0.02, 0.14, body, 0, g + 0.09, seatZ + 0.42); // footplate
+  box(root, 0.32, 0.02, 0.24, body, 0, g + 0.09, seatZ + 0.34); // footplate
 
   if (spec.addon === 'joystick') {
     box(root, 0.3, 0.1, 0.22, 0x1a1a1d, 0, seatY - 0.09, seatZ); // battery pack under the seat
@@ -327,9 +331,9 @@ function buildManual(spec: VehicleSpec): VehicleModel {
     for (const s of [1, -1]) {
       const bar = box(root, 0.03, 0.03, 0.5, STEEL, s * 0.1, g + 0.3, seatZ + 0.42);
       bar.rotation.y = s * -0.2;
-      const c = cyl(root, 0.06, 0.04, TYRE, s * 0.2, g + 0.13, seatZ + 0.36, 8);
+      const c = cyl(root, 0.06, 0.04, TYRE, s * 0.2, g + 0.13, frontZ, 8);
       c.rotation.z = Math.PI / 2;
-      box(root, 0.03, 0.12, 0.03, STEEL, s * 0.2, g + 0.2, seatZ + 0.36);
+      box(root, 0.03, 0.12, 0.03, STEEL, s * 0.2, g + 0.2, frontZ);
     }
   } else {
     for (const w of spec.wheels) if (w.caster) box(root, 0.03, 0.14, 0.03, STEEL, w.x, g + w.radius + 0.1, w.z); // caster forks
