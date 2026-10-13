@@ -23,7 +23,11 @@ export function createDebugPanel(core: GameCore): GUI {
 
   const h = gui.addFolder('Fahrverhalten');
   h.add(HANDLING, 'grip', 0.5, 4, 0.05).name('Reifengrip');
-  h.add(HANDLING, 'lateralAccel', 2, 14, 0.5).name('Kurven-g (m/s²)');
+  h.add(HANDLING, 'lateralAccel', 2, 16, 0.5).name('Lenk-Schärfe (m/s²)');
+  h.add(HANDLING, 'tipHeight', 0, 0.8, 0.02).name('Kippneigung');
+  h.add(HANDLING, 'tipAssist', 0, 1, 0.05).name('Kipp-Assistent');
+  h.add(HANDLING, 'tipAngle', 0.2, 1, 0.05).name('Assistent: Winkel');
+  h.add(HANDLING, 'rollDamping', 0, 200, 5).name('Wank-Dämpfung');
   h.add(HANDLING, 'motorGain', 1, 15, 0.5).name('Motor-Biss');
   h.add(HANDLING, 'yawGain', 2, 40, 1).name('Dreh-Biss (Rollstuhl)');
   h.add(HANDLING, 'brakeDecel', 1, 12, 0.5).name('Magnetbremse (m/s²)');

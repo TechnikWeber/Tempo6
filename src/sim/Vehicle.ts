@@ -33,6 +33,8 @@ export class Vehicle {
   yawRate = 0;
   /** Y component of the chassis up vector: 1 upright, below 0 upside down. */
   upY = 1;
+  /** Lean to the side in rad, positive = leaning to the driver's right. */
+  roll = 0;
   wheelsOnGround = 0;
   /** Swivel angle per wheel for casters, steering angle otherwise. */
   readonly wheelYaw: number[];
@@ -40,6 +42,9 @@ export class Vehicle {
   private readonly q = new Quaternion();
   private readonly fwd = new Vector3();
   private readonly up = new Vector3();
+  private readonly left = new Vector3();
+  /** Yaw torque the drive wheels were asked to produce in the last step. */
+  private wantedYawTorque = 0;
   private readonly local = new Vector3();
 
   constructor(private readonly world: RAPIER.World, readonly spec: VehicleSpec, x: number, y: number, z: number, yaw: number) {
@@ -93,22 +98,46 @@ export class Vehicle {
     this.speed = v;
     this.yawRate = yawRate;
     this.upY = this.up.y;
+    // The chassis X axis points left; when it rises, the vehicle leans right.
+    this.left.set(1, 0, 0).applyQuaternion(this.q);
+    this.roll = Math.asin(clamp(this.left.y, -1, 1));
 
+    // Nose up in a wheelie: ease off the motor so it hovers instead of flipping backwards.
+    const wheelie = Math.max(0, 1 - Math.max(0, this.fwd.y) / 0.3);
     const targetV = input.throttle >= 0 ? input.throttle * this.topSpeed : input.throttle * this.topSpeed * 0.5;
+    // Leaning out of the corner takes steering away, so full lock ends up balancing on two wheels.
+    // Steering towards the lean stays untouched: that is how you catch it again.
+    // Looking a little ahead (roll rate) keeps it from overshooting the balance point.
+    const rollRate = av.x * this.fwd.x + av.y * this.fwd.y + av.z * this.fwd.z;
+    const leaningOut = Math.max(0, -Math.sign(input.steer * v) * (this.roll + HANDLING.tipLookahead * rollRate));
+    const aLat = HANDLING.lateralAccel * Math.max(0, 1 - (HANDLING.tipAssist * leaningOut) / HANDLING.tipAngle);
     // Positive yaw turns left, so steering right asks for a negative yaw rate / wheel angle.
     const v2 = Math.max(v * v, 0.01);
     let yawTarget = 0;
     let steerAngle = 0;
     if (spec.differential) {
-      yawTarget = -input.steer * Math.min(spec.maxYawRate, HANDLING.lateralAccel / Math.max(Math.abs(v), 0.5));
+      yawTarget = -input.steer * Math.min(spec.maxYawRate, aLat / Math.max(Math.abs(v), 0.5));
     } else {
-      steerAngle = -input.steer * Math.min(spec.maxSteer, Math.atan((spec.wheelbase * HANDLING.lateralAccel) / v2));
+      steerAngle = -input.steer * Math.min(spec.maxSteer, Math.atan((spec.wheelbase * aLat) / v2));
     }
 
     const drives = spec.wheels.filter((w) => w.drive).length;
     const perWheel = spec.mass / drives;
     // Velocity in chassis space, used for the caster swivel.
     this.local.set(lv.x, lv.y, lv.z).applyQuaternion(this.q.invert());
+
+    // A drive wheel that has lifted off cannot push. For differential drive that would mean
+    // no steering on two wheels, so whatever turning force the tyres failed to deliver in
+    // the last step is applied to the chassis directly.
+    if (spec.differential && this.wheelsOnGround > 0 && !input.handbrake) {
+      let delivered = 0;
+      spec.wheels.forEach((w, i) => {
+        if (w.drive) delivered -= (w.x * (ctrl.wheelForwardImpulse(i) ?? 0)) / dt;
+      });
+      const fill = (this.wantedYawTorque - delivered) * dt;
+      body.applyTorqueImpulse({ x: this.up.x * fill, y: this.up.y * fill, z: this.up.z * fill }, true);
+    }
+    this.wantedYawTorque = 0;
 
     let onGround = 0;
     spec.wheels.forEach((w, i) => {
@@ -128,14 +157,26 @@ export class Vehicle {
           const actual = v - yawRate * w.x;
           // Slowing down may use the brake; speeding up is limited by the motor.
           const slowing = Math.abs(target) < Math.abs(actual) || target * actual < 0;
-          const cap = perWheel * (slowing ? Math.max(this.accel, HANDLING.brakeDecel) : this.accel);
-          force = perWheel * (HANDLING.motorGain * (targetV - v) - HANDLING.yawGain * (yawTarget - yawRate) * w.x);
-          // The drive axle sits behind the centre of mass, so cornering grip pulls the nose
-          // straight again. Feed forward the wheel force that cancels this, else it understeers.
-          if (spec.differential) force += ((w.z - spec.com[2]) * spec.mass * v * yawTarget) / (drives * w.x);
-          force = clamp(force, -cap, cap);
+          const cap = perWheel * (slowing ? Math.max(this.accel, HANDLING.brakeDecel) : this.accel * wheelie);
+          let turn = 0;
+          if (spec.differential) {
+            turn = -perWheel * HANDLING.yawGain * (yawTarget - yawRate) * w.x;
+            // The drive axle sits behind the centre of mass, so cornering grip pulls the nose
+            // straight again. Feed forward the wheel force that cancels this, else it understeers.
+            turn += ((w.z - spec.com[2]) * spec.mass * v * yawTarget) / (drives * w.x);
+            turn = clamp(turn, -cap * 0.8, cap * 0.8);
+          }
+          // Steering gets its share of the motor first; otherwise both wheels would sit at
+          // the limit under full throttle and there would be nothing left to turn with.
+          const room = cap - Math.abs(turn);
+          force = turn + clamp(perWheel * HANDLING.motorGain * (targetV - v), -room, room);
+          // With one drive wheel in the air the other one's steering force would act as
+          // extra thrust, so fade out anything that pushes beyond the top speed.
+          const over = Math.abs(v) - this.topSpeed;
+          if (over > 0 && force * v > 0) force *= Math.max(0, 1 - over / (0.1 * this.topSpeed + 0.2));
         }
       }
+      this.wantedYawTorque -= w.x * force;
       ctrl.setWheelEngineForce(i, force);
       ctrl.setWheelBrake(i, brake);
       ctrl.setWheelSideFrictionStiffness(i, side);
@@ -151,6 +192,14 @@ export class Vehicle {
       if (ctrl.wheelIsInContact(i)) onGround++;
     });
     this.wheelsOnGround = onGround;
+
+    // Cornering force pushes the top of the vehicle outwards (see HANDLING.tipHeight).
+    if (onGround > 0) {
+      const lateral = clamp(yawRate * v, -HANDLING.grip * 9.81, HANDLING.grip * 9.81);
+      // The second term is the roll damper.
+      const push = (spec.mass * lateral * HANDLING.tipHeight - HANDLING.rollDamping * rollRate) * dt;
+      body.applyTorqueImpulse({ x: this.fwd.x * push, y: this.fwd.y * push, z: this.fwd.z * push }, true);
+    }
 
     // Wheels ride on the world only; loose props are handled by the chassis collider.
     ctrl.updateVehicle(dt, RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC);

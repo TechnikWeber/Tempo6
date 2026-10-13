@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { STAGES } from '../src/config/tuning';
-import { SCOOTER, WHEELCHAIR, type VehicleSpec } from '../src/config/vehicles';
+import { HANDLING, SCOOTER, WHEELCHAIR, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
 import { Race } from '../src/sim/Race';
@@ -71,11 +71,70 @@ describe.each<[string, VehicleSpec]>([
     drive(sim, 6, 1);
     drive(sim, 3, 1, 1);
     const v = sim.vehicle;
-    expect(v.upY).toBeGreaterThan(0.9);
+    expect(v.upY).toBeGreaterThan(0.6);
     expect(v.yawRate).toBeLessThan(-0.1);
     // still travelling mostly nose first
     const lv = v.body.linvel();
     expect(v.speed).toBeGreaterThan(Math.hypot(lv.x, lv.z) * 0.8);
+  });
+});
+
+describe.each<[string, VehicleSpec]>([
+  ['wheelchair', WHEELCHAIR],
+  ['scooter', SCOOTER],
+])('%s cornering', (_name, spec) => {
+  it.each([0, 6, 12])('steers while accelerating flat out from a standstill (stage %i)', (stage) => {
+    const sim = new Sim(FLAT, spec);
+    const s = STAGES[stage];
+    sim.vehicle.setMotor(s.topSpeedKmh / 3.6, s.accel);
+    drive(sim, 1, 0);
+    drive(sim, 0.8, 1, -1);
+    expect(sim.vehicle.yawRate).toBeGreaterThan(0.4);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.8);
+  });
+
+  it('rides on two wheels at full lock and speed, but stays up', () => {
+    const sim = new Sim(FLAT, spec);
+    sim.vehicle.setMotor(30 / 3.6, 5);
+    drive(sim, 5, 1);
+    let maxRoll = 0;
+    let minWheels = 4;
+    for (let i = 0; i < 60 * 6; i++) {
+      sim.step({ throttle: 1, steer: 1, handbrake: false });
+      maxRoll = Math.max(maxRoll, Math.abs(sim.vehicle.roll));
+      minWheels = Math.min(minWheels, sim.vehicle.wheelsOnGround);
+    }
+    expect(maxRoll).toBeGreaterThan(0.12);
+    expect(minWheels).toBeLessThanOrEqual(2);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.6);
+    expect(sim.vehicle.yawRate).toBeLessThan(-0.2);
+  });
+
+  it('falls over without the tip assist', () => {
+    const sim = new Sim(FLAT, spec);
+    const saved = HANDLING.tipAssist;
+    HANDLING.tipAssist = 0;
+    try {
+      sim.vehicle.setMotor(40 / 3.6, 5.5);
+      drive(sim, 5, 1);
+      let minUp = 1;
+      for (let i = 0; i < 60 * 4; i++) {
+        sim.step({ throttle: 1, steer: 1, handbrake: false });
+        minUp = Math.min(minUp, sim.vehicle.upY);
+      }
+      expect(minUp).toBeLessThan(0.3);
+    } finally {
+      HANDLING.tipAssist = saved;
+    }
+  });
+
+  it('stays on four wheels at gentle steering', () => {
+    const sim = new Sim(FLAT, spec);
+    sim.vehicle.setMotor(30 / 3.6, 5);
+    drive(sim, 5, 1);
+    drive(sim, 4, 1, 0.5);
+    expect(Math.abs(sim.vehicle.roll)).toBeLessThan(0.2);
+    expect(sim.vehicle.wheelsOnGround).toBeGreaterThanOrEqual(3);
   });
 });
 

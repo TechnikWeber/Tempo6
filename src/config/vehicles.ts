@@ -79,8 +79,25 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = { wheelchair: WHEELCHAIR
 export const HANDLING = {
   /** Tyre grip (friction coefficient of the raycast wheels). */
   grip: 2.0,
-  /** Steering is limited so cornering stays below this lateral acceleration (m/s²). */
-  lateralAccel: 6.5,
+  /** Full lock asks for this much lateral acceleration (m/s²). Above about g·0.3/tipHeight the inner wheels lift. */
+  lateralAccel: 10,
+  /**
+   * Height (m) at which cornering force pushes the chassis over. The physics engine
+   * applies tyre forces almost at the centre of mass, so the roll is added by hand.
+   * 0 = never leans, higher = tips earlier.
+   */
+  tipHeight: 0.36,
+  /**
+   * Eases off the steering as the vehicle leans, which is what lets it balance on two
+   * wheels instead of going straight over. 0 = no help, 1 = steering fully gone at tipAngle.
+   */
+  tipAssist: 1,
+  /** Lean angle (rad) at which the assist has taken away all steering. */
+  tipAngle: 0.45,
+  /** How far ahead (s) the assist extrapolates the lean. */
+  tipLookahead: 0.25,
+  /** Damps the rocking from side to side (N·m·s/rad). */
+  rollDamping: 60,
   /** Proportional gain of the wheel speed controller (1/s). */
   motorGain: 6,
   /** Gain on the yaw rate error of differential drive (1/s). */
