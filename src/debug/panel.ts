@@ -4,24 +4,25 @@ import { HANDLING, HANDLING_DEFAULTS } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
 
 /** The "Werkstatt": live tuning of the handling and cheats for testing. Toggle with F2. */
-export function createDebugPanel(core: GameCore): GUI {
+export function createDebugPanel(game: () => GameCore): GUI {
   const gui = new GUI({ title: 'Werkstatt (F2)' });
-  const state = { stufe: core.progress.stageIndex };
+  const progress = game().progress;
+  const state = { stufe: progress.stageIndex };
 
   const stufe = gui
     .add(state, 'stufe', 0, STAGES.length - 1, 1)
     .name('Tuning-Stufe')
     .onChange((v: number) => {
-      core.progress.stageIndex = v;
-      core.progress.save();
-      core.applyStage();
+      progress.stageIndex = v;
+      progress.save();
+      game().applyStage();
     });
-  gui.add({ f: () => core.progress.earn(1000) }, 'f').name('+10 € Pfand');
+  gui.add({ f: () => progress.earn(1000) }, 'f').name('+10 € Pfand');
   gui
-    .add({ f: () => { core.progress.wipe(); core.applyStage(); } }, 'f')
+    .add({ f: () => { progress.wipe(); game().applyStage(); } }, 'f')
     .name('Spielstand löschen');
 
-  gui.add({ f: () => core.restart() }, 'f').name('Level neu starten (⌫)');
+  gui.add({ f: () => game().restart() }, 'f').name('Level neu starten (⌫)');
 
   const h = gui.addFolder('Fahrverhalten');
   h.add({ f: () => { Object.assign(HANDLING, HANDLING_DEFAULTS); h.controllersRecursive().forEach((c) => c.updateDisplay()); } }, 'f')
@@ -42,8 +43,8 @@ export function createDebugPanel(core: GameCore): GUI {
 
   // Keep the slider in step when the stage changes through normal play.
   setInterval(() => {
-    if (state.stufe !== core.progress.stageIndex) {
-      state.stufe = core.progress.stageIndex;
+    if (state.stufe !== progress.stageIndex) {
+      state.stufe = progress.stageIndex;
       stufe.updateDisplay();
     }
   }, 500);

@@ -41,4 +41,5 @@ export function installTouchControls(input: Input): void {
   hold('touch-back', () => (input.touch.throttle = -1), () => (input.touch.throttle = 0));
   hold('touch-brake', () => (input.touch.handbrake = true), () => (input.touch.handbrake = false));
   document.getElementById('touch-up')!.addEventListener('click', () => input.trigger('upright'));
+  document.getElementById('touch-menu')!.addEventListener('click', () => input.trigger('menu'));
 }

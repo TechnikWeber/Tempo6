@@ -109,15 +109,17 @@ export class View {
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(60, 1, 0.1, 600);
   private readonly sun = new DirectionalLight(0xfff1d6, 2.6);
-  private readonly propMeshes: Object3D[] = [];
-  private readonly pickupMeshes: Object3D[] = [];
+  private propMeshes: Object3D[] = [];
+  private pickupMeshes: Object3D[] = [];
+  private level: Group | null = null;
+  private track: TrackDef | null = null;
   private model: VehicleModel | null = null;
   private camYaw = 0;
   private camReady = false;
   private lean = 0;
   private time = 0;
 
-  constructor(canvas: HTMLCanvasElement, private readonly track: TrackDef) {
+  constructor(canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
@@ -141,25 +143,41 @@ export class View {
     lawn.position.y = -0.05;
     this.scene.add(lawn);
 
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  }
+
+  /** Swap the level geometry. */
+  setTrack(track: TrackDef): void {
+    if (this.level) {
+      this.scene.remove(this.level);
+      this.level.traverse((o) => {
+        if (o instanceof Mesh) o.geometry.dispose();
+      });
+    }
+    const level = new Group();
+    this.level = level;
+    this.track = track;
+    this.propMeshes = [];
+    this.pickupMeshes = [];
     for (const b of track.statics) {
-      const m = box(this.scene, b.half[0] * 2, b.half[1] * 2, b.half[2] * 2, b.color, ...b.pos);
+      const m = box(level, b.half[0] * 2, b.half[1] * 2, b.half[2] * 2, b.color, ...b.pos);
       if (b.quat) m.quaternion.fromArray(b.quat);
     }
-    for (const d of track.decor) this.scene.add(buildDecor(d));
+    for (const d of track.decor) level.add(buildDecor(d));
     for (const p of track.props) {
       const m = buildProp(p.type);
       this.propMeshes.push(m);
-      this.scene.add(m);
+      level.add(m);
     }
     for (const p of track.pickups) {
       const m = buildPickup(p.type);
       m.position.set(...p.pos);
       this.pickupMeshes.push(m);
-      this.scene.add(m);
+      level.add(m);
     }
-
-    this.resize();
-    window.addEventListener('resize', () => this.resize());
+    this.scene.add(level);
+    this.camReady = false;
   }
 
   private resize(): void {
@@ -176,10 +194,14 @@ export class View {
     this.camReady = false;
   }
 
-  /** @param alpha position between the last two physics steps, 0…1 */
-  render(core: GameCore, alpha: number, dt: number): void {
+  /**
+   * @param alpha position between the last two physics steps, 0…1
+   * @param showroom circle the camera around the parked vehicle (start screen)
+   */
+  render(core: GameCore, alpha: number, dt: number, showroom = false): void {
     const model = this.model;
-    if (!model) return;
+    const track = this.track;
+    if (!model || !track) return;
     const v = core.sim.vehicle;
     this.time += dt;
 
@@ -194,16 +216,33 @@ export class View {
     const target = Math.max(-0.45, Math.min(0.45, v.yawRate * v.speed * 0.05));
     this.lean += (target - this.lean) * Math.min(1, dt * 6);
     model.driver.rotation.z = this.lean;
+    // Pushing the rims: both arms swing with the stroke.
+    for (const arm of model.arms) arm.rotation.x = -0.15 + Math.sin(v.pushPhase) * 0.45;
 
     core.sim.props.forEach((p, i) => place(this.propMeshes[i], p.tracked, alpha));
     this.pickupMeshes.forEach((m, i) => {
-      m.visible = core.pickupTimers[i] === 0;
+      m.visible = !showroom && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;
-      m.position.y = this.track.pickups[i].pos[1] + Math.sin(this.time * 3 + i) * 0.08;
+      m.position.y = track.pickups[i].pos[1] + Math.sin(this.time * 3 + i) * 0.08;
     });
 
-    this.updateCamera(model.root.position, v.yaw, Math.abs(v.speed), dt);
+    if (showroom) this.showroomCamera(model.root.position, v.yaw);
+    else this.updateCamera(model.root.position, v.yaw, Math.abs(v.speed), dt);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private showroomCamera(pos: Vector3, yaw: number): void {
+    // Slow orbit, starting from the front three-quarter view.
+    const a = yaw + 0.7 + this.time * 0.35;
+    this.camera.position.set(pos.x + Math.sin(a) * 3.4, pos.y + 1.1, pos.z + Math.cos(a) * 3.4);
+    this.camera.lookAt(pos.x, pos.y + 0.25, pos.z);
+    if (this.camera.fov !== 42) {
+      this.camera.fov = 42;
+      this.camera.updateProjectionMatrix();
+    }
+    this.sun.position.set(pos.x + 18, pos.y + 34, pos.z - 12);
+    this.sun.target.position.copy(pos);
+    this.camReady = false;
   }
 
   private updateCamera(pos: Vector3, yaw: number, speed: number, dt: number): void {

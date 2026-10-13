@@ -56,8 +56,9 @@ export class Hud {
     const kmh = Math.abs(sim.vehicle.speed) * 3.6;
     const stage = progress.stage;
     this.set(this.speed, kmh.toFixed(1).replace('.', ','));
-    this.speedBar.style.width = `${Math.min(100, (kmh / stage.topSpeedKmh) * 100).toFixed(0)}%`;
-    this.set(this.top, String(stage.topSpeedKmh));
+    this.speedBar.style.width = `${Math.min(100, (kmh / core.topSpeedKmh) * 100).toFixed(0)}%`;
+    const top = core.topSpeedKmh;
+    this.set(this.top, top.toFixed(top % 1 ? 1 : 0).replace('.', ','));
     this.set(this.vehicle, sim.vehicle.spec.label);
     this.set(this.lapTime, race.running ? formatTime(race.lapTime) : '–');
     this.set(this.lapBest, formatTime(race.best));

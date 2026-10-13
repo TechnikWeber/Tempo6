@@ -39,7 +39,11 @@ export interface DecorDef {
 }
 
 export interface TrackDef {
+  id: string;
   name: string;
+  blurb: string;
+  /** Pfand in cents to unlock; 0 = available from the start. */
+  unlockPrice: number;
   spawn: { pos: [number, number, number]; yaw: number };
   statics: BoxDef[];
   props: PropDef[];

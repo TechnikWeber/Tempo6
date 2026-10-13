@@ -1,6 +1,6 @@
 import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { PROP_SHAPES, type PickupType, type PropType } from '../sim/Track';
-import type { VehicleSpec } from '../config/vehicles';
+import { groundY, type VehicleSpec, type WheelSpec } from '../config/vehicles';
 
 const materials = new Map<number, MeshStandardMaterial>();
 
@@ -43,89 +43,251 @@ export interface VehicleModel {
   wheels: WheelModel[];
   /** Leans in corners. */
   driver: Group;
+  /** Shoulder pivots that swing when pushing the rims. */
+  arms: Group[];
 }
 
 const SKIN = 0xe8b48c;
 const TYRE = 0x1d1d1f;
+const STEEL = 0x8d9299;
 
-function wheel(radius: number, width: number, hub: number): WheelModel {
+function wheel(w: WheelSpec, spec: VehicleSpec): WheelModel {
   const pivot = new Group();
   const spin = new Group();
   pivot.add(spin);
-  const tyre = cyl(spin, radius, width, TYRE, 0, 0, 0, 10);
-  tyre.rotation.z = Math.PI / 2;
-  const cap = cyl(spin, radius * 0.55, width + 0.02, hub, 0, 0, 0, 6);
-  cap.rotation.z = Math.PI / 2;
-  // a spoke, so the rolling is visible
-  box(spin, width + 0.03, radius * 1.5, radius * 0.25, hub);
+  const r = w.radius;
+  const axle = (m: Mesh) => (m.rotation.z = Math.PI / 2);
+  if (r >= 0.25) {
+    // Big push-rim wheel: thin tyre, spoke guard, hub.
+    axle(cyl(spin, r, 0.035, TYRE, 0, 0, 0, 14));
+    axle(cyl(spin, r * 0.93, 0.02, 0xb8bcc2, 0, 0, 0, 14));
+    axle(cyl(spin, r * 0.9, 0.012, STEEL, Math.sign(w.x) * 0.035, 0, 0, 14)); // push rim
+    if (spec.addon === 'hubs') {
+      axle(cyl(spin, r * 0.5, 0.07, spec.colors.accent, 0, 0, 0, 10));
+      axle(cyl(spin, r * 0.42, 0.1, spec.colors.hub, 0, 0, 0, 10));
+    } else {
+      axle(cyl(spin, r * 0.14, 0.09, spec.colors.hub, 0, 0, 0, 6));
+    }
+    box(spin, 0.04, r * 1.8, 0.03, STEEL);
+    box(spin, 0.04, 0.03, r * 1.8, STEEL);
+  } else {
+    const width = w.caster ? 0.045 : r > 0.15 ? 0.1 : 0.08;
+    axle(cyl(spin, r, width, TYRE, 0, 0, 0, 10));
+    axle(cyl(spin, r * 0.55, width + 0.02, w.caster ? STEEL : spec.colors.hub, 0, 0, 0, 6));
+    // a spoke, so the rolling is visible
+    box(spin, width + 0.03, r * 1.5, r * 0.25, w.caster ? STEEL : spec.colors.hub);
+  }
   return { pivot, spin };
 }
 
-function wheelsFor(root: Group, spec: VehicleSpec, hub: number): WheelModel[] {
+function wheelsFor(root: Group, spec: VehicleSpec): WheelModel[] {
   return spec.wheels.map((w) => {
-    const m = wheel(w.radius, w.caster ? 0.05 : 0.09, hub);
+    const m = wheel(w, spec);
     m.pivot.position.set(w.x, w.y - spec.suspensionRest, w.z);
     root.add(m.pivot);
     return m;
   });
 }
 
+interface DriverStyle {
+  shirt: number;
+  trousers: number;
+  hair: number;
+  arms: 'rest' | 'forward' | 'rims';
+  hat?: number;
+  beard?: number;
+  scarf?: number;
+}
+
 /** A seated blocky person. Origin is the seat surface under the hips. */
-function driver(shirt: number, trousers: number, hair: number, armsForward: boolean): Group {
+function driver(st: DriverStyle): { group: Group; arms: Group[] } {
   const g = new Group();
-  box(g, 0.36, 0.44, 0.24, shirt, 0, 0.26, -0.02);
+  const arms: Group[] = [];
+  box(g, 0.36, 0.44, 0.24, st.shirt, 0, 0.26, -0.02);
   box(g, 0.22, 0.22, 0.22, SKIN, 0, 0.62, 0);
-  box(g, 0.24, 0.08, 0.24, hair, 0, 0.75, -0.01);
+  box(g, 0.24, 0.08, 0.24, st.hair, 0, 0.75, -0.01);
   box(g, 0.23, 0.05, 0.06, 0x111111, 0, 0.64, 0.1); // sunglasses
   box(g, 0.06, 0.04, 0.03, 0xb85c4a, 0, 0.55, 0.11); // grin
+  if (st.hat !== undefined) {
+    box(g, 0.25, 0.07, 0.25, st.hat, 0, 0.79, -0.01);
+    box(g, 0.22, 0.02, 0.12, st.hat, 0, 0.765, 0.17);
+  }
+  if (st.beard !== undefined) box(g, 0.2, 0.1, 0.05, st.beard, 0, 0.53, 0.1);
+  if (st.scarf !== undefined) {
+    box(g, 0.26, 0.07, 0.26, st.scarf, 0, 0.49, 0);
+    const tail = box(g, 0.08, 0.05, 0.34, st.scarf, 0.08, 0.5, -0.28);
+    tail.rotation.x = 0.25;
+  }
   for (const s of [1, -1]) {
-    box(g, 0.14, 0.13, 0.42, trousers, s * 0.1, 0.06, 0.2);
-    box(g, 0.12, 0.38, 0.12, trousers, s * 0.1, -0.16, 0.36);
+    box(g, 0.14, 0.13, 0.42, st.trousers, s * 0.1, 0.06, 0.2);
+    box(g, 0.12, 0.38, 0.12, st.trousers, s * 0.1, -0.16, 0.36);
     box(g, 0.13, 0.07, 0.24, 0x2a2a2a, s * 0.1, -0.36, 0.42);
-    if (armsForward) {
-      const arm = box(g, 0.1, 0.1, 0.46, shirt, s * 0.22, 0.3, 0.2);
+    if (st.arms === 'forward') {
+      const arm = box(g, 0.1, 0.1, 0.46, st.shirt, s * 0.22, 0.3, 0.2);
       arm.rotation.x = -0.25;
       box(g, 0.09, 0.09, 0.09, SKIN, s * 0.22, 0.36, 0.44);
+    } else if (st.arms === 'rims') {
+      // Shoulder pivot; the arm hangs down and out to the push rim.
+      const shoulder = new Group();
+      shoulder.position.set(s * 0.22, 0.42, -0.02);
+      shoulder.rotation.z = s * 0.28;
+      box(shoulder, 0.1, 0.36, 0.1, st.shirt, 0, -0.16, 0);
+      box(shoulder, 0.09, 0.09, 0.09, SKIN, 0, -0.38, 0);
+      g.add(shoulder);
+      arms.push(shoulder);
     } else {
-      box(g, 0.1, 0.3, 0.1, shirt, s * 0.24, 0.28, -0.02);
+      box(g, 0.1, 0.3, 0.1, st.shirt, s * 0.24, 0.28, -0.02);
       box(g, 0.1, 0.09, 0.3, SKIN, s * 0.24, 0.14, 0.14);
     }
   }
-  return g;
+  return { group: g, arms };
 }
 
-function buildWheelchair(spec: VehicleSpec): VehicleModel {
+const DRIVERS: Record<VehicleSpec['id'], DriverStyle> = {
+  trex: { shirt: 0xe0563a, trousers: 0x3c5a8a, hair: 0xd8d8d8, arms: 'rest' },
+  avanti: { shirt: 0x1c1c1f, trousers: 0x2b2b30, hair: 0x3a2a1a, arms: 'rest', hat: 0x1e88e5 },
+  orkan: { shirt: 0x5b6b3a, trousers: 0x4a4034, hair: 0x6b4a2b, arms: 'rest', hat: 0xb71c1c, beard: 0x6b4a2b },
+  eskalation: { shirt: 0xf2f2f2, trousers: 0x25252a, hair: 0x2a2018, arms: 'rims', hat: 0x7b2d8e },
+  schubs: { shirt: 0xf0c020, trousers: 0x3c5a8a, hair: 0x8a5a2b, arms: 'rims', hat: 0x9ccc3c },
+  ekaptn: { shirt: 0x5a3d2b, trousers: 0x2b2b30, hair: 0x4a3a2a, arms: 'forward', hat: 0x5a3d2b, scarf: 0xf2f2f2 },
+  komet: { shirt: 0x3f8f5f, trousers: 0x8a6f4d, hair: 0xf0f0f0, arms: 'forward', hat: 0x8a8068 },
+};
+
+/** Power chair: battery base, shroud in the model's colour, captain's seat. */
+function buildPowerchair(spec: VehicleSpec): VehicleModel {
   const root = new Group();
-  const FRAME = 0x2b2f36;
-  const SEAT = 0x15161a;
-  const ACCENT = 0xd23b3b;
-  box(root, 0.5, 0.2, 0.62, FRAME, 0, -0.1, -0.08); // battery box
-  box(root, 0.3, 0.06, 0.3, ACCENT, 0, -0.1, 0.3); // front beam to the casters
-  box(root, 0.46, 0.08, 0.46, SEAT, 0, 0.06, -0.02);
-  box(root, 0.46, 0.56, 0.08, SEAT, 0, 0.38, -0.27);
-  box(root, 0.22, 0.14, 0.07, SEAT, 0, 0.76, -0.27); // headrest
+  const { body, accent, seat } = spec.colors;
+  const heavy = spec.look === 'heavy';
+  const g = groundY(spec);
+  const driveX = Math.max(...spec.wheels.filter((w) => w.drive).map((w) => Math.abs(w.x)));
+  const baseW = (driveX - 0.07) * 2;
+  const seatY = heavy ? 0.12 : 0.06;
+
+  if (spec.look === 'mid') {
+    box(root, baseW, 0.2, 0.6, body, 0, -0.1, 0);
+    box(root, baseW - 0.04, 0.14, 0.04, accent, 0, -0.08, 0.31); // front panel
+    box(root, baseW - 0.04, 0.14, 0.04, accent, 0, -0.08, -0.31);
+    for (const s of [1, -1]) {
+      box(root, 0.11, 0.05, 0.44, accent, s * driveX, g + 0.37, 0); // fender over the drive wheel
+      for (const z of [0.34, -0.34]) box(root, 0.05, 0.05, 0.22, body, s * 0.22, g + 0.2, z); // caster arms
+    }
+  } else if (heavy) {
+    box(root, baseW, 0.24, 0.8, body, 0, -0.1, -0.06);
+    box(root, baseW + 0.06, 0.26, 0.46, accent, 0, 0.0, -0.34); // the big rear shroud
+    box(root, baseW - 0.1, 0.05, 0.03, 0xff2a2a, 0, 0.04, -0.575); // tail light
+    box(root, baseW + 0.2, 0.05, 0.05, STEEL, 0, -0.16, 0.38); // bumper
+    for (const s of [1, -1]) {
+      box(root, 0.12, 0.05, 0.5, body, s * driveX, g + 0.43, -0.28);
+      box(root, 0.07, 0.2, 0.07, STEEL, s * 0.27, g + 0.26, 0.42); // caster fork
+      box(root, 0.07, 0.05, 0.05, 0xfff3b0, s * 0.18, -0.02, 0.35); // headlights
+    }
+  } else {
+    box(root, baseW, 0.18, 0.64, body, 0, -0.1, -0.1);
+    box(root, baseW - 0.1, 0.03, 0.02, 0xff2a2a, 0, -0.06, -0.425); // tail light strip
+    for (const s of [1, -1]) {
+      box(root, 0.02, 0.035, 0.6, accent, s * (baseW / 2 + 0.005), -0.05, -0.1); // accent line
+      box(root, 0.05, 0.05, 0.34, body, s * 0.24, g + 0.22, 0.26); // caster arms
+      box(root, 0.05, 0.03, 0.03, 0xdff3ff, s * 0.14, -0.07, 0.225); // LED lights
+    }
+  }
+
+  // Seat
+  box(root, 0.46, 0.08, 0.46, seat, 0, seatY, -0.02);
+  box(root, 0.46, 0.56, 0.08, seat, 0, seatY + 0.32, -0.27);
+  box(root, 0.22, 0.14, 0.07, seat, 0, seatY + 0.7, -0.27); // headrest
+  if (spec.look === 'rear') box(root, 0.3, 0.4, 0.02, accent, 0, seatY + 0.34, -0.315); // back panel
   for (const s of [1, -1]) {
-    box(root, 0.06, 0.05, 0.38, SEAT, s * 0.27, 0.27, -0.04);
-    box(root, 0.04, 0.2, 0.04, FRAME, s * 0.27, 0.16, -0.18);
-    box(root, 0.04, 0.3, 0.04, FRAME, s * 0.21, 0.72, -0.31); // push handles
-    box(root, 0.04, 0.04, 0.14, ACCENT, s * 0.21, 0.86, -0.36);
-    box(root, 0.16, 0.03, 0.2, FRAME, s * 0.11, -0.3, 0.48); // footrests
-    box(root, 0.03, 0.26, 0.03, FRAME, s * 0.11, -0.18, 0.42);
+    box(root, 0.06, 0.05, 0.38, seat, s * 0.27, seatY + 0.21, -0.04);
+    box(root, 0.04, 0.2, 0.04, body, s * 0.27, seatY + 0.1, -0.18);
+    box(root, 0.04, 0.3, 0.04, body, s * 0.21, seatY + 0.66, -0.31); // push handles
+    box(root, 0.04, 0.04, 0.14, accent, s * 0.21, seatY + 0.8, -0.36);
+    box(root, 0.16, 0.03, 0.2, body, s * 0.11, g + 0.07, 0.5); // footrests
+    box(root, 0.03, seatY - g - 0.1, 0.03, body, s * 0.11, (seatY + g) / 2, 0.42);
   }
   // joystick on the right armrest (right is -X)
-  box(root, 0.08, 0.05, 0.1, FRAME, -0.27, 0.29, 0.19);
-  cyl(root, 0.012, 0.09, 0x888888, -0.27, 0.35, 0.19, 5);
-  box(root, 0.04, 0.04, 0.04, ACCENT, -0.27, 0.4, 0.19);
-  const d = driver(0xe0563a, 0x3c5a8a, 0xd8d8d8, false);
-  d.position.set(0, 0.1, -0.14);
-  root.add(d);
-  return { root, wheels: wheelsFor(root, spec, 0xb9bcc2), driver: d };
+  box(root, 0.08, 0.05, 0.1, body, -0.27, seatY + 0.23, 0.19);
+  cyl(root, 0.012, 0.09, STEEL, -0.27, seatY + 0.29, 0.19, 5);
+  box(root, 0.04, 0.04, 0.04, accent, -0.27, seatY + 0.34, 0.19);
+
+  const d = driver(DRIVERS[spec.id]);
+  d.group.position.set(0, seatY + 0.04, -0.14);
+  root.add(d.group);
+  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
+}
+
+/** Folding manual chair with one of the add-on drives. */
+function buildManual(spec: VehicleSpec): VehicleModel {
+  const root = new Group();
+  const { body, accent, seat } = spec.colors;
+  const g = groundY(spec);
+  const big = spec.wheels.find((w) => w.radius >= 0.25)!;
+  const axleZ = big.z;
+  const axleY = g + big.radius;
+  const seatY = 0.08;
+  const seatZ = axleZ + 0.14;
+
+  box(root, 0.42, 0.04, 0.42, seat, 0, seatY, seatZ);
+  box(root, 0.42, 0.4, 0.04, seat, 0, seatY + 0.24, seatZ - 0.22);
+  box(root, 0.56, 0.035, 0.035, STEEL, 0, axleY, axleZ); // axle tube
+  for (const s of [1, -1]) {
+    box(root, 0.03, 0.03, 0.46, accent, s * 0.2, seatY - 0.03, seatZ); // seat rail
+    box(root, 0.03, seatY - axleY, 0.03, body, s * 0.2, (seatY + axleY) / 2, axleZ);
+    const down = box(root, 0.03, 0.46, 0.03, accent, s * 0.17, seatY - 0.22, seatZ + 0.3); // front tube
+    down.rotation.x = 0.35;
+    box(root, 0.03, 0.5, 0.03, body, s * 0.2, seatY + 0.3, seatZ - 0.23); // back tube
+    box(root, 0.03, 0.03, 0.12, 0x111111, s * 0.2, seatY + 0.54, seatZ - 0.28); // push handle
+    box(root, 0.02, 0.16, 0.26, 0x1b1b1f, s * 0.225, seatY + 0.1, seatZ - 0.02); // side guard
+  }
+  box(root, 0.32, 0.02, 0.14, body, 0, g + 0.09, seatZ + 0.42); // footplate
+
+  if (spec.addon === 'pusher') {
+    // Drive unit hanging under the axle, with the little wheel trailing behind.
+    const unit = spec.wheels.find((w) => w.drive)!;
+    box(root, 0.11, 0.13, 0.24, 0x1a1a1d, 0, g + 0.2, unit.z + 0.06);
+    box(root, 0.115, 0.03, 0.1, accent, 0, g + 0.25, unit.z + 0.06);
+    const link = box(root, 0.04, 0.04, 0.3, STEEL, 0, (axleY + g + 0.2) / 2, (axleZ + unit.z) / 2 + 0.03);
+    link.rotation.x = -0.5;
+    box(root, 0.05, 0.04, 0.06, accent, -0.23, seatY + 0.2, seatZ + 0.16); // control dial
+  }
+  if (spec.addon === 'tractor') {
+    const front = spec.wheels.find((w) => w.steer)!;
+    const topY = seatY + 0.42;
+    const topZ = front.z - 0.24;
+    const hubY = g + front.radius;
+    // fork and steering column, raked back towards the rider
+    const col = box(root, 0.06, 0.95, 0.06, 0x1a1a1d, 0, (topY + hubY) / 2, (topZ + front.z) / 2);
+    col.rotation.x = -Math.atan2(front.z - topZ, topY - hubY);
+    for (const s of [1, -1]) box(root, 0.025, front.radius * 1.3, 0.04, STEEL, s * 0.06, hubY + front.radius * 0.5, front.z - 0.03);
+    box(root, 0.56, 0.04, 0.04, 0x1a1a1d, 0, topY, topZ); // handlebar
+    for (const s of [1, -1]) box(root, 0.1, 0.05, 0.05, 0x111111, s * 0.28, topY, topZ);
+    box(root, 0.14, 0.09, 0.03, 0x111111, 0, topY + 0.06, topZ + 0.02); // display
+    box(root, 0.1, 0.02, 0.01, accent, 0, topY + 0.06, topZ + 0.005);
+    box(root, 0.12, 0.3, 0.1, 0x25252a, 0, hubY + 0.42, front.z - 0.14); // battery
+    box(root, 0.125, 0.04, 0.105, accent, 0, hubY + 0.5, front.z - 0.14);
+    box(root, 0.08, 0.06, 0.04, 0xfff3b0, 0, hubY + 0.3, front.z + 0.06); // headlight
+    box(root, 0.2, 0.03, 0.26, 0x1a1a1d, 0, hubY + front.radius + 0.04, front.z); // mudguard
+    // clamp bars to the chair frame; the chair's own casters hang in the air
+    for (const s of [1, -1]) {
+      const bar = box(root, 0.03, 0.03, 0.5, STEEL, s * 0.1, g + 0.3, seatZ + 0.42);
+      bar.rotation.y = s * -0.2;
+      const c = cyl(root, 0.06, 0.04, TYRE, s * 0.2, g + 0.13, seatZ + 0.36, 8);
+      c.rotation.z = Math.PI / 2;
+      box(root, 0.03, 0.12, 0.03, STEEL, s * 0.2, g + 0.2, seatZ + 0.36);
+    }
+  } else {
+    for (const w of spec.wheels) if (w.caster) box(root, 0.03, 0.14, 0.03, STEEL, w.x, g + w.radius + 0.1, w.z); // caster forks
+  }
+
+  const d = driver(DRIVERS[spec.id]);
+  d.group.position.set(0, seatY + 0.02, seatZ - 0.1);
+  root.add(d.group);
+  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
 }
 
 function buildScooter(spec: VehicleSpec): VehicleModel {
   const root = new Group();
-  const BODY = 0xb3202a;
-  const DARK = 0x24262b;
+  const BODY = spec.colors.body;
+  const DARK = spec.colors.seat;
   box(root, 0.5, 0.07, 1.15, DARK, 0, -0.14, 0); // deck
   box(root, 0.52, 0.22, 0.42, BODY, 0, -0.02, -0.38); // rear cover
   box(root, 0.4, 0.2, 0.22, BODY, 0, -0.04, 0.5); // front fairing
@@ -143,15 +305,17 @@ function buildScooter(spec: VehicleSpec): VehicleModel {
   box(root, 0.3, 0.02, 0.18, 0x3a3d42, 0, 0.525, 0.62);
   // safety flag
   cyl(root, 0.01, 1.3, 0xdddddd, -0.22, 0.75, -0.56, 4);
-  box(root, 0.01, 0.16, 0.24, 0xff7a00, -0.22, 1.32, -0.68);
-  const d = driver(0x3f8f5f, 0x8a6f4d, 0xf0f0f0, true);
-  d.position.set(0, 0.36, -0.36);
-  root.add(d);
-  return { root, wheels: wheelsFor(root, spec, 0xd9d9d9), driver: d };
+  box(root, 0.01, 0.16, 0.24, spec.colors.accent, -0.22, 1.32, -0.68);
+  const d = driver(DRIVERS[spec.id]);
+  d.group.position.set(0, 0.36, -0.36);
+  root.add(d.group);
+  return { root, wheels: wheelsFor(root, spec), driver: d.group, arms: d.arms };
 }
 
 export function buildVehicle(spec: VehicleSpec): VehicleModel {
-  return spec.id === 'wheelchair' ? buildWheelchair(spec) : buildScooter(spec);
+  if (spec.look === 'scooter') return buildScooter(spec);
+  if (spec.look === 'manual') return buildManual(spec);
+  return buildPowerchair(spec);
 }
 
 export function buildProp(type: PropType): Group {

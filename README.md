@@ -4,7 +4,23 @@
 
 A browser racing game with power wheelchairs and mobility scooters. You start at the legal 6 km/h, collect deposit bottles on a supermarket car park, and spend the money on increasingly questionable tuning until 75 km/h.
 
-Status: first playable prototype (one test track, two vehicles, tuning ladder).
+Status: playable prototype with a start screen, two tracks, seven vehicles and a tuning ladder.
+
+## Vehicles
+
+All makers and models are made up; they are loosely inspired by real product categories.
+
+| Model | Type | Character |
+| --- | --- | --- |
+| Rasicare T-Rex Mitteldreher | Power chair, mid-wheel drive | Six wheels, turns on the spot |
+| Rasicare Avanti RX | Power chair, rear-wheel drive | Fast, prefers wide arcs |
+| Rasicare Orkan 4 | Heavy power chair, rear-wheel drive | Slow to get going, very stable |
+| Halber e-skalation | Manual chair with hub motors | Light, twitchy, thrust in push strokes |
+| Halber schubs one | Manual chair with a pusher wheel | Steered and braked by hand |
+| Halber e-käpt'n | Manual chair with a front tractor unit | Three wheels, fastest, tips easily |
+| Rentnerblitz Komet 4 | Mobility scooter | Steers like a car |
+
+Vehicles and tracks are unlocked with deposit money; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
 
 ## Run
 
@@ -24,7 +40,7 @@ npm run build    # static build in dist/
 | Buy next tuning stage | T | X |
 | Back on the wheels | R | Y |
 | Restart the level | Backspace | Back |
-| Wheelchair / scooter | 1 / 2 | |
+| Back to the start screen | Esc | Start |
 | Sound on/off | M | |
 | Workshop (live handling tuning, cheats) | F2 | |
 

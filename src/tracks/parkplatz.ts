@@ -88,7 +88,10 @@ for (const z of [-33, 33]) {
 }
 
 export const PARKPLATZ: TrackDef = {
+  id: 'parkplatz',
   name: 'Pfandland-Parkplatz',
+  blurb: 'Enger Rundkurs um die Grüninsel. Hier fängt jeder an, mit 6 km/h.',
+  unlockPrice: 0,
   spawn: { pos: [-3, 0.5, -LINE_Z], yaw: Math.PI / 2 },
   statics,
   props,

@@ -4,7 +4,23 @@
 
 Ein Rennspiel für den Browser mit Elektrorollstühlen und Seniorenmobilen. Du startest mit den erlaubten 6 km/h, sammelst auf einem Supermarktparkplatz Pfandflaschen und steckst das Geld in immer fragwürdigeres Tuning, bis 75 km/h.
 
-Stand: erster spielbarer Prototyp (eine Teststrecke, zwei Fahrzeuge, Tuning-Leiter).
+Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, sieben Fahrzeugen und Tuning-Leiter.
+
+## Fahrzeuge
+
+Alle Hersteller und Modelle sind erfunden und nur lose an echte Produktkategorien angelehnt.
+
+| Modell | Bauart | Charakter |
+| --- | --- | --- |
+| Rasicare T-Rex Mitteldreher | Elektrorollstuhl, Mittelradantrieb | Sechs Räder, dreht auf der Stelle |
+| Rasicare Avanti RX | Elektrorollstuhl, Heckantrieb | Schnell, mag weite Bögen |
+| Rasicare Orkan 4 | Schwerer Elektrorollstuhl, Heckantrieb | Kommt langsam in Fahrt, sehr standfest |
+| Halber e-skalation | Faltrollstuhl mit Radnabenmotoren | Leicht, zappelig, Schub in Greifreifen-Stößen |
+| Halber schubs one | Faltrollstuhl mit Schubrad am Heck | Lenken und Bremsen von Hand |
+| Halber e-käpt'n | Faltrollstuhl mit Zuggerät vorn | Drei Räder, am schnellsten, kippt leicht |
+| Rentnerblitz Komet 4 | Seniorenmobil | Lenkt wie ein Auto |
+
+Fahrzeuge und Strecken werden mit Pfand freigeschaltet; `UNLOCK_ALL` in `src/config/vehicles.ts` öffnet zum Testen alles.
 
 ## Starten
 
@@ -24,7 +40,7 @@ npm run build    # statischer Build in dist/
 | Nächste Tuning-Stufe kaufen | T | X |
 | Aufrichten | R | Y |
 | Level neu starten | Rücktaste | Back |
-| Rollstuhl / Scooter | 1 / 2 | |
+| Zurück zum Startbildschirm | Esc | Start |
 | Ton an/aus | M | |
 | Werkstatt (Fahrverhalten live einstellen, Cheats) | F2 | |
 

@@ -11,7 +11,6 @@ export interface GameInput extends DriveInput {
   upright: boolean;
   respawn: boolean;
   tune: boolean;
-  selectVehicle: VehicleId | null;
 }
 
 export type GameEvent =
@@ -19,8 +18,7 @@ export type GameEvent =
   | { type: 'lapStart' }
   | { type: 'lap'; time: number; best: boolean }
   | { type: 'tuned'; stage: TuningStage }
-  | { type: 'broke'; missing: number }
-  | { type: 'vehicle'; id: VehicleId };
+  | { type: 'broke'; missing: number };
 
 const PICKUP_RADIUS = 1.0;
 const PICKUP_RESPAWN = 15;
@@ -38,14 +36,32 @@ export class GameCore {
 
   constructor(readonly track: TrackDef, readonly progress: Progress) {
     this.sim = new Sim(track, VEHICLES[progress.vehicle]);
-    this.race = new Race(track.gates, progress.bestLap);
+    this.race = new Race(track.gates, progress.bestLaps[track.id] ?? null);
     this.pickupTimers = track.pickups.map(() => 0);
     this.applyStage();
   }
 
   applyStage(): void {
     const s = this.progress.stage;
-    this.sim.vehicle.setMotor(s.topSpeedKmh / 3.6, s.accel);
+    const spec = this.sim.vehicle.spec;
+    this.sim.vehicle.setMotor((s.topSpeedKmh * spec.speedFactor) / 3.6, s.accel * spec.accelFactor);
+  }
+
+  /** Top speed of the current vehicle at the current tuning stage, in km/h. */
+  get topSpeedKmh(): number {
+    return this.sim.vehicle.topSpeed * 3.6;
+  }
+
+  setVehicle(id: VehicleId): void {
+    this.progress.vehicle = id;
+    this.progress.save();
+    this.sim.setVehicle(VEHICLES[id]);
+    this.applyStage();
+    this.race.reset();
+  }
+
+  dispose(): void {
+    this.sim.world.free();
   }
 
   /** Level back to its initial state: vehicle at the start, props and pickups restored. Progress stays. */
@@ -60,13 +76,6 @@ export class GameCore {
   step(input: GameInput): void {
     const { sim, progress, race } = this;
 
-    if (input.selectVehicle && input.selectVehicle !== sim.vehicle.spec.id) {
-      progress.vehicle = input.selectVehicle;
-      progress.save();
-      sim.setVehicle(VEHICLES[input.selectVehicle]);
-      race.reset();
-      this.events.push({ type: 'vehicle', id: input.selectVehicle });
-    }
     if (input.respawn) {
       this.restart();
     } else if (input.upright) {
@@ -93,7 +102,7 @@ export class GameCore {
     if (ev === 'lap') {
       const best = race.best === race.lastLap;
       if (best) {
-        progress.bestLap = race.best;
+        progress.bestLaps[this.track.id] = race.best!;
         progress.save();
       }
       this.events.push({ type: 'lap', time: race.lastLap!, best });

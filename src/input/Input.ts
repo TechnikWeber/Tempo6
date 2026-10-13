@@ -1,22 +1,20 @@
-import type { VehicleId } from '../config/vehicles';
 import type { GameInput } from '../sim/GameCore';
 
-type Action = 'upright' | 'respawn' | 'tune' | 'wheelchair' | 'scooter' | 'mute' | 'debug';
+type Action = 'upright' | 'respawn' | 'tune' | 'menu' | 'mute' | 'debug';
 
 const KEY_ACTIONS: Record<string, Action> = {
   KeyR: 'upright',
   Backspace: 'respawn',
   KeyT: 'tune',
   KeyE: 'tune',
-  Digit1: 'wheelchair',
-  Digit2: 'scooter',
+  Escape: 'menu',
   KeyM: 'mute',
   F2: 'debug',
 };
 const HELD = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
 
 // Standard gamepad mapping: A = handbrake, X = tune, Y = upright, Back = respawn, triggers = gas/reverse.
-const PAD_ACTIONS: [number, Action][] = [[2, 'tune'], [3, 'upright'], [8, 'respawn']];
+const PAD_ACTIONS: [number, Action][] = [[2, 'tune'], [3, 'upright'], [8, 'respawn'], [9, 'menu']];
 
 /**
  * Merges keyboard, gamepad and touch into one driving intent. The game only ever sees
@@ -96,9 +94,6 @@ export class Input {
     if (this.touch.throttle !== 0) throttle = this.touch.throttle;
     handbrake ||= this.touch.handbrake;
 
-    let selectVehicle: VehicleId | null = null;
-    if (this.take('wheelchair')) selectVehicle = 'wheelchair';
-    if (this.take('scooter')) selectVehicle = 'scooter';
     return {
       throttle: Math.max(-1, Math.min(1, throttle)),
       steer: Math.max(-1, Math.min(1, steer)),
@@ -106,7 +101,6 @@ export class Input {
       upright: this.take('upright'),
       respawn: this.take('respawn'),
       tune: this.take('tune'),
-      selectVehicle,
     };
   }
 }
