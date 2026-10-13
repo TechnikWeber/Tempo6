@@ -23,10 +23,10 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Werkstatt (F2). Solange d
 | E-six(7) | Schubshilfen | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
 | Arschtritt 3000 | Schubshilfen | Schubrad am Heck, Lenken und Bremsen von Hand |
 | e-kapitän | Vorderlader | Zuggerät vorn, drei Räder, am schnellsten |
-| Piepmatz | Seniorenraketen | Winziges Seniorenmobil, wendig, kippelig |
-| Stubentiger | Seniorenraketen | Kompaktes Seniorenmobil |
-| Sternschnuppe 4 | Seniorenraketen | Der Klassiker mit Korb |
-| Großer Wagen | Seniorenraketen | Lang, schwer, schnell, riesiger Wendekreis |
+| Kohlibri | Seniorenraketen | Winziges Seniorenmobil, wendig, kippelig |
+| Lion | Seniorenraketen | Kompaktes Seniorenmobil |
+| Covid Pro | Seniorenraketen | Der Klassiker mit Korb |
+| Olivion | Seniorenraketen | Lang, schwer, schnell, riesiger Wendekreis |
 
 Fahrzeuge und Strecken werden mit Pfand freigeschaltet; `UNLOCK_ALL` in `src/config/vehicles.ts` öffnet zum Testen alles.
 

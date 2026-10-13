@@ -463,7 +463,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   piepmatz: define({
     id: 'piepmatz',
-    label: 'Piepmatz',
+    label: 'Kohlibri',
     profiles: [
       BASE,
       prof('Spatz auf Koffein', 'Zappelt los und schlägt Haken.', { accel: 1.5, turn: 1.2, sharp: 1.25, tip: 1.05, assist: 0.8 }),
@@ -496,7 +496,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   tiger: define({
     id: 'tiger',
-    label: 'Stubentiger',
+    label: 'Lion',
     profiles: [
       BASE,
       prof('Raubkatze', 'Bissiger Antritt, scharfe Lenkung, guter Grip.', { accel: 1.4, sharp: 1.3, turn: 1.15, grip: 1.2, tip: 1.1 }),
@@ -529,7 +529,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   komet: define({
     id: 'komet',
-    label: 'Sternschnuppe 4',
+    label: 'Covid Pro',
     profiles: [
       BASE,
       prof('Sonntagsfahrer', 'Gemächlich und standfest.', { accel: 0.7, speed: 0.9, tip: 0.5, turn: 0.9, sharp: 0.8 }),
@@ -562,7 +562,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   wagen: define({
     id: 'wagen',
-    label: 'Großer Wagen',
+    label: 'Olivion',
     profiles: [
       BASE,
       prof('Reisebus', 'Noch schneller, noch träger, kippt nie.', { speed: 1.2, accel: 0.75, turn: 0.75, tip: 0.5 }),

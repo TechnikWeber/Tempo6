@@ -23,10 +23,10 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 | E-six(7) | Push assist | Hub motors with a joystick, optional attendant control |
 | Arschtritt 3000 | Push assist | Pusher wheel at the back, steered and braked by hand |
 | e-kapitän | Tractor unit | Front-mounted drive, three wheels, fastest |
-| Piepmatz | Mobility scooters | Tiny, agile, tippy |
-| Stubentiger | Mobility scooters | Compact |
-| Sternschnuppe 4 | Mobility scooters | The classic with a basket |
-| Großer Wagen | Mobility scooters | Long, heavy, fast, huge turning circle |
+| Kohlibri | Mobility scooters | Tiny, agile, tippy |
+| Lion | Mobility scooters | Compact |
+| Covid Pro | Mobility scooters | The classic with a basket |
+| Olivion | Mobility scooters | Long, heavy, fast, huge turning circle |
 
 Vehicles and tracks are unlocked with deposit money; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
 
