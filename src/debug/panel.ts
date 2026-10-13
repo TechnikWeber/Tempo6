@@ -73,6 +73,7 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   h.add(HANDLING, 'yawGain', 2, 40, 1).name('Dreh-Biss (Rollstuhl)');
   h.add(HANDLING, 'fwdStability', 0, 1.2, 0.05).name('Frontantrieb: Heck-Ruhe');
   h.add(HANDLING, 'brakeDecel', 1, 12, 0.5).name('Magnetbremse (m/s²)');
+  h.add(HANDLING, 'steerCoast', 0, 1, 0.05).name('Zuggerät: Bremse löst beim Lenken');
   h.add(HANDLING, 'footBrake', 2, 30, 0.5).name('Bremse mit S (m/s²)');
   h.add(HANDLING, 'handbrakeSlide', 0, 1, 0.05).name('Handbremse: Heckgrip');
   h.add(HANDLING, 'suspensionCompression', 0.5, 10, 0.1).name('Dämpfung ein');

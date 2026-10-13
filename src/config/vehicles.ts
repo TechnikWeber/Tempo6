@@ -674,6 +674,8 @@ export const HANDLING = {
   fwdStability: 0.9,
   /** Deceleration when letting go of the stick: the magnetic brake bites (m/s²). */
   brakeDecel: 5,
+  /** Driven front fork: share of the magnetic brake that lets go at full lock, so it rolls round the bend instead of digging in. */
+  steerCoast: 0.1,
   /** Deceleration when actively braking against the direction of travel, on all wheels (m/s²). */
   footBrake: 16,
   /** Rear side grip multiplier while the handbrake is held. */

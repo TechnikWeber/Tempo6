@@ -313,7 +313,15 @@ export class Vehicle {
       } else if (w.drive && !input.handbrake) {
         // Slowing down may use the brake; speeding up is limited by the motor.
         const decel = braking ? footBrake : autoBrake;
-        const cap = perDrive * (slowing ? Math.max(accel, decel) * stoppie : accel * wheelie * surge);
+        let cap = perDrive * (slowing ? Math.max(accel, decel) * stoppie : accel * wheelie * surge);
+        // A driven wheel on the fork: turned in, its cornering force already holds the
+        // vehicle back, and the motor brake on top of that digs it in. While coasting the
+        // brake gives way by that much and eases off with the lock, so it rolls round the bend.
+        if (w.steer && slowing && !braking) {
+          const plough = (Math.abs(ctrl.wheelSideImpulse(i) ?? 0) / dt) * Math.sin(Math.abs(steerAngle));
+          const lock = Math.min(1, Math.abs(steerAngle) / spec.maxSteer);
+          cap = Math.max(0, cap * (1 - HANDLING.steerCoast * lock) - plough);
+        }
         // Steering gets its share of the motor first; otherwise both wheels would sit at
         // the limit under full throttle and there would be nothing left to turn with.
         const asked = turn;

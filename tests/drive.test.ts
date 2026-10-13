@@ -326,6 +326,29 @@ describe('slowing down', () => {
     sim.world.free();
   });
 
+  // A driven front fork used to dig in when turned without throttle and stop it dead.
+  const HANDLEBARS = ALL.filter(([, spec]) => spec.wheels.some((w) => w.steer))
+    .flatMap(([id, spec]) => spec.profiles.map((p, i) => [`${id} / ${p.name}`, spec, i] as const));
+  it.each(HANDLEBARS)('%s rolls round a bend when coasting instead of digging in', (_name, spec, index) => {
+    const coast = (kmh: number, steer: number) => {
+      const p = spec.profiles[index];
+      const sim = simAt(spec, kmh * p.speed, 2.5 * p.accel);
+      sim.vehicle.profile = p;
+      drive(sim, 8, 1);
+      let steps = 0;
+      while (Math.abs(sim.vehicle.speed) > 0.15 && steps++ < 600) sim.step({ throttle: 0, steer, handbrake: false });
+      sim.world.free();
+      return steps / 60;
+    };
+    for (const kmh of [6, 12]) {
+      const straight = coast(kmh, 0);
+      const turning = coast(kmh, 1);
+      expect(turning).toBeGreaterThan(straight * 0.9);
+      // …but letting go still stops it
+      expect(turning).toBeLessThan(straight * 2.5);
+    }
+  });
+
   it.each(ALL)('%s stops from 60 km/h within 19 m on the brake', (_id, spec) => {
     const sim = simAt(spec, 60 / spec.speedFactor, 9);
     drive(sim, 9, 1);
