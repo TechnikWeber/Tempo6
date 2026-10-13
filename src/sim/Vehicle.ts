@@ -313,14 +313,17 @@ export class Vehicle {
       } else if (w.drive && !input.handbrake) {
         // Slowing down may use the brake; speeding up is limited by the motor.
         const decel = braking ? footBrake : autoBrake;
-        let cap = perDrive * (slowing ? Math.max(accel, decel) * stoppie : accel * wheelie * surge);
+        const cap = perDrive * (slowing ? Math.max(accel, decel) * stoppie : accel * wheelie * surge);
+        // Slowing down is the brake's job and no stronger than the brake, however much
+        // motor the tuning has added. (Steering below may still use all of `cap`.)
+        let hold = slowing ? perDrive * decel * stoppie : cap;
         // A driven wheel on the fork: turned in, its cornering force already holds the
         // vehicle back, and the motor brake on top of that digs it in. While coasting the
         // brake gives way by that much and eases off with the lock, so it rolls round the bend.
         if (w.steer && slowing && !braking) {
           const plough = (Math.abs(ctrl.wheelSideImpulse(i) ?? 0) / dt) * Math.sin(Math.abs(steerAngle));
           const lock = Math.min(1, Math.abs(steerAngle) / spec.maxSteer);
-          cap = Math.max(0, cap * (1 - HANDLING.steerCoast * lock) - plough);
+          hold = Math.max(0, hold * (1 - HANDLING.steerCoast * lock) - plough);
         }
         // Steering gets its share of the motor first; otherwise both wheels would sit at
         // the limit under full throttle and there would be nothing left to turn with.
@@ -328,7 +331,7 @@ export class Vehicle {
         turn = clamp(turn, -cap * 0.8, cap * 0.8);
         // What the motors cannot spare for turning is made up on the chassis (see the fill above).
         assist = (asked - turn) * HANDLING.steerAssist;
-        const room = cap - Math.abs(turn);
+        const room = Math.max(hold - Math.abs(turn), 0.2 * hold);
         let thrust = clamp(perDrive * HANDLING.motorGain * (cornerV - v), -room, room);
         // (too fast only for the corner: a drag, not the brake)
         if (!slowing && thrust * v < 0) thrust = 0;

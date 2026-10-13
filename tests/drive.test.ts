@@ -326,6 +326,19 @@ describe('slowing down', () => {
     sim.world.free();
   });
 
+  it.each(ALL)('%s coasts down just as gently with a strong motor as with a weak one', (_id, spec) => {
+    const coast = (accel: number) => {
+      const sim = simAt(spec, 40, accel);
+      drive(sim, 10, 1);
+      const z0 = sim.vehicle.body.translation().z;
+      drive(sim, 6, 0);
+      const d = sim.vehicle.body.translation().z - z0;
+      sim.world.free();
+      return d;
+    };
+    expect(coast(11)).toBeGreaterThan(coast(3) * 0.9);
+  });
+
   // A driven front fork used to dig in when turned without throttle and stop it dead.
   const HANDLEBARS = ALL.filter(([, spec]) => spec.wheels.some((w) => w.steer))
     .flatMap(([id, spec]) => spec.profiles.map((p, i) => [`${id} / ${p.name}`, spec, i] as const));
