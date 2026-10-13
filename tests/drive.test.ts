@@ -5,7 +5,7 @@ import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
 import { Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
-import type { TrackDef } from '../src/sim/Track';
+import { looping, type TrackDef } from '../src/sim/Track';
 import { TRACKS } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
@@ -648,6 +648,29 @@ describe.each(TRACKS.map((t) => [t.id, t] as const))('track %s', (_id, track) =>
     expect(core.race.running).toBe(true);
     expect(core.sim.vehicle.upY).toBeGreaterThan(0.95);
     core.dispose();
+  });
+});
+
+describe('looping', () => {
+  // The wall-glancing logic used to take the road ahead for a wall and steer the chairs off it.
+  it.each(ALL)('%s goes round at 65 km/h and comes out on its wheels', (_id, spec) => {
+    const track: TrackDef = {
+      ...FLAT,
+      spawn: { pos: [-130, 0.7, 0], yaw: Math.PI / 2 },
+      statics: [...FLAT.statics, ...looping([0, 0], 5, 4, 5, 0)],
+    };
+    const sim = new Sim(track, spec);
+    sim.vehicle.setMotor(65 / 3.6, 9);
+    let minUp = 1;
+    for (let i = 0; i < 60 * 14; i++) {
+      sim.step({ throttle: 1, steer: 0, handbrake: false });
+      minUp = Math.min(minUp, sim.vehicle.upY);
+    }
+    // upside down at the top, upright again and past the looping at the end
+    expect(minUp).toBeLessThan(-0.8);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.9);
+    expect(sim.vehicle.body.translation().x).toBeGreaterThan(20);
+    sim.world.free();
   });
 });
 

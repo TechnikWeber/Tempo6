@@ -89,6 +89,7 @@ export class Vehicle {
   /** Share of the steering lock in use (handlebar vehicles), see `update`. */
   private steerTrim = 1;
   private readonly local = new Vector3();
+  private readonly qOther = new Quaternion();
 
   constructor(private readonly world: RAPIER.World, readonly spec: VehicleSpec, x: number, y: number, z: number, yaw: number) {
     const [hx, hy, hz] = spec.half;
@@ -484,9 +485,22 @@ export class Vehicle {
     this.world.contactPairsWith(this.collider, (other) => {
       const parent = other.parent();
       if (parent && !parent.isFixed()) return;
+      // Whatever it is on top of is a bump to ride over, not a wall to turn away from: a kerb,
+      // or the next piece of a looping when the springs are flat out and the belly scrapes.
+      const half = other.halfExtents();
+      if (half) {
+        const at = this.body.translation(), to = other.translation(), r = other.rotation();
+        this.local.set(at.x - to.x, at.y - to.y, at.z - to.z).applyQuaternion(this.qOther.set(r.x, r.y, r.z, r.w).invert());
+        if (this.local.y > half.y) return;
+      }
       this.world.contactPair(this.collider, other, (manifold) => {
         const n = manifold.normal();
-        if (Math.abs(n.y) > 0.5) return;
+        // What the wheels stand on is ground, whichever way it faces: half-way up a looping
+        // the road is as upright as any wall.
+        // (With all wheels off it for a moment, the chassis' own floor stands in.)
+        const floor = this.normal.lengthSq() > 0 ? this.normal : this.up;
+        const ground = Math.abs(n.x * floor.x + n.y * floor.y + n.z * floor.z);
+        if (ground > 0.5) return;
         // The way it wants to go, and the normal turned to face against that.
         const gx = this.fwd.x * dir, gz = this.fwd.z * dir;
         const s = n.x * gx + n.z * gz > 0 ? -1 : 1;

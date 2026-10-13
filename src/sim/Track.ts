@@ -117,7 +117,7 @@ export function ramp(start: [number, number], yaw: number, length: number, width
  * carries the vehicle `shift` metres to its left (towards -Z), so it comes out beside the way in.
  * Just drive straight; it takes about √(5·g·radius) to get round.
  */
-export function looping(start: [number, number], radius: number, lane: number, shift: number, color: number, pieces = 40): BoxDef[] {
+export function looping(start: [number, number], radius: number, lane: number, shift: number, color: number, pieces = 48): BoxDef[] {
   const t = 0.1;
   const alpha = Math.atan2(shift, 2 * Math.PI * radius);
   const yaw = Math.PI / 2 - alpha;
@@ -134,7 +134,8 @@ export function looping(start: [number, number], radius: number, lane: number, s
     const sp = Math.sin(-a / 2), cp = Math.cos(-a / 2);
     out.push({
       pos: [start[0] + fx * u + lx * v, y, start[1] + fz * u + lz * v],
-      half: [lane / 2, t, radius * Math.sin(Math.PI / pieces) + 0.06],
+      // (just long enough to meet its neighbours: any more and the ends stick up as lips)
+      half: [lane / 2, t, radius * Math.tan(Math.PI / pieces) + 0.005],
       quat: [cy * sp, sy * cp, -sy * sp, cy * cp],
       color,
     });
