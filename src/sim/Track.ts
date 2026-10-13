@@ -1,0 +1,76 @@
+/** Static box with collision. `quat` is x, y, z, w. */
+export interface BoxDef {
+  pos: [number, number, number];
+  half: [number, number, number];
+  quat?: [number, number, number, number];
+  color: number;
+}
+
+export type PropType = 'cone' | 'carton' | 'cart';
+
+/** Loose physics object that can be shoved around. */
+export interface PropDef {
+  type: PropType;
+  pos: [number, number, number];
+  yaw?: number;
+}
+
+/** Checkpoint as an axis-aligned rectangle on the ground. */
+export interface Gate {
+  x: number;
+  z: number;
+  hx: number;
+  hz: number;
+}
+
+export type PickupType = 'bottle' | 'crate';
+
+export interface PickupDef {
+  type: PickupType;
+  pos: [number, number, number];
+}
+
+export interface DecorDef {
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign';
+  pos: [number, number, number];
+  half?: [number, number, number];
+  color?: number;
+  text?: string;
+}
+
+export interface TrackDef {
+  name: string;
+  spawn: { pos: [number, number, number]; yaw: number };
+  statics: BoxDef[];
+  props: PropDef[];
+  /** Gate 0 is the start/finish line; the rest must be passed in order. */
+  gates: Gate[];
+  pickups: PickupDef[];
+  /** Visual only, no collision. */
+  decor: DecorDef[];
+}
+
+/** Collider dimensions per prop type, shared by physics and visuals. */
+export const PROP_SHAPES = {
+  cone: { halfHeight: 0.25, radius: 0.15, mass: 1.5 },
+  carton: { half: [0.25, 0.25, 0.25] as [number, number, number], mass: 2 },
+  cart: { half: [0.3, 0.45, 0.5] as [number, number, number], mass: 18 },
+};
+
+/**
+ * A ramp that starts at ground level at `start` and rises along heading `yaw`
+ * (0 = +Z, π/2 = +X).
+ */
+export function ramp(start: [number, number], yaw: number, length: number, width: number, angle: number, color: number): BoxDef {
+  const t = 0.1;
+  const run = (length / 2) * Math.cos(angle);
+  const sy = Math.sin(yaw / 2), cy = Math.cos(yaw / 2);
+  const sp = Math.sin(-angle / 2), cp = Math.cos(-angle / 2);
+  return {
+    pos: [start[0] + Math.sin(yaw) * run, (length / 2) * Math.sin(angle) - t * Math.cos(angle), start[1] + Math.cos(yaw) * run],
+    half: [width / 2, t, length / 2],
+    // yaw about Y, then pitch about the local X axis
+    quat: [cy * sp, sy * cp, -sy * sp, cy * cp],
+    color,
+  };
+}

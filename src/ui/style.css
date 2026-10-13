@@ -1,0 +1,149 @@
+:root {
+  --ink: #fff;
+  --panel: rgb(18 20 24 / 0.72);
+  --accent: #ffd23f;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #9fd3f0;
+  color: var(--ink);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  position: absolute;
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 10px 14px;
+  line-height: 1.35;
+}
+
+.dim { font-size: 13px; opacity: 0.85; }
+
+#speedo { left: 16px; bottom: 16px; min-width: 190px; }
+#speed { font-size: 54px; font-weight: 800; letter-spacing: -1px; }
+#speedo small { margin-left: 6px; font-size: 16px; opacity: 0.8; }
+.bar { height: 6px; margin: 4px 0 6px; background: rgb(255 255 255 / 0.18); border-radius: 3px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+#laps { left: 16px; top: 16px; font-size: 18px; }
+
+#shop { right: 16px; top: 16px; max-width: 290px; text-align: right; }
+.money { font-size: 22px; }
+.money b { color: var(--accent); }
+
+#tune {
+  pointer-events: auto;
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: #ddd;
+  background: rgb(255 255 255 / 0.14);
+  cursor: pointer;
+}
+#tune.ready { color: #1a1300; background: var(--accent); animation: pulse 0.9s ease-in-out infinite alternate; }
+#tune:disabled { cursor: default; }
+@keyframes pulse { to { transform: scale(1.04); } }
+
+#toast {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 30px;
+  font-weight: 800;
+  text-shadow: 0 2px 0 #000, 0 0 14px rgb(0 0 0 / 0.6);
+  opacity: 0;
+  transition: opacity 0.4s;
+  max-width: 90vw;
+}
+#toast.show { opacity: 1; transition: none; }
+#toast small { display: block; font-size: 17px; font-weight: 600; margin-top: 4px; }
+
+#flipped {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translateX(-50%);
+  background: #c22a2a;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+#help { right: 16px; bottom: 16px; max-width: 46vw; text-align: right; }
+kbd {
+  display: inline-block;
+  padding: 0 5px;
+  margin: 1px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.18);
+  font: inherit;
+  font-size: 12px;
+}
+
+/* Touch controls */
+#touch { position: fixed; inset: 0; pointer-events: none; }
+#touch > * { position: absolute; pointer-events: auto; }
+#touch button {
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 26px;
+  color: #fff;
+  background: rgb(18 20 24 / 0.55);
+}
+#touch-steer {
+  left: 16px;
+  bottom: 120px;
+  width: 44vw;
+  max-width: 260px;
+  height: 72px;
+  border-radius: 36px;
+  background: rgb(18 20 24 / 0.45);
+  display: grid;
+  place-items: center;
+}
+#touch-steer i { width: 56px; height: 56px; border-radius: 50%; background: rgb(255 255 255 / 0.75); }
+#touch-gas { right: 16px; bottom: 120px; }
+#touch-back { right: 100px; bottom: 120px; }
+#touch-brake { right: 16px; bottom: 204px; }
+#touch-up { right: 100px; bottom: 204px; }
+
+@media (pointer: coarse) {
+  #help { display: none; }
+}
+@media (max-width: 700px) {
+  #speed { font-size: 40px; }
+  #shop { max-width: 200px; }
+}
