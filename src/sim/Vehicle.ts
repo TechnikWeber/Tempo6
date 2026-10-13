@@ -121,6 +121,8 @@ export class Vehicle {
       steerAngle = -input.steer * Math.min(spec.maxSteer, Math.atan((spec.wheelbase * aLat) / v2));
     }
 
+    // Stick pulled against the direction of travel: that is braking, not reversing yet.
+    const braking = Math.abs(v) > 0.3 && input.throttle * v < 0;
     const drives = spec.wheels.filter((w) => w.drive).length;
     const perWheel = spec.mass / drives;
     // Velocity in chassis space, used for the caster swivel.
@@ -157,7 +159,8 @@ export class Vehicle {
           const actual = v - yawRate * w.x;
           // Slowing down may use the brake; speeding up is limited by the motor.
           const slowing = Math.abs(target) < Math.abs(actual) || target * actual < 0;
-          const cap = perWheel * (slowing ? Math.max(this.accel, HANDLING.brakeDecel) : this.accel * wheelie);
+          const decel = braking ? HANDLING.footBrake : HANDLING.brakeDecel;
+          const cap = perWheel * (slowing ? Math.max(this.accel, decel) : this.accel * wheelie);
           let turn = 0;
           if (spec.differential) {
             turn = -perWheel * HANDLING.yawGain * (yawTarget - yawRate) * w.x;
@@ -175,6 +178,9 @@ export class Vehicle {
           const over = Math.abs(v) - this.topSpeed;
           if (over > 0 && force * v > 0) force *= Math.max(0, 1 - over / (0.1 * this.topSpeed + 0.2));
         }
+      } else if (braking) {
+        // The other wheels help: the drive wheels alone go light under hard braking.
+        brake = (spec.mass * HANDLING.footBrake * 0.5 * dt) / (spec.wheels.length - drives);
       }
       this.wantedYawTorque -= w.x * force;
       ctrl.setWheelEngineForce(i, force);

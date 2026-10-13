@@ -23,7 +23,7 @@ npm run build    # statischer Build in dist/
 | Handbremse | Leertaste | A |
 | Nächste Tuning-Stufe kaufen | T | X |
 | Aufrichten | R | Y |
-| Zurück zum Start | Rücktaste | Back |
+| Level neu starten | Rücktaste | Back |
 | Rollstuhl / Scooter | 1 / 2 | |
 | Ton an/aus | M | |
 | Werkstatt (Fahrverhalten live einstellen, Cheats) | F2 | |

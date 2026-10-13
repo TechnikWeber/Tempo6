@@ -1,6 +1,6 @@
 import GUI from 'lil-gui';
 import { STAGES } from '../config/tuning';
-import { HANDLING } from '../config/vehicles';
+import { HANDLING, HANDLING_DEFAULTS } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
 
 /** The "Werkstatt": live tuning of the handling and cheats for testing. Toggle with F2. */
@@ -21,7 +21,11 @@ export function createDebugPanel(core: GameCore): GUI {
     .add({ f: () => { core.progress.wipe(); core.applyStage(); } }, 'f')
     .name('Spielstand löschen');
 
+  gui.add({ f: () => core.restart() }, 'f').name('Level neu starten (⌫)');
+
   const h = gui.addFolder('Fahrverhalten');
+  h.add({ f: () => { Object.assign(HANDLING, HANDLING_DEFAULTS); h.controllersRecursive().forEach((c) => c.updateDisplay()); } }, 'f')
+    .name('Einstellungen zurücksetzen');
   h.add(HANDLING, 'grip', 0.5, 4, 0.05).name('Reifengrip');
   h.add(HANDLING, 'lateralAccel', 2, 16, 0.5).name('Lenk-Schärfe (m/s²)');
   h.add(HANDLING, 'tipHeight', 0, 0.8, 0.02).name('Kippneigung');
@@ -31,6 +35,7 @@ export function createDebugPanel(core: GameCore): GUI {
   h.add(HANDLING, 'motorGain', 1, 15, 0.5).name('Motor-Biss');
   h.add(HANDLING, 'yawGain', 2, 40, 1).name('Dreh-Biss (Rollstuhl)');
   h.add(HANDLING, 'brakeDecel', 1, 12, 0.5).name('Magnetbremse (m/s²)');
+  h.add(HANDLING, 'footBrake', 2, 20, 0.5).name('Bremse mit S (m/s²)');
   h.add(HANDLING, 'handbrakeSlide', 0, 1, 0.05).name('Handbremse: Heckgrip');
   h.add(HANDLING, 'suspensionCompression', 0.5, 10, 0.1).name('Dämpfung ein');
   h.add(HANDLING, 'suspensionRelaxation', 0.5, 10, 0.1).name('Dämpfung aus');

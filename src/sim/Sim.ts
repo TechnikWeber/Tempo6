@@ -76,6 +76,19 @@ export class Sim {
     this.vehicle.place(pos[0], pos[1], pos[2], yaw);
   }
 
+  /** Put every loose prop back where the track definition has it. */
+  resetProps(): void {
+    for (const { def, tracked } of this.props) {
+      const yaw = def.yaw ?? 0;
+      const b = tracked.body;
+      b.setTranslation({ x: def.pos[0], y: def.pos[1], z: def.pos[2] }, true);
+      b.setRotation({ x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) }, true);
+      b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      b.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      tracked.teleport();
+    }
+  }
+
   step(input: DriveInput): void {
     this.vehicle.update(input, STEP);
     this.world.step();

@@ -48,6 +48,15 @@ export class GameCore {
     this.sim.vehicle.setMotor(s.topSpeedKmh / 3.6, s.accel);
   }
 
+  /** Level back to its initial state: vehicle at the start, props and pickups restored. Progress stays. */
+  restart(): void {
+    this.sim.respawn();
+    this.sim.resetProps();
+    this.race.reset();
+    this.pickupTimers.fill(0);
+    this.flippedFor = 0;
+  }
+
   step(input: GameInput): void {
     const { sim, progress, race } = this;
 
@@ -59,8 +68,7 @@ export class GameCore {
       this.events.push({ type: 'vehicle', id: input.selectVehicle });
     }
     if (input.respawn) {
-      sim.respawn();
-      race.reset();
+      this.restart();
     } else if (input.upright) {
       sim.vehicle.upright();
     }

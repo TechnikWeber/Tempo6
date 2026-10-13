@@ -23,7 +23,7 @@ npm run build    # static build in dist/
 | Handbrake | Space | A |
 | Buy next tuning stage | T | X |
 | Back on the wheels | R | Y |
-| Back to the start | Backspace | Back |
+| Restart the level | Backspace | Back |
 | Wheelchair / scooter | 1 / 2 | |
 | Sound on/off | M | |
 | Workshop (live handling tuning, cheats) | F2 | |

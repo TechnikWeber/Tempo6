@@ -104,8 +104,12 @@ export const HANDLING = {
   yawGain: 20,
   /** Deceleration when letting go of the stick: the magnetic brake bites (m/s²). */
   brakeDecel: 5,
+  /** Deceleration when actively braking against the direction of travel, on all wheels (m/s²). */
+  footBrake: 10,
   /** Rear side grip multiplier while the handbrake is held. */
   handbrakeSlide: 0.35,
   suspensionCompression: 3.5,
   suspensionRelaxation: 4.5,
 };
+
+export const HANDLING_DEFAULTS: Readonly<typeof HANDLING> = { ...HANDLING };

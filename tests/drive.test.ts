@@ -59,6 +59,23 @@ describe.each<[string, VehicleSpec]>([
     expect(Math.abs(sim.vehicle.speed)).toBeLessThan(0.1);
   });
 
+  it('brakes hard when pulling back, clearly harder than just letting go', () => {
+    const stopFrom40 = (throttle: number) => {
+      const sim = new Sim(FLAT, spec);
+      sim.vehicle.setMotor(40 / 3.6, 5.5);
+      drive(sim, 6, 1);
+      const z0 = sim.vehicle.body.translation().z;
+      let steps = 0;
+      while (sim.vehicle.speed > 0.3 && steps++ < 600) sim.step({ throttle, steer: 0, handbrake: false });
+      expect(sim.vehicle.upY).toBeGreaterThan(0.9);
+      return sim.vehicle.body.translation().z - z0;
+    };
+    const coasting = stopFrom40(0);
+    const braking = stopFrom40(-1);
+    expect(braking).toBeLessThan(8.5);
+    expect(braking).toBeLessThan(coasting * 0.65);
+  });
+
   it('reverses', () => {
     const sim = new Sim(FLAT, spec);
     drive(sim, 3, -1);
@@ -176,6 +193,23 @@ describe('game on the Parkplatz', () => {
     core.step({ ...idle, tune: true });
     expect(core.progress.stageIndex).toBe(1);
     expect(core.sim.vehicle.topSpeed).toBeCloseTo(8 / 3.6);
+  });
+
+  it('restarts the level: vehicle, props and pickups back, money kept', () => {
+    const core = new GameCore(PARKPLATZ, new Progress());
+    const cone = core.sim.props[0];
+    cone.tracked.body.setTranslation({ x: 5, y: 3, z: 5 }, true);
+    for (let i = 0; i < 60 * 12; i++) core.step({ ...idle, throttle: 1 });
+    const money = core.progress.money;
+    expect(money).toBeGreaterThan(0);
+    core.step({ ...idle, respawn: true });
+    const p = core.sim.vehicle.body.translation();
+    expect(Math.hypot(p.x - PARKPLATZ.spawn.pos[0], p.z - PARKPLATZ.spawn.pos[2])).toBeLessThan(0.2);
+    const c = cone.tracked.body.translation();
+    expect(Math.hypot(c.x - cone.def.pos[0], c.z - cone.def.pos[2])).toBeLessThan(0.2);
+    expect(core.pickupTimers.every((t) => t === 0)).toBe(true);
+    expect(core.race.running).toBe(false);
+    expect(core.progress.money).toBe(money);
   });
 
   it('cannot tune without money', () => {
