@@ -99,6 +99,25 @@ describe.each(ALL)('%s', (_name, spec) => {
     expect(sim.vehicle.speed).toBeLessThan(-0.6);
   });
 
+  it('stands for a moment after braking to a stop before it backs away', () => {
+    const sim = simAt(spec, 40 / spec.speedFactor, 7);
+    drive(sim, 8, 1);
+    let steps = 0;
+    while (sim.vehicle.speed > 0.3 && steps++ < 600) sim.step({ throttle: -1, steer: 0, handbrake: false });
+    // the stick stays pulled back: nothing much happens for a good while…
+    let minUp = 1;
+    for (let i = 0; i < 60 * 0.4; i++) {
+      sim.step({ throttle: -1, steer: 0, handbrake: false });
+      expect(sim.vehicle.speed).toBeGreaterThan(-0.3);
+      minUp = Math.min(minUp, sim.vehicle.upY);
+    }
+    // …then it reverses after all
+    drive(sim, 3, -1);
+    expect(sim.vehicle.speed).toBeLessThan(-0.6);
+    expect(minUp).toBeGreaterThan(0.9);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.95);
+  });
+
   it.each([6, 12, 30, 60])('turns right at %i km/h without falling over or spinning out', (kmh) => {
     const sim = simAt(spec, kmh / spec.speedFactor, 6);
     drive(sim, 8, 1);

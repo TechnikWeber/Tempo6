@@ -88,6 +88,10 @@ export class Vehicle {
   private boostRamp = 0;
   /** Share of the steering lock in use (handlebar vehicles), see `update`. */
   private steerTrim = 1;
+  /** Seconds still to wait at a standstill before reverse engages, after braking to a stop. */
+  private reverseWait = 0;
+  /** Seconds since reverse engaged; it eases in. */
+  private reverseTime = 0;
   private readonly local = new Vector3();
   private readonly qOther = new Quaternion();
   private readonly carryV = new Vector3();
@@ -198,7 +202,23 @@ export class Vehicle {
     const wheelie = clamp(1 - (nose - 0.1 * rearUp) / 0.25, 0, 1);
     // Same on the brakes: nose down in a stoppie, let go a little.
     const stoppie = clamp(1 - (-nose - 0.22) / 0.2, 0, 1);
-    const targetV = throttle >= 0 ? throttle * topSpeed : throttle * topSpeed * 0.5;
+    let targetV = throttle >= 0 ? throttle * topSpeed : throttle * topSpeed * 0.5;
+    // Pulling back is the brake first and reverse second: once it has stopped it waits a
+    // moment with the nose still down, and then pulls away backwards gently, instead of
+    // throwing the full motor the other way while it is standing on its front wheels.
+    if (throttle >= 0) {
+      this.reverseWait = 0;
+      this.reverseTime = 0;
+    } else if (v > 0.3) {
+      this.reverseWait = HANDLING.reverseDelay;
+      this.reverseTime = 0;
+    } else if (this.reverseWait > 0) {
+      this.reverseWait -= dt;
+      targetV = 0;
+    } else {
+      this.reverseTime += dt;
+    }
+    const launch = throttle < 0 ? clamp(this.reverseTime / Math.max(HANDLING.reverseEase, 0.01), 0.1, 1) : 1;
     // Which way it is trying to go: by the stick if it is pushed, else by the motion.
     const heading = Math.abs(targetV) > 0.3 ? Math.sign(targetV) : Math.abs(v) > 1 ? Math.sign(v) : 0;
     const wallTurn = heading !== 0 ? this.wallTurn(heading) : 0;
@@ -357,7 +377,7 @@ export class Vehicle {
       } else if (w.drive && !input.handbrake) {
         // Slowing down may use the brake; speeding up is limited by the motor.
         const decel = braking ? footBrake : autoBrake;
-        const cap = perDrive * (slowing ? Math.max(accel, decel) * stoppie : accel * wheelie * surge);
+        const cap = perDrive * (slowing ? Math.max(accel, decel) * stoppie : accel * wheelie * surge * launch);
         // Slowing down is the brake's job and no stronger than the brake, however much
         // motor the tuning has added. (Steering below may still use all of `cap`.)
         let hold = slowing ? perDrive * decel * stoppie : cap;
@@ -612,6 +632,7 @@ export class Vehicle {
     this.boostCharge = 1;
     this.boostRamp = this.boost = 0;
     this.steerTrim = 1;
+    this.reverseWait = this.reverseTime = 0;
     this.boosting = false;
     this.tracked.teleport();
   }

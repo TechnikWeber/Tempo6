@@ -700,6 +700,10 @@ export const HANDLING = {
   brakeDecel: 5,
   /** Driven front fork: share of the magnetic brake that lets go at full lock, so it rolls round the bend instead of digging in. */
   steerCoast: 0.1,
+  /** After braking to a stop with the stick held back, it stands this long (s) before reverse engages. */
+  reverseDelay: 0.5,
+  /** Reverse then comes in over this long (s) instead of all at once. */
+  reverseEase: 0.8,
   /** Deceleration when actively braking against the direction of travel, on all wheels (m/s²). */
   footBrake: 16,
   /** Rear side grip multiplier while the handbrake is held. */
