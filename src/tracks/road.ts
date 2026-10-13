@@ -1,4 +1,4 @@
-import type { DecorDef, Gate, TrackDef } from '../sim/Track';
+import type { DecorDef, Gate, TerrainDef, TrackDef } from '../sim/Track';
 
 const ROAD = 0x3f4248;
 const PAINT = 0xe8e8e8;
@@ -6,6 +6,8 @@ const PAINT = 0xe8e8e8;
 export interface Road {
   /** The centre line, a point every `STEP` metres, closed. */
   line: [number, number][];
+  /** Height of the road at each of those points. */
+  heights: number[];
   length: number;
   /** Tightest radius of the centre line in metres. */
   minRadius: number;
@@ -16,17 +18,20 @@ export interface Road {
 
 const STEP = 1.5;
 
-/** Closed Catmull-Rom spline through the points, resampled at even distances. */
-function smooth(points: [number, number][]): [number, number][] {
+/** A point of the road: x, z and, for a road over hills, the height there. */
+export type RoadPoint = [number, number] | [number, number, number];
+
+/** Closed Catmull-Rom spline through the points (x, z, height), resampled at even distances. */
+function smooth(points: RoadPoint[]): [number, number, number][] {
   const n = points.length;
-  const dense: [number, number][] = [];
+  const dense: [number, number, number][] = [];
   for (let i = 0; i < n; i++) {
     const [p0, p1, p2, p3] = [points[(i + n - 1) % n], points[i], points[(i + 1) % n], points[(i + 2) % n]];
     for (let k = 0; k < 40; k++) {
       const t = k / 40, t2 = t * t, t3 = t2 * t;
       const at = (a: number, b: number, c: number, d: number) =>
         0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (3 * b - a - 3 * c + d) * t3);
-      dense.push([at(p0[0], p1[0], p2[0], p3[0]), at(p0[1], p1[1], p2[1], p3[1])]);
+      dense.push([at(p0[0], p1[0], p2[0], p3[0]), at(p0[1], p1[1], p2[1], p3[1]), at(p0[2] ?? 0, p1[2] ?? 0, p2[2] ?? 0, p3[2] ?? 0)]);
     }
   }
   let total = 0;
@@ -35,7 +40,7 @@ function smooth(points: [number, number][]): [number, number][] {
     total += Math.hypot(b[0] - dense[i][0], b[1] - dense[i][1]);
   }
   const count = Math.round(total / STEP);
-  const out: [number, number][] = [];
+  const out: [number, number, number][] = [];
   let walked = 0;
   let next = 0;
   for (let i = 0; i < dense.length && out.length < count; i++) {
@@ -43,7 +48,7 @@ function smooth(points: [number, number][]): [number, number][] {
     const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
     while (next <= walked + d && out.length < count) {
       const f = (next - walked) / d;
-      out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+      out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]);
       next += total / count;
     }
     walked += d;
@@ -55,8 +60,12 @@ function smooth(points: [number, number][]): [number, number][] {
  * A closed road on flat ground, painted on: surface, edge lines, finish line, checkpoints
  * and the starting grid. Driven in the order of the points; the lap starts at the first one.
  */
-export function road(points: [number, number][], width: number, gateCount = 8): Road {
-  const line = smooth(points);
+export function road(points: RoadPoint[], width: number, gateCount = 8): Road {
+  const sampled = smooth(points);
+  const line = sampled.map(([x, z]): [number, number] => [x, z]);
+  const heights = sampled.map((p) => p[2]);
+  // Over hills the paint sits a little higher, so the ground between the grid points cannot poke through.
+  const lift = heights.some((h) => h !== 0) ? 0.03 : 0.004;
   const n = line.length;
   const heading = (i: number) => {
     const a = line[(i + n - 1) % n], b = line[(i + 1) % n];
@@ -75,10 +84,10 @@ export function road(points: [number, number][], width: number, gateCount = 8): 
       return [x + side * Math.cos(h) * (width / 2), z - side * Math.sin(h) * (width / 2)];
     });
   const decor: DecorDef[] = [
-    { type: 'path', pos: [0, 0.004, 0], half: [width / 2 + 0.3, 0, 0], points: line, color: ROAD },
-    { type: 'path', pos: [0, 0.008, 0], half: [0.12, 0, 0], points: edge(1), color: PAINT },
-    { type: 'path', pos: [0, 0.008, 0], half: [0.12, 0, 0], points: edge(-1), color: PAINT },
-    { type: 'finish', pos: [line[0][0], 0.012, line[0][1]], half: [0.6, 0, width / 2], yaw: heading(0) - Math.PI / 2 },
+    { type: 'path', pos: [0, lift, 0], half: [width / 2 + 0.3, 0, 0], points: line, color: ROAD },
+    { type: 'path', pos: [0, lift * 2, 0], half: [0.12, 0, 0], points: edge(1), color: PAINT },
+    { type: 'path', pos: [0, lift * 2, 0], half: [0.12, 0, 0], points: edge(-1), color: PAINT },
+    { type: 'finish', pos: [line[0][0], lift * 3, line[0][1]], half: [0.6, 0, width / 2], yaw: heading(0) - Math.PI / 2 },
   ];
   const gates: Gate[] = [];
   for (let k = 0; k < gateCount; k++) {
@@ -87,5 +96,29 @@ export function road(points: [number, number][], width: number, gateCount = 8): 
   }
   const back = Math.round(8 / STEP);
   const [sx, sz] = line[(n - back) % n];
-  return { line, length: n * STEP, minRadius, decor, gates, spawn: { pos: [sx, 0.6, sz], yaw: heading((n - back) % n) } };
+  return { line, heights, length: n * STEP, minRadius, decor, gates, spawn: { pos: [sx, heights[(n - back) % n] + 0.7, sz], yaw: heading((n - back) % n) } };
+}
+
+/**
+ * Ground for a road over hills: at the road it has the road's height, and away from it
+ * whatever the nearest stretches of road have, blended.
+ */
+export function terrainFor(r: Road, half: [number, number], color: number, cell = 2): TerrainDef {
+  const cols = Math.round((half[0] * 2) / cell), rows = Math.round((half[1] * 2) / cell);
+  const heights: number[] = [];
+  for (let iz = 0; iz <= rows; iz++) {
+    for (let ix = 0; ix <= cols; ix++) {
+      const x = -half[0] + (ix / cols) * half[0] * 2, z = -half[1] + (iz / rows) * half[1] * 2;
+      let sum = 0, weight = 0;
+      for (let i = 0; i < r.line.length; i += 2) {
+        const d2 = (r.line[i][0] - x) ** 2 + (r.line[i][1] - z) ** 2;
+        // falls off fast: the road next door decides, the far side of the lap hardly counts
+        const w = 1 / (d2 + 4) ** 2;
+        sum += w * r.heights[i];
+        weight += w;
+      }
+      heights.push(sum / weight);
+    }
+  }
+  return { half, cols, rows, heights, color };
 }

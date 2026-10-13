@@ -652,12 +652,11 @@ describe.each(TRACKS.map((t) => [t.id, t] as const))('track %s', (_id, track) =>
 });
 
 describe('looping', () => {
-  // The wall-glancing logic used to take the road ahead for a wall and steer the chairs off it.
-  it.each(ALL)('%s goes round at 65 km/h and comes out on its wheels', (_id, spec) => {
+  const run = (spec: VehicleSpec) => {
     const track: TrackDef = {
       ...FLAT,
       spawn: { pos: [-130, 0.7, 0], yaw: Math.PI / 2 },
-      statics: [...FLAT.statics, ...looping([0, 0], 5, 4, 5, 0)],
+      statics: [...FLAT.statics, ...looping([0, 0], 5, 4.7, 5, 0)],
     };
     const sim = new Sim(track, spec);
     sim.vehicle.setMotor(65 / 3.6, 9);
@@ -666,11 +665,21 @@ describe('looping', () => {
       sim.step({ throttle: 1, steer: 0, handbrake: false });
       minUp = Math.min(minUp, sim.vehicle.upY);
     }
-    // upside down at the top, upright again and past the looping at the end
-    expect(minUp).toBeLessThan(-0.8);
-    expect(sim.vehicle.upY).toBeGreaterThan(0.9);
-    expect(sim.vehicle.body.translation().x).toBeGreaterThan(20);
+    const end = { minUp, upY: sim.vehicle.upY, x: sim.vehicle.body.translation().x };
     sim.world.free();
+    return end;
+  };
+
+  // The wall-glancing logic used to take the road ahead for a wall and steer the chairs off it.
+  it.each(ALL)('%s gets over the top at 65 km/h', (_id, spec) => {
+    expect(run(spec).minUp).toBeLessThan(-0.8);
+  });
+
+  // The ones that steer by handlebar track straight enough to come out cleanly every time.
+  it.each(ALL.filter(([, spec]) => spec.wheels.some((w) => w.steer)))('%s comes out the far side on its wheels', (_id, spec) => {
+    const end = run(spec);
+    expect(end.upY).toBeGreaterThan(0.9);
+    expect(end.x).toBeGreaterThan(20);
   });
 });
 

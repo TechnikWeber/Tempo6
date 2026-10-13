@@ -62,6 +62,29 @@ export interface TrafficDef {
   offset?: number;
 }
 
+/** Hilly ground instead of a flat floor: a grid of heights over the whole lot, centred on the origin. */
+export interface TerrainDef {
+  /** Half extents in X and Z. */
+  half: [number, number];
+  /** Number of cells in X and Z. */
+  cols: number;
+  rows: number;
+  /** Heights at the corners of the cells, row by row from -Z to +Z, each row from -X to +X. */
+  heights: number[];
+  color: number;
+}
+
+/** Height of the terrain at a point, between the grid corners. 0 without terrain or outside it. */
+export function heightAt(t: TerrainDef | undefined, x: number, z: number): number {
+  if (!t) return 0;
+  const fx = Math.min(t.cols, Math.max(0, ((x + t.half[0]) / (2 * t.half[0])) * t.cols));
+  const fz = Math.min(t.rows, Math.max(0, ((z + t.half[1]) / (2 * t.half[1])) * t.rows));
+  const ix = Math.min(t.cols - 1, Math.floor(fx)), iz = Math.min(t.rows - 1, Math.floor(fz));
+  const u = fx - ix, v = fz - iz;
+  const at = (i: number, k: number) => t.heights[k * (t.cols + 1) + i];
+  return (at(ix, iz) * (1 - u) + at(ix + 1, iz) * u) * (1 - v) + (at(ix, iz + 1) * (1 - u) + at(ix + 1, iz + 1) * u) * v;
+}
+
 /** A flat disc that turns on the spot and takes along whatever stands on it. */
 export interface SpinnerDef {
   /** Centre of its top surface. */
@@ -90,6 +113,8 @@ export interface TrackDef {
   line?: [number, number][];
   traffic?: TrafficDef[];
   spinners?: SpinnerDef[];
+  /** With terrain the track brings no floor of its own in `statics`. */
+  terrain?: TerrainDef;
 }
 
 /** Collider dimensions per prop type, shared by physics and visuals. */

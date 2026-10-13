@@ -36,7 +36,7 @@ cartons(80, 0, 5, 11);
 // South lane: the looping. The run-up is the whole lane.
 const LOOP_Z = -45;
 board('LOOPING', -112, LOOP_Z + 9);
-statics.push(...looping([0, LOOP_Z], 5, 4, 5, STEEL));
+statics.push(...looping([0, LOOP_Z], 5, 4.7, 5, STEEL));
 for (let x = -100; x <= -10; x += 10) decor.push({ type: 'box', pos: [x, 0.005, LOOP_Z], half: [2.5, 0.005, 0.12], color: 0xe6c94a });
 
 // North lane: washboard, then a table-top.

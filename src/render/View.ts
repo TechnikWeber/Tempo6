@@ -7,7 +7,7 @@ import {
 import { HANDLING, type VehicleSpec } from '../config/vehicles';
 import type { GameCore } from '../sim/GameCore';
 import { SPINNER_HALF } from '../sim/Sim';
-import type { DecorDef, TrackDef } from '../sim/Track';
+import { heightAt, type DecorDef, type TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
 import { box, buildPickup, buildProp, buildTraffic, buildVehicle, mat, type VehicleRig } from './models';
 import { Sparks, SpeedLines } from './Boost';
@@ -68,9 +68,12 @@ function checkerTexture(): CanvasTexture {
   return t;
 }
 
-function buildDecor(d: DecorDef): Object3D {
+/** @param ground height of the ground at a point; decor stands on it */
+function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Object3D {
   const g = new Group();
   g.position.set(...d.pos);
+  // (bands follow the ground point by point instead, see below)
+  if (d.type !== 'path') g.position.y += ground(d.pos[0], d.pos[2]);
   g.rotation.y = d.yaw ?? 0;
   const [hx, hy, hz] = d.half ?? [0.5, 0.5, 0.5];
   switch (d.type) {
@@ -117,18 +120,22 @@ function buildDecor(d: DecorDef): Object3D {
       break;
     }
     case 'path': {
-      // one flat band, two vertices per point
+      // one band lying on the ground: a few vertices across at every point
       const pts = d.points ?? [];
       const n = pts.length;
+      const across = hx > 1 ? 5 : 2;
       const vertices: number[] = [];
       const index: number[] = [];
       pts.forEach(([x, z], i) => {
         const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n];
         const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
         const nx = ((b[1] - a[1]) / len) * hx, nz = (-(b[0] - a[0]) / len) * hx;
-        vertices.push(x + nx, 0, z + nz, x - nx, 0, z - nz);
-        const j = ((i + 1) % n) * 2;
-        index.push(i * 2, i * 2 + 1, j, i * 2 + 1, j + 1, j);
+        for (let k = 0; k < across; k++) {
+          const f = 1 - (2 * k) / (across - 1);
+          vertices.push(x + nx * f, ground(x + nx * f, z + nz * f), z + nz * f);
+        }
+        const j = ((i + 1) % n) * across;
+        for (let k = 0; k < across - 1; k++) index.push(i * across + k, i * across + k + 1, j + k, i * across + k + 1, j + k + 1, j + k);
       });
       const geo = new BufferGeometry();
       geo.setAttribute('position', new Float32BufferAttribute(vertices, 3));
@@ -254,7 +261,20 @@ export class View {
       const m = box(level, b.half[0] * 2, b.half[1] * 2, b.half[2] * 2, b.color, ...b.pos);
       if (b.quat) m.quaternion.fromArray(b.quat);
     }
-    for (const d of track.decor) level.add(buildDecor(d));
+    const ground = (x: number, z: number) => heightAt(track.terrain, x, z);
+    if (track.terrain) {
+      const t = track.terrain;
+      const geo = new PlaneGeometry(t.half[0] * 2, t.half[1] * 2, t.cols, t.rows);
+      geo.rotateX(-Math.PI / 2);
+      // (the plane's rows run from -Z to +Z after the turn, like the grid)
+      const y = geo.attributes.position;
+      for (let i = 0; i < y.count; i++) y.setY(i, ground(y.getX(i), y.getZ(i)));
+      geo.computeVertexNormals();
+      const m = new Mesh(geo, mat(t.color));
+      m.receiveShadow = true;
+      level.add(m);
+    }
+    for (const d of track.decor) level.add(buildDecor(d, ground));
     for (const p of track.props) {
       const m = buildProp(p.type);
       this.propMeshes.push(m);

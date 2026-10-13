@@ -39,6 +39,13 @@ export class Sim {
     }
     for (const def of track.props) this.props.push({ def, tracked: new Tracked(this.createProp(def)) });
 
+    if (track.terrain) {
+      const t = track.terrain;
+      // the engine wants the grid column by column, a column running along Z
+      const heights = new Float32Array((t.rows + 1) * (t.cols + 1));
+      for (let ix = 0; ix <= t.cols; ix++) for (let iz = 0; iz <= t.rows; iz++) heights[iz + ix * (t.rows + 1)] = t.heights[iz * (t.cols + 1) + ix];
+      this.world.createCollider(RAPIER.ColliderDesc.heightfield(t.rows, t.cols, heights, { x: t.half[0] * 2, y: 1, z: t.half[1] * 2 }).setFriction(0.8));
+    }
     for (const s of track.spinners ?? []) {
       // (velocity based: it just keeps turning, and the vehicle can read its speed off it)
       const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.kinematicVelocityBased().setTranslation(s.pos[0], s.pos[1] - SPINNER_HALF, s.pos[2]));

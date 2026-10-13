@@ -91,6 +91,8 @@ export class Vehicle {
   private readonly local = new Vector3();
   private readonly qOther = new Quaternion();
   private readonly carryV = new Vector3();
+  /** Normal of the ground under the wheels in the last step; straight up while in the air. */
+  private readonly ground = new Vector3(0, 1, 0);
   private readonly carryW = new Vector3();
 
   constructor(private readonly world: RAPIER.World, readonly spec: VehicleSpec, x: number, y: number, z: number, yaw: number) {
@@ -166,7 +168,9 @@ export class Vehicle {
     this.upY = this.up.y;
     // The chassis X axis points left; when it rises, the vehicle leans right.
     this.left.set(1, 0, 0).applyQuaternion(this.q);
-    this.roll = Math.asin(clamp(this.left.y, -1, 1));
+    // (Measured against the ground it stands on, as of the last step: across a slope it is
+    // not leaning, and nothing below should treat it as tipping over.)
+    this.roll = Math.asin(clamp(this.left.dot(this.ground), -1, 1));
 
     const p = this.profile;
     // Tyres bite harder the faster it goes, or the tight lines at speed would be a slide.
@@ -188,6 +192,8 @@ export class Vehicle {
       if (n) this.normal.x += n.x, this.normal.y += n.y, this.normal.z += n.z;
     });
     const nose = this.normal.lengthSq() > 0 ? this.fwd.dot(this.normal.normalize()) : this.fwd.y;
+    if (this.normal.lengthSq() > 0) this.ground.copy(this.normal);
+    else this.ground.set(0, 1, 0);
     const rearUp = p.wheelie ?? 1;
     const wheelie = clamp(1 - (nose - 0.1 * rearUp) / 0.25, 0, 1);
     // Same on the brakes: nose down in a stoppie, let go a little.
@@ -531,6 +537,8 @@ export class Vehicle {
       if (parent && !parent.isFixed()) return;
       // Whatever it is on top of is a bump to ride over, not a wall to turn away from: a kerb,
       // or the next piece of a looping when the springs are flat out and the belly scrapes.
+      // Hilly ground is never a wall, however steep a facet of it may be.
+      if (other.shapeType() === RAPIER.ShapeType.HeightField) return;
       const half = other.halfExtents();
       if (half) {
         const at = this.body.translation(), to = other.translation(), r = other.rotation();

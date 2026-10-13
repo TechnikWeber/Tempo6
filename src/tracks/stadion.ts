@@ -1,5 +1,5 @@
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
-import { road } from './road';
+import { road, terrainFor } from './road';
 
 const GRASS = 0x5c9447;
 const CONCRETE = 0x9a9a94;
@@ -10,21 +10,23 @@ const LOT_X = 165;
 const LOT_Z = 110;
 const WIDTH = 7;
 
+// x, z and height: the stadium is level, the woods rise gently to the hairpin
 const ROAD = road([
-  [-40, -72], [20, -72], [56, -62], [72, -36],
-  [86, 0], [114, 36], [130, 62],
-  [122, 82], [100, 80],
-  [80, 52], [40, 32], [-10, 26], [-60, 36],
-  [-96, 26], [-106, 0], [-90, -20],
-  [-70, -26], [-60, -46], [-76, -60], [-70, -72],
+  [-40, -72, 0], [20, -72, 0], [56, -62, 0], [72, -36, 0.5],
+  [86, 0, 1.5], [114, 36, 3], [130, 62, 4],
+  [122, 82, 4], [100, 80, 3.5],
+  [80, 52, 2.5], [40, 32, 1.5], [-10, 26, 1], [-60, 36, 1.5],
+  [-96, 26, 1], [-106, 0, 0.5], [-90, -20, 0],
+  [-70, -26, 0], [-60, -46, 0], [-76, -60, 0], [-70, -72, 0],
 ], WIDTH, 10);
+const TERRAIN = terrainFor(ROAD, [LOT_X, LOT_Z], GRASS);
 
+// (no floor: the terrain is the ground)
 const statics: BoxDef[] = [
-  { pos: [0, -0.5, 0], half: [LOT_X, 0.5, LOT_Z], color: GRASS },
-  { pos: [0, 0.5, LOT_Z], half: [LOT_X, 0.5, 0.3], color: CONCRETE },
-  { pos: [0, 0.5, -LOT_Z], half: [LOT_X, 0.5, 0.3], color: CONCRETE },
-  { pos: [LOT_X, 0.5, 0], half: [0.3, 0.5, LOT_Z], color: CONCRETE },
-  { pos: [-LOT_X, 0.5, 0], half: [0.3, 0.5, LOT_Z], color: CONCRETE },
+  { pos: [0, 2, LOT_Z], half: [LOT_X, 4, 0.3], color: CONCRETE },
+  { pos: [0, 2, -LOT_Z], half: [LOT_X, 4, 0.3], color: CONCRETE },
+  { pos: [LOT_X, 2, 0], half: [0.3, 4, LOT_Z], color: CONCRETE },
+  { pos: [-LOT_X, 2, 0], half: [0.3, 4, LOT_Z], color: CONCRETE },
   // grandstands along the start straight and behind the twisty bit
   { pos: [-10, 2, -84], half: [40, 2, 3], color: 0x8c949c },
   { pos: [-122, 2, -20], half: [3, 2, 30], color: 0x8c949c },
@@ -47,4 +49,5 @@ export const STADION: TrackDef = {
   pickups: [],
   decor,
   line: ROAD.line,
+  terrain: TERRAIN,
 };
