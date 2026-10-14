@@ -27,6 +27,15 @@ export const STAGES: TuningStage[] = [
   { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 400 },
 ];
 
+/**
+ * Top speed of a stage in km/h for a vehicle whose own factors (vehicle times driving profile)
+ * come to `factor`. A quicker vehicle gets more than the stage says, a slower one never less:
+ * the 6 km/h at the start are 6 for everyone.
+ */
+export function stageSpeedKmh(stage: TuningStage, factor: number): number {
+  return stage.topSpeedKmh * Math.max(1, factor);
+}
+
 /** The boost battery: a short shove with a bit of a kick, though it still fades in rather than snapping on. */
 export const BOOST = {
   /** In Schrauben. */

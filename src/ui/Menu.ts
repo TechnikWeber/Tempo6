@@ -1,4 +1,4 @@
-import { formatMoney, STAGES } from '../config/tuning';
+import { formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
 import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from '../sim/Progress';
 import { TRACKS, TRAINING } from '../tracks';
@@ -209,7 +209,7 @@ export class Menu {
     const profile = v.profiles[this.progress.profiles[v.id] ?? 0] ?? v.profiles[0];
     const stageNo = this.progress.stages[v.id] ?? 0;
     const stage = STAGES[stageNo];
-    const top = stage.topSpeedKmh * v.speedFactor * profile.speed;
+    const top = stageSpeedKmh(stage, v.speedFactor * profile.speed);
     this.detail.replaceChildren(
       h('h3', '', v.label),
       h('p', 'kind', `${v.kind} · Fahrprofile: ${v.profiles.map((p) => p.name).join(', ')}`),

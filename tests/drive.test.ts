@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BONUS, BOOST, DAMAGE, STAGES, STUNTS } from '../src/config/tuning';
+import { BONUS, BOOST, DAMAGE, stageSpeedKmh, STAGES, STUNTS } from '../src/config/tuning';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
@@ -1305,8 +1305,32 @@ describe('Reha-Parcours', () => {
     expect(t / 60).toBeLessThan(120);
     expect(progress.stageIndex).toBe(1);
     expect(progress.stages[id]).toBe(1);
-    expect(core.topSpeedKmh).toBeCloseTo(STAGES[1].topSpeedKmh * spec.speedFactor * core.sim.vehicle.profile.speed);
+    expect(core.topSpeedKmh).toBeCloseTo(stageSpeedKmh(STAGES[1], spec.speedFactor * core.sim.vehicle.profile.speed));
+    // learning to drive pays nothing: no screws lying about, no lap money
+    expect(progress.money).toBe(0);
     core.dispose();
+  });
+
+  it('puts the screws out from the second run on', () => {
+    const progress = new Progress();
+    progress.stageIndex = 1;
+    const core = new GameCore(REHA, progress);
+    const ap = new Autopilot(REHA.line!);
+    drive(core, ap, 40);
+    expect(progress.money).toBeGreaterThan(0);
+    core.dispose();
+  });
+
+  it('starts every vehicle and profile at 6 km/h or more, and a stage never below what it says', () => {
+    for (const [, spec] of ALL) {
+      for (const p of spec.profiles) {
+        for (const s of STAGES) {
+          const kmh = stageSpeedKmh(s, spec.speedFactor * p.speed);
+          expect(kmh).toBeGreaterThanOrEqual(s.topSpeedKmh);
+          if (spec.speedFactor * p.speed > 1) expect(kmh).toBeGreaterThan(s.topSpeedKmh);
+        }
+      }
+    }
   });
 
   it('tips the seesaw over under the vehicle and back again once it has left', () => {

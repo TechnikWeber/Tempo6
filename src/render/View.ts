@@ -113,7 +113,8 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       const edge = mat(0x2a2c30);
       const face = new MeshStandardMaterial({ map: textTexture(d.text ?? '', '#f4f4f4', '#1d1d1f'), roughness: 0.9 });
       g.add(new Mesh(new BoxGeometry(hx * 2, hy * 2, hz * 2), [edge, edge, edge, edge, face, face]));
-      for (const s of [1, -1]) box(g, 0.1, d.pos[1], 0.1, 0x2a2c30, s * hx * 0.8, -d.pos[1] / 2, 0); // posts
+      // posts, thinner than the board so their faces never lie in the board's own
+      for (const s of [1, -1]) box(g, 0.1, d.pos[1], hz * 1.4, 0x2a2c30, s * hx * 0.8, -d.pos[1] / 2, 0);
       break;
     }
     case 'label': {
@@ -444,7 +445,7 @@ export class View {
     core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));
     core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
     this.pickupMeshes.forEach((m, i) => {
-      m.visible = !showroom && core.pickupTimers[i] === 0;
+      m.visible = !showroom && core.paying && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;
       m.position.y = track.pickups[i].pos[1] + Math.sin(this.time * 3 + i) * 0.08;
     });

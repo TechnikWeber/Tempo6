@@ -1,4 +1,4 @@
-import { BONUS, BOOST, PICKUP_VALUE, type TuningStage } from '../config/tuning';
+import { BONUS, BOOST, PICKUP_VALUE, stageSpeedKmh, type TuningStage } from '../config/tuning';
 import { VEHICLES, type VehicleId } from '../config/vehicles';
 import { GHOST_RATE, type GhostLap, type Progress } from './Progress';
 import { Race } from './Race';
@@ -86,7 +86,7 @@ export class GameCore {
     const spec = v.spec;
     v.profile = spec.profiles[this.profileIndex] ?? spec.profiles[0];
     v.boostFitted = this.progress.hasBoost;
-    v.setMotor((s.topSpeedKmh * spec.speedFactor * v.profile.speed) / 3.6, s.accel * spec.accelFactor * v.profile.accel);
+    v.setMotor(stageSpeedKmh(s, spec.speedFactor * v.profile.speed) / 3.6, s.accel * spec.accelFactor * v.profile.accel);
   }
 
   /** Index of the driving profile in use for the current vehicle. */
@@ -138,8 +138,17 @@ export class GameCore {
     this.scratched = false;
   }
 
+  /**
+   * Whether Schrauben are out to be had. Not on the first run through the Reha-Parcours: that
+   * one is for learning to drive, and getting through is its own reward.
+   */
+  get paying(): boolean {
+    return this.track.id !== TRAINING || this.progress.trained();
+  }
+
   step(input: GameInput): void {
     const { sim, progress, race } = this;
+    const paying = this.paying;
 
     if (input.respawn) {
       this.restart(true);
@@ -196,7 +205,7 @@ export class GameCore {
       this.stunts.reset();
     }
     this.wreckSeen = v.wrecked;
-    for (const s of this.stunts.update(v, sim.traffic.cars.map((c) => c.tracked), STEP)) this.events.push({ type: 'stunt', ...s });
+    for (const s of this.stunts.update(v, sim.traffic.cars.map((c) => c.tracked), STEP)) if (paying) this.events.push({ type: 'stunt', ...s });
     if (sim.traffic.honk) {
       sim.traffic.honk = false;
       this.events.push({ type: 'honk' });
@@ -239,7 +248,11 @@ export class GameCore {
       this.steps = 0;
     }
     // The finish line is the till: lap money and bonuses, and the stunts of the lap are safe.
-    if (ev) {
+    if (ev && !paying) {
+      // (the stunts of the run are dropped, not saved up for later)
+      this.stunts.bank();
+      this.scratched = false;
+    } else if (ev) {
       const lap = ev === 'lap' ? this.track.lapPay : 0;
       const forBest = ev === 'lap' && race.best === race.lastLap ? Math.round(lap * BONUS.best) : 0;
       const clean = ev === 'lap' && !this.scratched ? Math.round(lap * BONUS.clean) : 0;
@@ -252,7 +265,7 @@ export class GameCore {
       this.scratched = false;
     }
 
-    this.track.pickups.forEach((pk, i) => {
+    if (paying) this.track.pickups.forEach((pk, i) => {
       if (this.pickupTimers[i] > 0) {
         this.pickupTimers[i] = Math.max(0, this.pickupTimers[i] - STEP);
         return;

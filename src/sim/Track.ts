@@ -171,6 +171,35 @@ export function ramp(start: [number, number], yaw: number, length: number, width
 }
 
 /**
+ * A ramp from the ground up to `height` over `run` metres of ground, starting at `start` and
+ * rising along heading `yaw`. It eases in and out: three pieces, the middle one twice as
+ * steep as the two ends, so no wheel meets a sharp edge at the foot or at the top.
+ */
+export function easedRamp(start: [number, number], yaw: number, run: number, width: number, height: number, color: number): BoxDef[] {
+  const t = 0.1;
+  const m = height / (1.5 * run);
+  const sy = Math.sin(yaw / 2), cy = Math.cos(yaw / 2);
+  const out: BoxDef[] = [];
+  let s = 0, y = 0;
+  for (const [share, slope] of [[0.25, m], [0.5, 2 * m], [0.25, m]]) {
+    const a = Math.atan(slope);
+    const len = (run * share) / Math.cos(a);
+    // the top surface starts at (s, y); the box centre sits half a thickness below its middle
+    const c = s + (len / 2) * Math.cos(a) + t * Math.sin(a);
+    const sp = Math.sin(-a / 2), cp = Math.cos(-a / 2);
+    out.push({
+      pos: [start[0] + Math.sin(yaw) * c, y + (len / 2) * Math.sin(a) - t * Math.cos(a), start[1] + Math.cos(yaw) * c],
+      half: [width / 2, t, len / 2],
+      quat: [cy * sp, sy * cp, -sy * sp, cy * cp],
+      color,
+    });
+    s += run * share;
+    y += run * share * slope;
+  }
+  return out;
+}
+
+/**
  * A looping entered at ground level at `start`, driving along +X. It is a helix: one turn
  * carries the vehicle `shift` metres to its left (towards -Z), so it comes out beside the way in.
  * Just drive straight; it takes about √(5·g·radius) to get round.
