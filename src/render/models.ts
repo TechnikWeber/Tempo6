@@ -571,6 +571,11 @@ export function buildProp(type: PropType): Group {
     g.add(c);
     box(g, 0.36, 0.03, 0.36, 0xff6a13, 0, -s.halfHeight + 0.015, 0);
     cyl(g, 0.085, 0.07, 0xf5f5f5, 0, 0.02, 0, 8);
+  } else if (type === 'bigcone') {
+    // the small one, blown up
+    const big = buildProp('cone');
+    big.scale.setScalar(PROP_SHAPES.bigcone.halfHeight / PROP_SHAPES.cone.halfHeight);
+    g.add(big);
   } else if (type === 'carton') {
     const [x, y, z] = PROP_SHAPES.carton.half;
     box(g, x * 2, y * 2, z * 2, 0xc19a6b);

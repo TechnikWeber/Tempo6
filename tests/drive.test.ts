@@ -1,13 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BONUS, BOOST, DAMAGE, stageSpeedKmh, STAGES, STUNTS, TUTORIAL_STAGE } from '../src/config/tuning';
+import { BONUS, BOOST, DAMAGE, stageSpeedKmh, STAGES, STUNTS } from '../src/config/tuning';
+import { CRASH, MODES, RACE } from '../src/config/modes';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
-import { GameCore, type GameInput } from '../src/sim/GameCore';
+import { GameCore, type GameEvent, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
 import { Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
 import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
-import { AFTER_TRAINING, TRACKS, TRAINING } from '../src/tracks';
+import { trackById, trackOpen, TRACKS, TRAINING } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 import { REHA } from '../src/tracks/reha';
@@ -667,7 +668,8 @@ describe('race', () => {
   });
 });
 
-describe.each(TRACKS.map((t) => [t.id, t] as const))('track %s', (_id, track) => {
+// (the crashtest ground has no laps; its own test is with the modes)
+describe.each(TRACKS.filter((t) => t.id !== 'crashtest').map((t) => [t.id, t] as const))('track %s', (_id, track) => {
   it('lets the starter roll off the grid and through the finish gate', () => {
     const core = new GameCore(track, new Progress());
     for (let i = 0; i < 60 * 3; i++) core.step(idle);
@@ -925,8 +927,8 @@ describe('curve test ground', () => {
   });
 });
 
-// (the Reha-Parcours is a slow course with rails; it has tests of its own)
-describe.each(TRACKS.filter((t) => t.line && t.id !== TRAINING).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
+// (the Reha-Parcours and the car park are too tight for this; the Reha-Parcours has tests of its own)
+describe.each(TRACKS.filter((t) => t.line && t.id !== TRAINING && t.id !== PARKPLATZ.id).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
   it('can be lapped at 30 km/h by following its centre line', () => {
     const core = new GameCore(track, new Progress());
     core.sim.vehicle.setMotor(30 / 3.6, 5);
@@ -1377,17 +1379,18 @@ describe('Reha-Parcours', () => {
   it('keeps the tuning stage per vehicle, and an old save gives its stage to the vehicle it drove', () => {
     const data: Record<string, string> = {};
     const store = { getItem: (k: string) => data[k] ?? null, setItem: (k: string, v: string) => void (data[k] = v) };
-    data['tempo6.save.v3'] = JSON.stringify({ money: 5, stageIndex: 2, vehicle: 'komet' });
+    data['tempo6.save.v3'] = JSON.stringify({ money: 5, stageIndex: 2, vehicle: 'komet', unlocked: ['komet'] });
     const p = new Progress(store);
     expect(p.stageIndex).toBe(2);
-    expect(p.tutorialDone).toBe(false);
-    expect(p.trained('komet')).toBe(true);
-    expect(p.trained('trex')).toBe(false);
+    // (a vehicle past the Reha-Parcours means the tutorial is done, so every vehicle has stage 1)
+    expect(p.tutorialDone).toBe(true);
+    expect(p.trained('trex')).toBe(true);
     p.vehicle = 'trex';
-    expect(p.stageIndex).toBe(0);
-    p.graduate();
+    expect(p.stageIndex).toBe(1);
+    p.save();
     const again = new Progress(store);
-    expect(again.stages).toEqual({ komet: 2, trex: 1 });
+    expect(again.stages).toEqual({ komet: 2 });
+    expect(again.stageOf('trex')).toBe(1);
   });
 
   it('exports the save with its shadows to a file and reads it back into an empty browser', () => {
@@ -1413,19 +1416,97 @@ describe('Reha-Parcours', () => {
     expect(back.loadGhost('reha')?.time).toBe(31);
   });
 
-  it('ends the tutorial at its stage: every vehicle is free of its throttle, and the car park opens', () => {
+  it('ends the tutorial with the first vehicle through: all throttles off, modes and free tracks open', () => {
     const progress = new Progress();
-    progress.stageIndex = TUTORIAL_STAGE - 1;
-    const core = new GameCore(REHA, progress);
-    progress.earn(STAGES[TUTORIAL_STAGE].price);
-    core.step({ ...idle, tune: true });
-    expect(core.events.some((e) => e.type === 'tutorialDone')).toBe(true);
+    expect(trackOpen(progress, TRAINING)).toBe(true);
+    expect(trackOpen(progress, PARKPLATZ.id)).toBe(false);
+    progress.graduate();
     expect(progress.tutorialDone).toBe(true);
     for (const [id] of ALL) expect(progress.stageOf(id)).toBeGreaterThanOrEqual(1);
     expect(progress.stageOf('komet')).toBe(1);
-    expect(progress.isUnlocked(AFTER_TRAINING, PARKPLATZ.unlockPrice)).toBe(true);
-    // and the other tracks still cost something
-    expect(TRACKS.filter((t) => t.unlockPrice === 0).map((t) => t.id).sort()).toEqual([AFTER_TRAINING, TRAINING].sort());
+    expect(trackOpen(progress, PARKPLATZ.id)).toBe(true);
+    // free after the tutorial: the car park and the crashtest ground; the rest is bought
+    expect(TRACKS.filter((t) => t.unlockPrice === 0).map((t) => t.id).sort()).toEqual(['crashtest', 'parkplatz', TRAINING].sort());
+    expect(trackOpen(progress, 'stadion')).toBe(false);
+  });
+});
+
+describe('modes', () => {
+  const trained = (stage = 1) => {
+    const p = new Progress();
+    p.tutorialDone = true;
+    p.stageIndex = stage;
+    return p;
+  };
+
+  it('has every track of every mode, and each mode at least one that is free after the tutorial', () => {
+    for (const m of MODES) {
+      for (const id of m.tracks) expect(TRACKS.some((t) => t.id === id)).toBe(true);
+      expect(m.tracks.some((id) => trackOpen(trained(), id))).toBe(true);
+    }
+    // the others need a line to follow
+    for (const id of MODES.find((m) => m.id === 'race')!.tracks) expect(trackById(id).line).toBeTruthy();
+  });
+
+  it('races three others round the car park; they drive off and whoever is first over the line after three laps wins', () => {
+    const core = new GameCore(PARKPLATZ, trained(4), 'race');
+    expect(core.rivals.length).toBe(3);
+    core.restart(true);
+    const ap = new Autopilot(PARKPLATZ.line!, 2.5).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
+    let over: GameEvent | undefined;
+    for (let i = 0; i < 60 * 120 && !over; i++) {
+      core.step(ap.input(core));
+      over = core.events.find((e) => e.type === 'raceOver');
+      core.events.length = 0;
+    }
+    expect(over).toMatchObject({ type: 'raceOver', of: 4 });
+    expect(core.finished).toBeGreaterThanOrEqual(1);
+    expect(core.progress.records['race:parkplatz']).toBe(core.finished);
+    // the others got going too
+    for (const r of core.rivals) expect(r.race.laps).toBeGreaterThanOrEqual(RACE.laps - 1);
+    core.dispose();
+  });
+
+  it('pays a freestyle run of stunts when it ends, and never times a lap', () => {
+    // (about the speed the stunt tests jump at)
+    const progress = trained();
+    progress.vehicle = 'komet';
+    progress.stageIndex = 6;
+    const jump: TrackDef = { ...FLAT, gates: [{ x: 0, z: 0, hx: 3, hz: 1 }], spawn: { pos: [0, 0.7, -60], yaw: 0 }, statics: [...FLAT.statics, ramp([0, 0], 0, 10, 6, 0.3, 0)] };
+    const core = new GameCore(jump, progress, 'freestyle');
+    // over the ramp (and through what would be a finish gate), then let the run end
+    for (let i = 0; i < 60 * 10; i++) core.step({ ...idle, throttle: 1 });
+    for (let i = 0; i < 60 * 10; i++) core.step({ ...idle });
+    expect(core.events.some((e) => e.type === 'lap' || e.type === 'lapStart')).toBe(false);
+    expect(core.events.some((e) => e.type === 'stunt' && e.kind === 'air')).toBe(true);
+    const chain = core.events.find((e) => e.type === 'chain');
+    expect(chain).toMatchObject({ type: 'chain', record: true });
+    expect(core.progress.money).toBeGreaterThan(0);
+    core.dispose();
+  });
+
+  it('scores a crashtest from the first knock until it lies still, with nobody at the controls after it', () => {
+    const core = new GameCore(trackById('crashtest'), trained(3), 'crash');
+    let over: GameEvent | undefined;
+    let stoppedSteering = true;
+    for (let i = 0; i < 60 * 40 && !over; i++) {
+      const before = core.crash.started;
+      core.step({ ...idle, throttle: 1, steer: 1 });
+      // once it has started, the steering no longer turns it on purpose
+      if (before && Math.abs(core.sim.vehicle.speed) > 1 && core.sim.vehicle.boosting) stoppedSteering = false;
+      over = core.events.find((e) => e.type === 'crashOver');
+      core.events.length = 0;
+    }
+    expect(stoppedSteering).toBe(true);
+    expect(over).toBeTruthy();
+    if (over?.type !== 'crashOver') return;
+    expect(over.score).toBeGreaterThan(50);
+    expect(over.pay).toBe(Math.round(over.score / CRASH.perScrew));
+    expect(core.progress.records['crash:crashtest']).toBe(over.score);
+    // and Backspace sets up the next go
+    core.step({ ...idle, respawn: true });
+    expect(core.crash.started).toBe(false);
+    expect(core.crash.score).toBe(0);
     core.dispose();
   });
 });

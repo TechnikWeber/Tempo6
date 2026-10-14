@@ -1,4 +1,6 @@
+import type { Progress } from '../sim/Progress';
 import type { TrackDef } from '../sim/Track';
+import { CRASHTEST } from './crashtest';
 import { FLUGPLATZ } from './flugplatz';
 import { KURVEN } from './kurven';
 import { PARKPLATZ } from './parkplatz';
@@ -10,10 +12,17 @@ import { TALSTADT } from './talstadt';
 import { WESERTOR } from './wesertor';
 
 // (in the order they cost: the tutorial, the free car park after it, then dearer and dearer)
-export const TRACKS: TrackDef[] = [REHA, PARKPLATZ, KURVEN, TALSTADT, WESERTOR, FLUGPLATZ, SPIELWIESE, STADION, SCHLEIFE];
+export const TRACKS: TrackDef[] = [REHA, PARKPLATZ, CRASHTEST, KURVEN, TALSTADT, WESERTOR, FLUGPLATZ, SPIELWIESE, STADION, SCHLEIFE];
 
-/** Where the tutorial sends you once it is over; it costs nothing. */
-export const AFTER_TRAINING = PARKPLATZ.id;
+/**
+ * Whether a track can be driven: the Reha-Parcours always, the rest once the tutorial is
+ * over and they are bought (or free).
+ */
+export function trackOpen(progress: Progress, id: string): boolean {
+  if (id === TRAINING) return true;
+  const t = TRACKS.find((x) => x.id === id);
+  return !!t && progress.tutorialDone && progress.isUnlocked(id, t.unlockPrice);
+}
 
 export function trackById(id: string): TrackDef {
   return TRACKS.find((t) => t.id === id) ?? TRACKS[0];

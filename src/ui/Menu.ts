@@ -1,13 +1,14 @@
-import { formatMoney, stageSpeedKmh, STAGES, TUTORIAL_STAGE } from '../config/tuning';
+import { MODES, modeById, type ModeId } from '../config/modes';
+import { formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
 import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from '../sim/Progress';
-import { TRACKS, TRAINING } from '../tracks';
+import { trackOpen, TRACKS, TRAINING } from '../tracks';
 import { formatTime } from './Hud';
 
 interface MenuHandlers {
-  /** Highlighted vehicle changed (it is unlocked). */
+  /** Highlighted vehicle changed; it is shown even while it is still locked. */
   onVehicle(id: VehicleId): void;
-  /** Highlighted track changed (it is unlocked). */
+  /** Highlighted track changed; it is shown even while it is still locked. */
   onTrack(id: string): void;
   onStart(): void;
   /** Into the tuning garage with the highlighted vehicle (it is unlocked). */
@@ -29,6 +30,7 @@ interface Lock {
 /** Smallest scale of the vehicle list that is still readable and tappable. */
 const MIN_ZOOM = 0.7;
 const STAT_LABELS = { tempo: 'Tempo', antritt: 'Antritt', wendig: 'Wendigkeit', standfest: 'Standfest' } as const;
+const TUTORIAL_LOCK = '🔒 Erst durch den Reha-Parcours';
 
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -37,7 +39,10 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): 
   return e;
 }
 
-/** Start screen: pick a vehicle and a level, unlock them with Schrauben, go. */
+/**
+ * Start screen: pick a vehicle, a mode and a track, unlock them with Schrauben, go. Whatever
+ * is highlighted is shown behind the menu, bought or not; only "Los!" needs both to be had.
+ */
 export class Menu {
   private readonly root = document.getElementById('menu')!;
   private readonly money = h('b');
@@ -45,14 +50,18 @@ export class Menu {
   private readonly vehicleList = h('div', 'garage');
   /** Zoomed wrapper inside the list, so the whole garage fits without scrolling. */
   private readonly vehicleCards = h('div');
+  private readonly modeList = h('div', 'modes');
+  private readonly modeBlurb = h('p', 'mode-blurb');
   private readonly trackList = h('div', 'cards tracks');
-  private readonly start = h('button', 'start');
+  private readonly start = h('button', 'start', 'Los!');
   private readonly ghost = h('input');
-  private readonly garage = h('button', 'garage-btn');
+  private readonly garage = h('button', 'garage-btn', '🔧 Garage');
+  private readonly buyVehicle = h('button', 'unlock');
+  private readonly buyTrack = h('button', 'unlock');
   /** Answer to the last save or cheat action, shown in the header for a moment. */
   private readonly note = h('span', 'note');
   private noteTimer = 0;
-  /** What the cursor is on; may be locked, unlike the progress selection. */
+  /** What the cursor is on; may be locked. */
   private vehicle: VehicleId;
   private track: string;
 
@@ -78,28 +87,30 @@ export class Menu {
     const left = h('section', 'col');
     this.vehicleList.append(this.vehicleCards);
     left.append(this.vehicleList);
-    this.garage.textContent = '🔧 Garage';
     this.garage.title = 'Gefährt in der Werkstatt ansehen und tunen (T)';
     this.garage.addEventListener('click', () => this.openGarage());
+    this.buyVehicle.addEventListener('click', () => this.unlockVehicle());
+    this.buyTrack.addEventListener('click', () => this.unlockTrack());
     const right = h('section', 'col');
-    right.append(h('h2', '', 'Strecke'), this.trackList, this.start);
+    right.append(h('h2', '', 'Modus'), this.modeList, this.modeBlurb, h('h2', '', 'Strecke'), this.trackList, this.buyTrack, this.start);
     const hint = h('p', 'keys');
-    hint.innerHTML = '<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los';
+    hint.innerHTML = '<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los';
     right.append(hint);
     this.root.append(head, left, this.detail, right);
 
     this.start.addEventListener('click', () => this.go());
     new ResizeObserver(() => this.fit()).observe(this.root);
     window.addEventListener('keydown', (e) => {
-      // (typing a name is not steering the menu)
+      // (typing a cheat code is not steering the menu)
       if (this.root.hidden || e.ctrlKey || e.metaKey || e.altKey || e.target instanceof HTMLInputElement) return;
       const step = (list: readonly string[], cur: string, d: number) => list[(list.indexOf(cur) + d + list.length) % list.length];
-      const tracks = TRACKS.map((t) => t.id);
       switch (e.code) {
         case 'KeyA': case 'ArrowLeft': this.pickVehicle(step(VEHICLE_ORDER, this.vehicle, -1) as VehicleId); break;
         case 'KeyD': case 'ArrowRight': this.pickVehicle(step(VEHICLE_ORDER, this.vehicle, 1) as VehicleId); break;
-        case 'KeyW': case 'ArrowUp': this.pickTrack(step(tracks, this.track, -1)); break;
-        case 'KeyS': case 'ArrowDown': this.pickTrack(step(tracks, this.track, 1)); break;
+        case 'KeyW': case 'ArrowUp': this.pickTrack(step(this.mode.tracks, this.track, -1)); break;
+        case 'KeyS': case 'ArrowDown': this.pickTrack(step(this.mode.tracks, this.track, 1)); break;
+        case 'KeyQ': this.pickMode(step(MODES.map((m) => m.id), this.progress.mode, -1) as ModeId); break;
+        case 'KeyE': this.pickMode(step(MODES.map((m) => m.id), this.progress.mode, 1) as ModeId); break;
         case 'Enter': case 'Space': this.go(); break;
         case 'KeyT': this.openGarage(); break;
         default: return;
@@ -148,16 +159,20 @@ export class Menu {
     return box;
   }
 
-  /** A short message in the header. */
-  private say(text: string): void {
+  /** A short message in the header, e.g. what the last cheat or the tutorial did. */
+  say(text: string, seconds = 4): void {
     this.note.textContent = text;
     clearTimeout(this.noteTimer);
-    this.noteTimer = window.setTimeout(() => (this.note.textContent = ''), 4000);
+    this.noteTimer = window.setTimeout(() => (this.note.textContent = ''), seconds * 1000);
+  }
+
+  private get mode() {
+    return modeById(this.progress.mode);
   }
 
   private openGarage(): void {
     if (this.vehicleOpen(this.vehicle)) this.handlers.onGarage();
-    else this.nope();
+    else this.nope(this.garage);
   }
 
   get visible(): boolean {
@@ -167,7 +182,6 @@ export class Menu {
   show(): void {
     this.root.hidden = false;
     this.vehicle = this.progress.vehicle;
-    // (the game may have moved on to another track by itself, at the end of the tutorial)
     this.track = this.progress.track || TRACKS[0].id;
     this.render();
   }
@@ -180,15 +194,18 @@ export class Menu {
     return this.progress.isUnlocked(id, VEHICLES[id].unlockPrice);
   }
 
+  private modeLock(id: ModeId): Lock | null {
+    return id === 'time' || this.progress.tutorialDone ? null : { text: TUTORIAL_LOCK };
+  }
+
   /**
    * What keeps a track shut, or null if it is open. Until the tutorial is over only the
    * Reha-Parcours is; after it, a track is bought with Schrauben unless it is free.
    */
   private trackLock(id: string): Lock | null {
-    if (id === TRAINING) return null;
-    if (!this.progress.tutorialDone) return { text: `🔒 Erst Reha-Parcours bis Stufe ${TUTORIAL_STAGE}` };
-    const price = TRACKS.find((t) => t.id === id)!.unlockPrice;
-    return this.progress.isUnlocked(id, price) ? null : this.priced(price);
+    if (trackOpen(this.progress, id)) return null;
+    if (!this.progress.tutorialDone) return { text: TUTORIAL_LOCK };
+    return this.priced(TRACKS.find((t) => t.id === id)!.unlockPrice);
   }
 
   private vehicleLock(id: VehicleId): Lock | null {
@@ -210,42 +227,52 @@ export class Menu {
 
   private pickVehicle(id: VehicleId): void {
     this.vehicle = id;
-    if (this.vehicleOpen(id)) {
-      this.handlers.onVehicle(id);
-      // a vehicle that still has its throttle in goes through training first
-      if (!this.progress.trained(id) && this.track !== TRAINING) this.pickTrack(TRAINING);
-    }
+    this.handlers.onVehicle(id);
+    // a vehicle that still has its throttle in goes through training first
+    if (!this.progress.trained(id) && this.vehicleOpen(id) && this.track !== TRAINING) this.pickTrack(TRAINING);
     this.render();
+  }
+
+  private pickMode(id: ModeId): void {
+    if (this.modeLock(id)) return this.nope(this.start);
+    this.progress.mode = id;
+    this.progress.save();
+    // the track goes along if the mode has it, else the mode's first
+    this.pickTrack(this.mode.tracks.includes(this.track) ? this.track : this.mode.tracks[0]);
   }
 
   private pickTrack(id: string): void {
     this.track = id;
-    if (!this.trackLock(id)) this.handlers.onTrack(id);
+    this.handlers.onTrack(id);
     this.render();
   }
 
-  /** Start, or buy whatever is still locked in the current selection. */
-  private go(): void {
+  private unlockVehicle(): void {
     const v = VEHICLES[this.vehicle];
-    const t = TRACKS.find((x) => x.id === this.track)!;
-    if (!this.vehicleOpen(v.id)) {
-      if (this.progress.unlock(v.id, v.unlockPrice)) this.pickVehicle(v.id);
-      else this.nope();
-      return;
-    }
-    const lock = this.trackLock(t.id);
-    if (lock) {
-      if (lock.price !== undefined && this.progress.unlock(t.id, lock.price)) this.pickTrack(t.id);
-      else this.nope();
-      return;
-    }
-    this.handlers.onStart();
+    if (this.progress.unlock(v.id, v.unlockPrice)) this.pickVehicle(v.id);
+    else this.nope(this.buyVehicle);
   }
 
-  private nope(): void {
-    this.start.classList.remove('nope');
-    void this.start.offsetWidth;
-    this.start.classList.add('nope');
+  private unlockTrack(): void {
+    const lock = this.trackLock(this.track);
+    if (lock?.price !== undefined && this.progress.unlock(this.track, lock.price)) this.pickTrack(this.track);
+    else this.nope(this.buyTrack);
+  }
+
+  /** Only with a vehicle and a track that are both had. */
+  private get ready(): boolean {
+    return this.vehicleOpen(this.vehicle) && !this.trackLock(this.track) && !this.modeLock(this.progress.mode);
+  }
+
+  private go(): void {
+    if (this.ready) this.handlers.onStart();
+    else this.nope(this.start);
+  }
+
+  private nope(button: HTMLElement): void {
+    button.classList.remove('nope');
+    void button.offsetWidth;
+    button.classList.add('nope');
   }
 
   /** Shrink the vehicle list until it fits its column; below MIN_ZOOM it scrolls instead. */
@@ -258,9 +285,18 @@ export class Menu {
     this.vehicleList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
   }
 
+  /** The button that buys a locked thing, or nothing if there is nothing to buy. */
+  private unlockButton(b: HTMLButtonElement, name: string, lock: Lock | null): void {
+    b.hidden = lock?.price === undefined;
+    if (lock?.price === undefined) return;
+    b.textContent = `🔓 ${name} freischalten · ${formatMoney(lock.price)}`;
+    b.classList.toggle('can', this.progress.money >= lock.price);
+  }
+
   private render(): void {
     this.money.textContent = formatMoney(this.progress.money);
     this.ghost.checked = this.progress.showGhost;
+    const mode = this.mode;
 
     this.vehicleCards.replaceChildren(
       ...CATEGORIES.flatMap((cat) => {
@@ -288,25 +324,44 @@ export class Menu {
     const stageNo = this.progress.stageOf(v.id);
     const stage = STAGES[stageNo];
     const top = stageSpeedKmh(stage, v.speedFactor * profile.speed);
+    const lockV = this.vehicleLock(this.vehicle);
+    this.unlockButton(this.buyVehicle, v.label, lockV);
+    this.garage.disabled = !!lockV;
+    const actions = h('div', 'actions');
+    actions.append(this.garage, this.buyVehicle);
     this.detail.replaceChildren(
       h('h3', '', v.label),
       h('p', 'kind', `${v.kind} · Fahrprofile: ${v.profiles.map((p) => p.name).join(', ')}`),
       h('p', '', v.blurb),
       stats,
-      this.garage,
+      actions,
       h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`),
     );
 
+    this.modeList.replaceChildren(
+      ...MODES.map((m) => {
+        const b = h('button', `mode${m.id === mode.id ? ' on' : ''}`, m.name);
+        const lock = this.modeLock(m.id);
+        if (lock) {
+          b.classList.add('locked');
+          b.title = lock.text;
+        }
+        b.addEventListener('click', () => this.pickMode(m.id));
+        return b;
+      }),
+    );
+    this.modeBlurb.textContent = mode.blurb;
+
     this.trackList.replaceChildren(
-      ...TRACKS.map((t) => {
+      ...mode.tracks.map((id) => {
+        const t = TRACKS.find((x) => x.id === id)!;
         const lock = this.trackLock(t.id);
-        const open = !lock;
         const b = h('button', `card${t.id === this.track ? ' on' : ''}`);
         b.append(h('strong', '', t.name), h('span', '', t.blurb));
-        if (open) b.append(h('em', '', `Bestzeit ${formatTime(this.progress.bestLaps[t.id] ?? null)}`));
+        if (!lock) b.append(h('em', '', this.record(mode.id, t.id)));
         this.lockCard(b, lock);
         // the chosen track shows who is fastest on it
-        if (t.id === this.track && open) {
+        if (t.id === this.track && !lock && mode.id === 'time') {
           const board = h('ol', 'board');
           for (const e of (this.progress.boards[t.id] ?? []).slice(0, 3)) {
             board.append(h('li', '', `${formatTime(e.time)} · ${e.name} · ${VEHICLES[e.vehicle].label} · Stufe ${e.stage}`));
@@ -317,19 +372,20 @@ export class Menu {
         return b;
       }),
     );
-
-    const lockedV = !this.vehicleOpen(this.vehicle);
-    const lockT = this.trackLock(this.track);
-    const t = TRACKS.find((x) => x.id === this.track)!;
-    this.start.textContent = lockedV
-      ? `${v.label} freischalten (${formatMoney(v.unlockPrice)})`
-      : lockT?.price !== undefined
-        ? `${t.name} freischalten (${formatMoney(lockT.price)})`
-        : lockT
-          ? `Erst Reha-Parcours bis Stufe ${TUTORIAL_STAGE}`
-          : 'Los!';
-    this.start.classList.toggle('buy', lockedV || !!lockT);
-    this.garage.disabled = lockedV;
+    const t = TRACKS.find((x) => x.id === this.track);
+    this.unlockButton(this.buyTrack, t?.name ?? '', this.trackLock(this.track));
+    this.start.disabled = !this.ready;
     this.fit();
+  }
+
+  /** The best a track has seen in a mode, for its card. */
+  private record(mode: ModeId, track: string): string {
+    const r = this.progress.records[`${mode}:${track}`];
+    switch (mode) {
+      case 'time': return `Bestzeit ${formatTime(this.progress.bestLaps[track] ?? null)}`;
+      case 'race': return r ? `Bester Platz ${r}` : 'Noch kein Rennen';
+      case 'freestyle': return r ? `Beste Kette ${formatMoney(r)}` : 'Noch keine Kette';
+      case 'crash': return r ? `Teuerster Crash ${r} Punkte` : 'Noch kein Crash';
+    }
   }
 }

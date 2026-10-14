@@ -1,0 +1,77 @@
+export type ModeId = 'time' | 'race' | 'freestyle' | 'crash';
+
+export interface ModeDef {
+  id: ModeId;
+  name: string;
+  blurb: string;
+  /** Tracks this mode is played on, in the order the menu lists them. */
+  tracks: string[];
+}
+
+/**
+ * The ways to play. All but the first open once the tutorial is over; which tracks go with
+ * which mode is decided here and nowhere else.
+ */
+export const MODES: ModeDef[] = [
+  {
+    id: 'time',
+    name: 'Zeitrennen',
+    blurb: 'Allein gegen die Uhr und den eigenen Schatten. Jede Runde zahlt, Bestzeiten extra.',
+    tracks: ['reha', 'parkplatz', 'kurven', 'talstadt', 'wesertor', 'flugplatz', 'spielwiese', 'stadion', 'schleife'],
+  },
+  {
+    id: 'race',
+    name: 'Rennen',
+    blurb: 'Drei Runden gegen drei andere. Wer vorn ist, kassiert am meisten.',
+    tracks: ['parkplatz', 'talstadt', 'wesertor', 'stadion', 'schleife'],
+  },
+  {
+    id: 'freestyle',
+    name: 'Freestyle',
+    blurb: 'Keine Runden, keine Uhr: Stunts aneinanderreihen. Jede Kette zahlt, sobald sie endet.',
+    tracks: ['spielwiese', 'flugplatz', 'parkplatz', 'crashtest', 'reha'],
+  },
+  {
+    id: 'crash',
+    name: 'Crashtest',
+    blurb: 'Ein Versuch, ein Abflug. Nach dem ersten Einschlag ist Schluss mit Lenken, und jeder Aufprall zählt, bis alles stillsteht.',
+    tracks: ['crashtest', 'spielwiese', 'flugplatz'],
+  },
+];
+
+export function modeById(id: string): ModeDef {
+  return MODES.find((m) => m.id === id) ?? MODES[0];
+}
+
+/** Race against the others. */
+export const RACE = {
+  laps: 3,
+  /** How fast each opponent goes, as a share of what the player's vehicle could do at the same stage. */
+  skill: [0.8, 0.87, 0.94],
+  /** Prize for the places, in lap money of the track. */
+  placePay: [4, 2.5, 1.5, 0.5],
+};
+
+/** Crashtest: one go, and every knock until it all lies still is scored. */
+export const CRASH = {
+  /** Points per knock: this times the square of the change of speed (m/s). Landings count too. */
+  perImpact: 2,
+  /** Knocks below this (m/s) are just rolling about. */
+  minKnock: 1.5,
+  /** The first one has to be a proper knock, not a hop on the way down the in-run. */
+  firstKnock: 5,
+  /** The run-up is never slower than this (km/h), so even an untuned chair gets to fly. */
+  runUpKmh: 35,
+  /** …and pulls away this hard (m/s²). */
+  runUpAccel: 7,
+  /** One knock is one knock: what follows within this many seconds belongs to it. */
+  grace: 0.25,
+  /** On top for a write-off. */
+  wreck: 300,
+  /** It is over once the vehicle has lain this still for this long (s)… */
+  stillFor: 1.5,
+  /** …or this long after the first knock, whatever. */
+  maxFor: 15,
+  /** Points per Schraube paid. */
+  perScrew: 10,
+};

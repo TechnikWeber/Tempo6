@@ -8,10 +8,10 @@ export interface TuningStage {
   price: number;
 }
 
-// Each vehicle starts out in the Reha-Parcours (12 km/h, whatever the brochure says), and getting through once takes the
-// throttle off. Two more stages there end the tutorial; from then on every vehicle starts at
-// stage 1. The ladder is short and quick: up to stage 5 in no time, all the way in about five
-// minutes. Vehicles, tracks and the boost cost more.
+// The first vehicle starts out in the Reha-Parcours (12 km/h, whatever the brochure says);
+// getting through once is the tutorial, and from then on every vehicle has the throttle off.
+// The ladder is short and quick: up to stage 5 in no time, all the way in about five minutes.
+// Vehicles, tracks and the boost cost more.
 export const STAGES: TuningStage[] = [
   { name: 'Werkszustand', blurb: 'Zugelassen bis 6 km/h. Steht so im Prospekt.', topSpeedKmh: 12, accel: 3.7, price: 0 },
   { name: 'Drossel raus', blurb: 'Der kleine Stecker unterm Sitz war eh locker.', topSpeedKmh: 18, accel: 4.7, price: 0 },
@@ -24,8 +24,6 @@ export const STAGES: TuningStage[] = [
   { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 70 },
 ];
 
-/** Reaching this stage ends the tutorial: off to the car park, and every vehicle is free of its throttle. */
-export const TUTORIAL_STAGE = 3;
 
 /**
  * Top speed of a stage in km/h for a vehicle whose own factors (vehicle times driving profile)

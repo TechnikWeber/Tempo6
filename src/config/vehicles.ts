@@ -614,6 +614,8 @@ export function groundY(spec: VehicleSpec): number {
 export const HANDLING = {
   /** Tyre grip (friction coefficient of the raycast wheels). */
   grip: 2.0,
+  /** Rolling resistance with nobody at the controls (m/s²), as after the knock in the crashtest. */
+  limpDrag: 1.2,
   /** Full lock asks for this much lateral acceleration (m/s²). Above about g·0.3/tipHeight the inner wheels lift. */
   lateralAccel: 12,
   /**

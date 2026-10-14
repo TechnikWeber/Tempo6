@@ -1,4 +1,4 @@
-import { BOOST, formatMoney, stageSpeedKmh, STAGES, TUTORIAL_STAGE } from '../config/tuning';
+import { BOOST, formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
 import type { GameCore } from '../sim/GameCore';
 
 interface GarageHandlers {
@@ -64,7 +64,6 @@ export class Garage {
       if (e.type === 'broke') this.said = `Es fehlen noch ${formatMoney(e.missing)}.`;
       if (e.type === 'untrained') this.said = 'Erst einmal durch den Reha-Parcours, dann geht die Drossel raus.';
       if (e.type === 'boostBought') this.said = 'Autobatterie auf dem Schoß! Umschalt halten für den Boost.';
-      if (e.type === 'tutorialDone') this.said = 'Ausbildung bestanden! Der Baumarkt-Parkplatz ist offen, und jedes Gefährt hat die Drossel raus.';
     }
     core.events.length = 0;
     this.render();
@@ -84,7 +83,6 @@ export class Garage {
       if (i <= now) row.append(h('span', 'price', i === now ? 'eingebaut' : '✓'));
       else if (i === 1 && !progress.trained()) row.append(h('span', 'price', 'Reha-Parcours'));
       else row.append(h('span', 'price', formatMoney(s.price)));
-      if (i === TUTORIAL_STAGE && !progress.tutorialDone) row.title = 'Beendet die Ausbildung';
       ladder.append(row);
     });
 

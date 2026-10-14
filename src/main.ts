@@ -1,4 +1,5 @@
 import { Sound } from './audio/Sound';
+import { modeById } from './config/modes';
 import { formatMoney } from './config/tuning';
 import { VEHICLE_ORDER, VEHICLES } from './config/vehicles';
 import { createDebugPanel } from './debug/panel';
@@ -8,7 +9,7 @@ import { View } from './render/View';
 import { GameCore, type GameInput } from './sim/GameCore';
 import { Progress } from './sim/Progress';
 import { initPhysics, STEP } from './sim/Sim';
-import { AFTER_TRAINING, trackById, TRACKS, TRAINING } from './tracks';
+import { trackById, trackOpen, TRACKS, TRAINING } from './tracks';
 import { GARAGE } from './tracks/garage';
 import type { TrackDef } from './sim/Track';
 import { Garage } from './ui/Garage';
@@ -32,12 +33,15 @@ function loadTrack(id: string): void {
 /** Put up a scene, the garage too, without making it the track to come back to. */
 function build(track: TrackDef): void {
   core?.dispose();
-  core = new GameCore(track, progress);
+  // (the tutorial is a time trial; the garage is nothing in particular)
+  const mode = progress.tutorialDone && track !== GARAGE && modeById(progress.mode).tracks.includes(track.id) ? progress.mode : 'time';
+  core = new GameCore(track, progress, mode);
   view.setTrack(track);
   view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
 }
-// A vehicle that has not been through the Reha-Parcours yet starts there.
-loadTrack(progress.tutorialDone ? progress.track : TRAINING);
+// Before the tutorial there is only the Reha-Parcours; and a track that was only looked at
+// in the menu, never bought, is not where the game starts either.
+loadTrack(trackOpen(progress, progress.track) ? progress.track : TRAINING);
 
 const input = new Input();
 const sound = new Sound();
@@ -85,7 +89,6 @@ const menu = new Menu(progress, {
   },
   onGarage() {
     sound.unlock();
-    tutorialBefore = progress.tutorialDone;
     menu.hide();
     build(GARAGE);
     garage.show();
@@ -119,14 +122,11 @@ const menu = new Menu(progress, {
   },
 });
 
-/** Whether the tutorial was already over when the garage was entered. */
-let tutorialBefore = false;
 const garage = new Garage({
   core: () => core,
   back() {
     garage.hide();
-    // tuned to the end of the tutorial in the garage: out onto the car park
-    loadTrack(!tutorialBefore && progress.tutorialDone ? AFTER_TRAINING : progress.track);
+    loadTrack(progress.track);
     menu.show();
   },
 });
@@ -150,8 +150,14 @@ setRacing(false);
 /** Lap message waiting for its payout line, and the place the lap took on the board. */
 let lastLap = '';
 let ranked = 0;
-/** Set when the tutorial is over: the next frame moves on to the car park. */
-let graduate = false;
+/**
+ * Back to the menu a moment after the run is over (the tutorial done, a race finished),
+ * with a line for the menu to show.
+ */
+let leave: { at: number; note: string } | null = null;
+function leaveSoon(seconds: number, note: string): void {
+  leave = { at: performance.now() + seconds * 1000, note };
+}
 function handleEvents(): void {
   for (const e of core.events) {
     if (!racing) continue;
@@ -216,8 +222,27 @@ function handleEvents(): void {
         sound.tuned();
         hud.toast('Autobatterie auf dem Schoß!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
         break;
-      case 'tutorialDone':
-        graduate = true;
+      case 'raceOver': {
+        sound.lap();
+        const medal = ['🥇', '🥈', '🥉'][e.place - 1] ?? '🏁';
+        hud.toast(`${medal} Platz ${e.place} von ${e.of}`, e.pay ? `Preisgeld +${formatMoney(e.pay)}` : 'Kein Preisgeld. Nächstes Mal.', 5);
+        leaveSoon(5, `Rennen auf ${core.track.name}: Platz ${e.place} von ${e.of}${e.pay ? `, +${formatMoney(e.pay)}` : ''}.`);
+        break;
+      }
+      case 'chain':
+        sound.crate();
+        hud.toast(`Kette: +${formatMoney(e.total)}`, e.record ? 'Neuer Rekord auf dieser Strecke!' : '', 2.5);
+        break;
+      case 'chainLost':
+        sound.nope();
+        hud.toast('Kette gerissen!', `${formatMoney(e.lost)} futsch.`, 2);
+        break;
+      case 'crashScore':
+        hud.stunt(`+${e.points}`);
+        break;
+      case 'crashOver':
+        sound.crate();
+        hud.toast(`${e.score} Punkte${e.record ? ' · Rekord!' : ''}`, `+${formatMoney(e.pay)} · Rücktaste: nochmal`, 6);
         break;
       case 'untrained':
         sound.nope();
@@ -225,7 +250,8 @@ function handleEvents(): void {
         break;
       case 'graduated':
         sound.tuned();
-        hud.toast(`Geschafft! ${e.stage.name}`, `Jetzt ${core.topSpeedKmh.toFixed(1).replace('.', ',')} km/h, und alle Strecken offen. ${e.stage.blurb}`, 5);
+        hud.toast(`Geschafft! ${e.stage.name}`, `Ausbildung bestanden: jedes Gefährt fährt jetzt ${e.stage.topSpeedKmh} km/h. ${e.stage.blurb}`, 3);
+        leaveSoon(3, 'Ausbildung bestanden! Alle Modi und der Parkplatz sind offen, jedes Gefährt hat die Drossel raus.');
         break;
       case 'broke':
         sound.nope();
@@ -239,11 +265,13 @@ function handleEvents(): void {
     lastLap = '';
   }
   core.events.length = 0;
-  if (graduate) {
-    graduate = false;
-    loadTrack(AFTER_TRAINING);
-    core.restart(true);
-    hud.toast('Ausbildung bestanden!', `Ab auf den ${core.track.name}. Ab jetzt hat jedes Gefährt die Drossel raus.`, 5);
+  if (leave && performance.now() > leave.at) {
+    const { note } = leave;
+    leave = null;
+    if (racing) {
+      setRacing(false);
+      menu.say(note, 8);
+    }
   }
 }
 
@@ -266,7 +294,10 @@ function frame(now: number): void {
   }
   // (the workshop only opens once its cheat code has been typed in)
   if (input.take('debug') && progress.workshop) gui.show(gui._hidden);
-  if (input.take('menu') && racing) setRacing(false);
+  if (input.take('menu') && racing) {
+    leave = null;
+    setRacing(false);
+  }
   // On the start screen the vehicle just stands there and gets looked at.
   if (!racing) cmd = { ...IDLE };
 

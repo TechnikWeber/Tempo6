@@ -1,3 +1,4 @@
+import { RACE } from '../config/modes';
 import { BOOST, formatMoney } from '../config/tuning';
 import type { GameCore } from '../sim/GameCore';
 
@@ -16,6 +17,8 @@ export class Hud {
   private readonly speedBar = el('speed-bar');
   private readonly top = el('top');
   private readonly vehicle = el('vehicle');
+  private readonly lapLabel = el('lap-label');
+  private readonly lapSub = el('lap-sub');
   private readonly lapTime = el('lap-time');
   private readonly lapBest = el('lap-best');
   private readonly money = el('money');
@@ -90,11 +93,44 @@ export class Hud {
     this.stuntTimer = window.setTimeout(() => this.stuntEl.classList.remove('show'), 1400);
   }
 
+  /** The panel top left says what the mode is about: lap times, the place, the run, the score. */
+  private lapPanel(core: GameCore): void {
+    const { race, progress, track } = core;
+    const record = progress.records[`${core.mode}:${track.id}`];
+    switch (core.mode) {
+      case 'time':
+        this.set(this.lapLabel, 'Runde');
+        this.set(this.lapTime, race.running ? formatTime(race.lapTime) : '–');
+        this.set(this.lapSub, 'Bestzeit');
+        this.set(this.lapBest, formatTime(race.best));
+        break;
+      case 'race':
+        this.set(this.lapLabel, 'Platz');
+        this.set(this.lapTime, `${core.place} / ${core.rivals.length + 1}`);
+        this.set(this.lapSub, core.finished ? 'Im Ziel' : `Runde ${Math.min(RACE.laps, race.laps + 1)} / ${RACE.laps}`);
+        this.set(this.lapBest, race.running && !core.finished ? formatTime(race.lapTime) : '');
+        break;
+      case 'freestyle':
+        this.set(this.lapLabel, 'Kette');
+        this.set(this.lapTime, core.stunts.chain ? `${Math.round(core.stunts.pending)} · ×${core.stunts.multiplier.toFixed(1).replace('.', ',')}` : '–');
+        this.set(this.lapSub, 'Beste Kette');
+        this.set(this.lapBest, record ? String(record) : '–');
+        break;
+      case 'crash':
+        this.set(this.lapLabel, 'Crash');
+        this.set(this.lapTime, core.crash.started ? `${core.crash.score} Punkte` : 'Gas!');
+        this.set(this.lapSub, 'Rekord');
+        this.set(this.lapBest, record ? `${record}` : '–');
+        break;
+    }
+  }
+
   update(core: GameCore): void {
-    const { progress, race, sim } = core;
+    const { progress, sim } = core;
     // what the lap has earned so far and is not safe yet
     const open = Math.round(core.stunts.pending);
-    this.pending.hidden = open === 0 && core.stunts.chain === 0;
+    // (freestyle shows its run in the big panel, the crashtest has no tricks)
+    this.pending.hidden = (open === 0 && core.stunts.chain === 0) || core.mode === 'freestyle' || core.mode === 'crash';
     this.set(this.pending, `+${open} offen${core.stunts.multiplier > 1 ? ` · ×${core.stunts.multiplier.toFixed(1).replace('.', ',')}` : ''}`);
     const kmh = Math.abs(sim.vehicle.speed) * 3.6;
     const stage = progress.stage;
@@ -103,8 +139,7 @@ export class Hud {
     const top = core.topSpeedKmh;
     this.set(this.top, top.toFixed(top % 1 ? 1 : 0).replace('.', ','));
     this.set(this.vehicle, sim.vehicle.spec.label);
-    this.set(this.lapTime, race.running ? formatTime(race.lapTime) : '–');
-    this.set(this.lapBest, formatTime(race.best));
+    this.lapPanel(core);
     this.set(this.money, formatMoney(progress.money));
     this.set(this.stageNo, String(progress.stageIndex));
     this.set(this.stage, stage.name);

@@ -1,4 +1,5 @@
-import { BOOST, STAGES, TUTORIAL_STAGE, type TuningStage } from '../config/tuning';
+import { MODES, type ModeId } from '../config/modes';
+import { BOOST, STAGES, type TuningStage } from '../config/tuning';
 import { UNLOCK_ALL, VEHICLES, type VehicleId } from '../config/vehicles';
 
 /** The slice of the Web Storage API we need, so tests can pass a stub. */
@@ -45,12 +46,15 @@ export class Progress {
   /** Tuning stage per vehicle id; every vehicle starts at stage 0. */
   readonly stages: Record<string, number> = {};
   /**
-   * Whether the tutorial in the Reha-Parcours is over: one vehicle got through and was tuned
-   * to TUTORIAL_STAGE. From then on every vehicle has its throttle off, and the tracks open.
+   * Whether the tutorial is over: one vehicle got through the Reha-Parcours. From then on
+   * every vehicle has its throttle off, and the modes and tracks open.
    */
   tutorialDone = false;
   vehicle: VehicleId = 'trex';
   track = '';
+  mode: ModeId = 'time';
+  /** Best score per mode and track (`mode:track`): the longest stunt run, the costliest crash. */
+  readonly records: Record<string, number> = {};
   /** Best lap in seconds per track id. */
   readonly bestLaps: Record<string, number> = {};
   /** Chosen driving profile (index into the vehicle's list) per vehicle id. */
@@ -76,11 +80,15 @@ export class Progress {
       for (const [k, v] of Object.entries(d.stages ?? {})) if (typeof v === 'number') this.stages[k] = Math.min(STAGES.length - 1, Math.max(0, v | 0));
       // (an older save had one stage for all; it goes to the vehicle it was driven with)
       if (!d.stages && d.stageIndex > 0) this.stages[this.vehicle] = Math.min(STAGES.length - 1, d.stageIndex | 0);
-      this.tutorialDone = d.tutorialDone === true || Object.values(this.stages).some((n) => n >= TUTORIAL_STAGE);
+      this.tutorialDone = d.tutorialDone === true || Object.values(this.stages).some((n) => n >= 1);
       if (typeof d.track === 'string') this.track = d.track;
+      if (MODES.some((m) => m.id === d.mode)) this.mode = d.mode;
+      for (const [k, v] of Object.entries(d.records ?? {})) if (typeof v === 'number') this.records[k] = v;
       for (const [k, v] of Object.entries(d.bestLaps ?? {})) if (typeof v === 'number') this.bestLaps[k] = v;
       for (const [k, v] of Object.entries(d.profiles ?? {})) if (typeof v === 'number') this.profiles[k] = v;
       for (const id of d.unlocked ?? []) if (typeof id === 'string') this.unlocked.add(id);
+      // (a vehicle that was looked at in the menu but never bought is not the one to drive)
+      if (!this.isUnlocked(this.vehicle, VEHICLES[this.vehicle].unlockPrice)) this.vehicle = 'trex';
       this.workshop = d.workshop === true;
       if (typeof d.showGhost === 'boolean') this.showGhost = d.showGhost;
       for (const [k, list] of Object.entries(d.boards ?? {})) {
@@ -113,9 +121,10 @@ export class Progress {
     return Math.max(this.stages[id] ?? 0, this.tutorialDone ? 1 : 0);
   }
 
-  /** The Reha-Parcours is done: the first stage comes free. */
+  /** The Reha-Parcours is done: the first stage comes free, and the tutorial is over. */
   graduate(): void {
     if (this.stageIndex === 0) this.stageIndex = 1;
+    this.tutorialDone = true;
     this.save();
   }
 
@@ -142,7 +151,6 @@ export class Progress {
     if (!n || !this.trained() || this.money < n.price) return false;
     this.money -= n.price;
     this.stageIndex++;
-    if (this.stageIndex >= TUTORIAL_STAGE) this.tutorialDone = true;
     this.save();
     return true;
   }
@@ -210,6 +218,8 @@ export class Progress {
         tutorialDone: this.tutorialDone,
         vehicle: this.vehicle,
         track: this.track,
+        mode: this.mode,
+        records: this.records,
         bestLaps: this.bestLaps,
         profiles: this.profiles,
         unlocked: [...this.unlocked],
@@ -259,6 +269,7 @@ export class Progress {
     this.unlocked.clear();
     for (const k of Object.keys(this.bestLaps)) delete this.bestLaps[k];
     for (const k of Object.keys(this.boards)) delete this.boards[k];
+    for (const k of Object.keys(this.records)) delete this.records[k];
     this.save();
   }
 }

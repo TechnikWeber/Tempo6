@@ -190,6 +190,8 @@ export class View {
   private trafficMeshes: Object3D[] = [];
   private spinnerMeshes: Object3D[] = [];
   private moverMeshes: Object3D[] = [];
+  /** The opponents of the race on show, and which game they belong to. */
+  private rivals: { core: GameCore | null; rigs: Object3D[] } = { core: null, rigs: [] };
   private level: Group | null = null;
   private track: TrackDef | null = null;
   private model: VehicleRig | null = null;
@@ -332,6 +334,16 @@ export class View {
     this.camReady = false;
   }
 
+  /** The others in a race: built once per game, then moved along with their bodies. */
+  private placeRivals(core: GameCore, alpha: number): void {
+    if (this.rivals.core !== core) {
+      for (const r of this.rivals.rigs) this.scene.remove(r);
+      this.rivals = { core, rigs: core.rivals.map((r) => buildVehicle(r.vehicle.spec).root) };
+      for (const r of this.rivals.rigs) this.scene.add(r);
+    }
+    core.rivals.forEach((r, i) => place(this.rivals.rigs[i], r.vehicle.tracked, alpha));
+  }
+
   private resize(): void {
     const w = window.innerWidth, h = window.innerHeight;
     this.renderer.setSize(w, h, false);
@@ -444,6 +456,7 @@ export class View {
     core.sim.traffic.cars.forEach((c, i) => place(this.trafficMeshes[i], c.tracked, alpha));
     core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));
     core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
+    this.placeRivals(core, alpha);
     this.pickupMeshes.forEach((m, i) => {
       m.visible = !showroom && core.paying && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;

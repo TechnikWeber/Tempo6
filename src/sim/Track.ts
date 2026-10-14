@@ -6,7 +6,7 @@ export interface BoxDef {
   color: number;
 }
 
-export type PropType = 'cone' | 'carton' | 'cart';
+export type PropType = 'cone' | 'bigcone' | 'carton' | 'cart';
 
 /** Loose physics object that can be shoved around. */
 export interface PropDef {
@@ -142,6 +142,8 @@ export interface TrackDef {
 /** Collider dimensions per prop type, shared by physics and visuals. */
 export const PROP_SHAPES = {
   cone: { halfHeight: 0.25, radius: 0.15, mass: 1.5 },
+  /** A traffic cone the size of a person, for the crashtest. */
+  bigcone: { halfHeight: 1.0, radius: 0.6, mass: 30 },
   carton: { half: [0.25, 0.25, 0.25] as [number, number, number], mass: 2 },
   cart: { half: [0.3, 0.45, 0.5] as [number, number, number], mass: 18 },
 };
@@ -156,13 +158,13 @@ export const TRAFFIC_SHAPES = {
  * A ramp that starts at ground level at `start` and rises along heading `yaw`
  * (0 = +Z, π/2 = +X).
  */
-export function ramp(start: [number, number], yaw: number, length: number, width: number, angle: number, color: number): BoxDef {
+export function ramp(start: [number, number], yaw: number, length: number, width: number, angle: number, color: number, base = 0): BoxDef {
   const t = 0.1;
   const run = (length / 2) * Math.cos(angle);
   const sy = Math.sin(yaw / 2), cy = Math.cos(yaw / 2);
   const sp = Math.sin(-angle / 2), cp = Math.cos(-angle / 2);
   return {
-    pos: [start[0] + Math.sin(yaw) * run, (length / 2) * Math.sin(angle) - t * Math.cos(angle), start[1] + Math.cos(yaw) * run],
+    pos: [start[0] + Math.sin(yaw) * run, base + (length / 2) * Math.sin(angle) - t * Math.cos(angle), start[1] + Math.cos(yaw) * run],
     half: [width / 2, t, length / 2],
     // yaw about Y, then pitch about the local X axis
     quat: [cy * sp, sy * cp, -sy * sp, cy * cp],
@@ -195,6 +197,29 @@ export function easedRamp(start: [number, number], yaw: number, run: number, wid
     });
     s += run * share;
     y += run * share * slope;
+  }
+  return out;
+}
+
+/**
+ * A strip of road running along +Z at `x` that follows a height profile: one plank per pair
+ * of points (z, y), each laid from the one point to the next. Small steps between the planks
+ * make a smooth curve, so nothing is a kerb to run into, however fast.
+ */
+export function profile(x: number, points: [number, number][], width: number, color: number): BoxDef[] {
+  const t = 0.1;
+  const out: BoxDef[] = [];
+  for (let i = 0; i + 1 < points.length; i++) {
+    const [z0, y0] = points[i], [z1, y1] = points[i + 1];
+    const len = Math.hypot(z1 - z0, y1 - y0);
+    const a = Math.atan2(y1 - y0, z1 - z0);
+    // middle of the top surface, then half a thickness down along its normal
+    out.push({
+      pos: [x, (y0 + y1) / 2 - t * Math.cos(a), (z0 + z1) / 2 + t * Math.sin(a)],
+      half: [width / 2, t, len / 2],
+      quat: [Math.sin(-a / 2), 0, 0, Math.cos(-a / 2)],
+      color,
+    });
   }
   return out;
 }

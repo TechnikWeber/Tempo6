@@ -121,6 +121,8 @@ export const PARKPLATZ: TrackDef = {
   ],
   pickups,
   decor,
+  // round the island, corners cut a little, the way the bottles lie
+  line: [[-9, -LINE_Z], [9, -LINE_Z], [LINE_X, -3], [LINE_X, 3], [9, LINE_Z], [-9, LINE_Z], [-LINE_X, 3], [-LINE_X, -3]],
   traffic: [
     // someone looking for a space, round the outside behind the parking bays
     { type: 'car', color: 0xb23a3a, speed: 6, path: [[-64, -40], [64, -40], [64, 40], [-64, 40]] },

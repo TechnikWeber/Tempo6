@@ -30,6 +30,8 @@ export class Sim {
   readonly movers: Mover[] = [];
   readonly traffic: Traffic;
   vehicle: Vehicle;
+  /** Other vehicles on the track (opponents in a race), each with what it is told to do. */
+  readonly others: { vehicle: Vehicle; input: DriveInput }[] = [];
 
   constructor(readonly track: TrackDef, spec: VehicleSpec) {
     this.world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
@@ -73,8 +75,8 @@ export class Sim {
         .setAngularDamping(0.6),
     );
     let desc: RAPIER.ColliderDesc;
-    if (def.type === 'cone') {
-      const s = PROP_SHAPES.cone;
+    if (def.type === 'cone' || def.type === 'bigcone') {
+      const s = PROP_SHAPES[def.type];
       desc = RAPIER.ColliderDesc.cone(s.halfHeight, s.radius).setMass(s.mass).setFriction(0.7);
     } else {
       const s = PROP_SHAPES[def.type];
@@ -88,6 +90,13 @@ export class Sim {
   private spawnVehicle(spec: VehicleSpec): Vehicle {
     const { pos, yaw } = this.track.spawn;
     return new Vehicle(this.world, spec, pos[0], pos[1], pos[2], yaw);
+  }
+
+  /** Another vehicle on the track; it drives by whatever is put into its `input`. */
+  addOther(spec: VehicleSpec, x: number, y: number, z: number, yaw: number): Vehicle {
+    const vehicle = new Vehicle(this.world, spec, x, y, z, yaw);
+    this.others.push({ vehicle, input: { throttle: 0, steer: 0, handbrake: true } });
+    return vehicle;
   }
 
   /** Swap the vehicle type; the new one starts at the spawn point. */
@@ -125,6 +134,7 @@ export class Sim {
 
   step(input: DriveInput): void {
     this.vehicle.update(input, STEP);
+    for (const o of this.others) o.vehicle.update(o.input, STEP);
     const at = this.vehicle.body.translation();
     this.traffic.update(STEP, at.x, at.z);
     for (const m of this.movers) m.update(STEP, at, this.vehicle.wheelsOnGround > 0 && m.holds(at, 1));
@@ -136,6 +146,7 @@ export class Sim {
     const after = this.vehicle.body.linvel();
     this.vehicle.hit(after.x - bx, after.y - by + 9.81 * STEP, after.z - bz);
     this.vehicle.tracked.snap();
+    for (const o of this.others) o.vehicle.tracked.snap();
     for (const c of this.traffic.cars) c.tracked.snap();
     for (const p of this.props) p.tracked.snap();
     for (const s of this.spinners) s.snap();

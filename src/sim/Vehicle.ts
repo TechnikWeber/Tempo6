@@ -12,6 +12,8 @@ export interface DriveInput {
   handbrake: boolean;
   /** Dump the battery pack into the motors, for as long as it lasts. */
   boost?: boolean;
+  /** Nobody at the controls: no motor, no brakes, the wheels just roll (the crashtest, after the knock). */
+  limp?: boolean;
 }
 
 const DOWN = { x: 0, y: -1, z: 0 };
@@ -77,6 +79,11 @@ export class Vehicle {
   airTime = 0;
   /** Sink rate in m/s at the moment of touchdown; consumed by the game. */
   landing = 0;
+  /**
+   * The hardest knock since it was last read, in m/s, whatever it was and however the vehicle
+   * lay: the crashtest scores these. Damage only follows the ones that count as crashes.
+   */
+  knock = 0;
   /** Angle between where it points and where it goes, in rad; positive = nose to the left of travel. */
   slip = 0;
   /** Whether a boost battery is fitted. */
@@ -174,6 +181,7 @@ export class Vehicle {
    */
   hit(dx: number, dy: number, dz: number): void {
     const impact = Math.hypot(dx, dy, dz);
+    this.knock = Math.max(this.knock, impact);
     if (impact < DAMAGE.minImpact || this.wrecked || this.hitGrace > 0) return;
     // Scraping round a looping or up a steep bank is rough, but it is not a crash.
     if (this.ground.y < 0.85 || this.upY < 0.5) return;
@@ -489,6 +497,12 @@ export class Vehicle {
       } else if (braking) {
         // The other wheels help: the drive wheels alone go light under hard braking.
         brake = brakeShare * dt;
+      }
+      if (input.limp) {
+        force = 0;
+        assist = 0;
+        // (just the rolling resistance, so it does not roll on for ever)
+        brake = (spec.mass * HANDLING.limpDrag * dt) / spec.wheels.length;
       }
       if (w.turn) this.wantedYawTorque -= w.x * (force + assist);
       ctrl.setWheelEngineForce(i, force);
