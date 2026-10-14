@@ -53,10 +53,10 @@ export const RACE = {
   laps: 3,
   /**
    * How fast each opponent goes, as a share of what its vehicle does at the player's stage.
-   * They drive a perfect line, and the quickest is a touch faster than the player; with the
-   * boost battery bought, they get one too.
+   * They drive a perfect line: two take it easy, only one is a touch faster than the player;
+   * with the boost battery bought, they get one too.
    */
-  skill: [0.92, 0.98, 1.05],
+  skill: [0.84, 0.9, 1.04],
   /** Grid slots behind the start line: how far back and how far to the left (m). Who gets which is drawn. */
   grid: [[0.5, 1.2], [0.5, -1.2], [3.1, 1.2], [3.1, -1.2]] as [number, number][],
   /** Prize for the places, in lap money of the track. */

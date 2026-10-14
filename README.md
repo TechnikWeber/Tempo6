@@ -70,7 +70,7 @@ Every push to `main` tests, builds and publishes the game with GitHub Pages (`.g
 | Back to the start screen | Esc | Start |
 | Sound on/off | M | |
 | Garage (on the start screen) | T | |
-| Workshop (live handling tuning; after a cheat code) | F2 | |
+| Workshop (live handling tuning; with dev mode on in the settings) | F2 | |
 
 On a phone held sideways: steering strip bottom left with "aufrichten" (upright) and "neu" (restart) above it, throttle (big), reverse, handbrake and boost bottom right, menu top left. "Vollbild" on the start screen goes full screen.
 

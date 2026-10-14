@@ -18,8 +18,10 @@ interface MenuHandlers {
   onExport(): void;
   /** A save file picked to load; resolves to a message if it was no good. */
   onImport(text: string): Promise<string | null>;
-  /** A cheat code typed in; returns what it did, or null if it is not one. */
-  onCheat(code: string): string | null;
+  /** Dev mode on or off: it makes the workshop (F2) available. */
+  onDevMode(on: boolean): void;
+  /** Everything bought and tuned all the way, to try things out; returns what it did. */
+  onUnlockAll(): string;
 }
 
 /** Why something cannot be had yet: what the card says, and what it costs if it can be bought. */
@@ -59,10 +61,11 @@ export class Menu {
   private readonly trackList = h('div', 'cards tracks');
   private readonly start = h('button', 'start', L('Los!', 'Go!'));
   private readonly ghost = h('input');
+  private readonly dev = h('input');
   private readonly garage = h('button', 'garage-btn', '🔧 Garage');
   private readonly buyVehicle = h('button', 'unlock');
   private readonly buyTrack = h('button', 'unlock');
-  /** Answer to the last save or cheat action, shown in the header for a moment. */
+  /** Answer to the last save or settings action, shown in the header for a moment. */
   private readonly note = h('span', 'note');
   private noteTimer = 0;
   /** What the cursor is on; may be locked. */
@@ -116,7 +119,7 @@ export class Menu {
 
     this.start.addEventListener('click', () => this.go());
     window.addEventListener('keydown', (e) => {
-      // (typing a cheat code is not steering the menu)
+      // (typing into a field is not steering the menu)
       if (this.root.hidden || e.ctrlKey || e.metaKey || e.altKey || e.target instanceof HTMLInputElement) return;
       const step = (list: readonly string[], cur: string, d: number) => list[(list.indexOf(cur) + d + list.length) % list.length];
       switch (e.code) {
@@ -142,7 +145,7 @@ export class Menu {
 
   /**
    * Along the bottom: the settings behind a cog (folded away until wanted) and full screen.
-   * The settings: save to a file, load from one, the language, the ghost, cheat codes.
+   * The settings: save to a file, load from one, the language, the ghost, dev mode and unlocking everything.
    */
   private bar(): HTMLElement {
     const bar = h('div', 'menubar');
@@ -169,20 +172,19 @@ export class Menu {
     const load = h('button', 'tool', L('📂 Laden', '📂 Load'));
     load.title = L('Einen gespeicherten Spielstand laden', 'Load a saved game');
     load.addEventListener('click', () => file.click());
-    const cheat = h('form', 'cheat');
-    const code = h('input');
-    code.placeholder = L('Cheatcode', 'Cheat code');
-    code.size = 9;
-    code.autocomplete = 'off';
-    const ok = h('button', 'tool', '🎮');
-    ok.title = L('Cheatcode eingeben', 'Enter a cheat code');
-    cheat.append(code, ok);
-    cheat.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const said = this.handlers.onCheat(code.value);
-      code.value = '';
-      code.blur();
-      this.say(said ?? L('Nichts passiert.', 'Nothing happens.'));
+    // dev mode: the workshop (F2) to tune the handling live
+    const dev = h('label', 'tool toggle');
+    this.dev.type = 'checkbox';
+    this.dev.addEventListener('change', () => {
+      this.handlers.onDevMode(this.dev.checked);
+      this.say(this.dev.checked ? L('Dev-Mode an: F2 öffnet die Werkstatt.', 'Dev mode on: F2 opens the workshop.') : L('Dev-Mode aus.', 'Dev mode off.'));
+    });
+    dev.append(this.dev, L(' 🛠 Dev-Mode', ' 🛠 Dev mode'));
+    dev.title = L('Macht die Werkstatt (F2) verfügbar: Fahrverhalten live einstellen', 'Makes the workshop (F2) available: tune the handling live');
+    const all = h('button', 'tool', L('🔓 Alles freischalten', '🔓 Unlock everything'));
+    all.title = L('Alle Gefährte und Strecken, Boost-Batterie, volles Tuning', 'Every ride and track, the boost battery, full tuning');
+    all.addEventListener('click', () => {
+      this.say(this.handlers.onUnlockAll());
       this.render();
     });
     // whether the best lap drives along
@@ -198,7 +200,7 @@ export class Menu {
     const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
     other.title = L('Switch to English', 'Auf Deutsch umstellen');
     other.addEventListener('click', () => switchLanguage(lang === 'de' ? 'en' : 'de'));
-    box.append(save, load, file, other, shadow, cheat);
+    box.append(save, load, file, other, shadow, dev, all);
     bar.append(panel, cog);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {
@@ -215,7 +217,7 @@ export class Menu {
     return bar;
   }
 
-  /** A short message in the header, e.g. what the last cheat or the tutorial did. */
+  /** A short message in the header, e.g. what the last setting or the tutorial did. */
   say(text: string, seconds = 4): void {
     this.note.textContent = text;
     clearTimeout(this.noteTimer);
@@ -358,6 +360,7 @@ export class Menu {
   private render(): void {
     this.money.textContent = formatMoney(this.progress.money);
     this.ghost.checked = this.progress.showGhost;
+    this.dev.checked = this.progress.workshop;
     const mode = this.mode;
 
     const v = VEHICLES[this.vehicle];

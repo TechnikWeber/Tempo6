@@ -1,7 +1,7 @@
 import { L, num, ordinal, translatePage } from './i18n';
 import { Sound } from './audio/Sound';
 import { modeById } from './config/modes';
-import { formatMoney } from './config/tuning';
+import { formatMoney, STAGES } from './config/tuning';
 import { VEHICLE_ORDER, VEHICLES } from './config/vehicles';
 import { createDebugPanel } from './debug/panel';
 import { Input } from './input/Input';
@@ -123,18 +123,18 @@ const menu = new Menu(progress, {
     location.reload();
     return null;
   },
-  onCheat(code) {
-    switch (code.trim().toLowerCase()) {
-      case '1337':
-        progress.workshop = true;
-        progress.save();
-        return L('Werkstatt freigeschaltet: F2 öffnet sie.', 'Workshop unlocked: F2 opens it.');
-      case 'money':
-        progress.earn(1000);
-        return L('+1000 Schrauben!', '+1000 screws!');
-      default:
-        return null;
-    }
+  onDevMode(on) {
+    progress.workshop = on;
+    progress.save();
+    if (!on) gui.hide();
+  },
+  onUnlockAll() {
+    // (tutorial over, every vehicle and track bought, the boost fitted, everything tuned all the way)
+    progress.unlockEverything([...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]);
+    for (const id of VEHICLE_ORDER) progress.stages[id] = STAGES.length - 1;
+    progress.save();
+    core.applyStage();
+    return L('Alles freigeschaltet und voll getunt.', 'Everything unlocked and fully tuned.');
   },
 });
 
@@ -357,7 +357,7 @@ function frame(now: number): void {
     progress.save();
     if (racing) hud.toast(progress.showGhost ? L('Schatten an', 'Ghost on') : L('Schatten aus', 'Ghost off'), L('Die Bestzeit fährt mit.', 'Your best lap drives along.'), 1.5);
   }
-  // (the workshop only opens once its cheat code has been typed in)
+  // (the workshop only opens in dev mode, switched on in the settings)
   if (input.take('debug') && progress.workshop) gui.show(gui._hidden);
   if (input.take('menu') && racing) {
     leave = null;

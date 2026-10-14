@@ -63,7 +63,7 @@ export class Progress {
   readonly unlocked = new Set<string>();
   /** The name on the leaderboards; they only ever hold this device's own laps. */
   readonly name = 'Du';
-  /** Whether the workshop (F2) has been unlocked with the cheat code. */
+  /** Dev mode: whether the workshop (F2) is available. */
   workshop = false;
   /** Whether the best lap drives along as a shadow. */
   showGhost = true;

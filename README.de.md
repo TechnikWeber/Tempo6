@@ -70,7 +70,7 @@ Jeder Push auf `main` testet, baut und veröffentlicht das Spiel über GitHub Pa
 | Zurück zum Startbildschirm | Esc | Start |
 | Ton an/aus | M | |
 | Garage (im Startbildschirm) | T | |
-| Werkstatt (Fahrverhalten live einstellen; erst nach Cheatcode) | F2 | |
+| Werkstatt (Fahrverhalten live einstellen; mit Dev-Mode in den Einstellungen) | F2 | |
 
 Auf dem Handy, quer gehalten: links unten die Lenkleiste mit „aufrichten“ und „neu“ darüber, rechts unten Gas (groß), Rückwärts, Handbremse und Boost, oben links das Menü. Im Startbildschirm schaltet „Vollbild“ die Leisten des Browsers weg.
 
