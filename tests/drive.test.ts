@@ -1275,6 +1275,15 @@ describe('traffic', () => {
 });
 
 describe('unlocking', () => {
+  it('unlocks everything for trying out, the boost battery included', () => {
+    const p = new Progress();
+    p.unlockEverything([...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]);
+    expect(p.hasBoost).toBe(true);
+    expect(p.tutorialDone).toBe(true);
+    expect(p.isUnlocked('wagen', VEHICLES.wagen.unlockPrice)).toBe(true);
+    expect(trackOpen(p, 'schleife')).toBe(true);
+  });
+
   it('buys a vehicle with Schrauben when not everything is open', () => {
     const p = new Progress();
     expect(p.isUnlocked('trex', 0)).toBe(true);

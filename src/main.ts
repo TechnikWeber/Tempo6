@@ -25,9 +25,8 @@ await initPhysics();
 const DEMO = new URLSearchParams(location.search).has('demo');
 const progress = new Progress(DEMO ? memoryStore() : window.localStorage);
 if (DEMO) {
-  progress.tutorialDone = true;
   progress.money = 999;
-  for (const id of [...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]) progress.unlocked.add(id);
+  progress.unlockEverything([...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]);
   for (const id of VEHICLE_ORDER) progress.stages[id] = 5;
 }
 

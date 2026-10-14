@@ -195,6 +195,13 @@ export class Progress {
     return this.unlock(BOOST_ID, BOOST.price);
   }
 
+  /** Everything there is to buy, for trying things out: every vehicle and track, and the boost battery. */
+  unlockEverything(ids: readonly string[]): void {
+    this.tutorialDone = true;
+    for (const id of [...ids, BOOST_ID]) this.unlocked.add(id);
+    this.save();
+  }
+
   /** Vehicles and tracks share one unlock list; free items are always open. */
   isUnlocked(id: string, price: number): boolean {
     return UNLOCK_ALL || price === 0 || this.unlocked.has(id);
