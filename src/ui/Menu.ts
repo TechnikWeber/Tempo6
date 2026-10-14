@@ -155,7 +155,19 @@ export class Menu {
       this.say(said ?? 'Nichts passiert.');
       this.render();
     });
-    box.append(save, load, file, cheat, this.note);
+    box.append(save, load, file, cheat);
+    // full screen, held sideways where the phone allows it
+    if (document.fullscreenEnabled) {
+      const full = h('button', 'tool', '⛶ Vollbild');
+      full.title = 'Vollbild an oder aus';
+      full.addEventListener('click', async () => {
+        if (document.fullscreenElement) return void document.exitFullscreen();
+        await document.documentElement.requestFullscreen().catch(() => {});
+        await (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.('landscape').catch(() => {});
+      });
+      box.append(full);
+    }
+    box.append(this.note);
     return box;
   }
 

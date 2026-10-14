@@ -18,7 +18,21 @@ import { Menu } from './ui/Menu';
 
 await initPhysics();
 
-const progress = new Progress(window.localStorage);
+// ?demo: a show round with everything open that keeps nothing (screenshots, trying things
+// out on someone else's phone). The real save is not touched.
+const DEMO = new URLSearchParams(location.search).has('demo');
+const progress = new Progress(DEMO ? memoryStore() : window.localStorage);
+if (DEMO) {
+  progress.tutorialDone = true;
+  progress.money = 999;
+  for (const id of [...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]) progress.unlocked.add(id);
+  for (const id of VEHICLE_ORDER) progress.stages[id] = 5;
+}
+
+function memoryStore() {
+  const data = new Map<string, string>();
+  return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) };
+}
 const view = new View(document.getElementById('game') as HTMLCanvasElement);
 let core!: GameCore;
 
@@ -361,3 +375,18 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// In the show round, a handle for setting up pictures from the browser's console.
+if (DEMO) {
+  Object.assign(window, {
+    tempo6: {
+      core: () => core,
+      /** Put the vehicle somewhere, facing somewhere; the camera catches up behind it. */
+      place: (x: number, z: number, yaw: number, y = 0.7) => core.sim.vehicle.place(x, y, z, yaw),
+      track: (id: string) => {
+        loadTrack(id);
+        core.restart(true);
+      },
+    },
+  });
+}

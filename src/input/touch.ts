@@ -42,5 +42,12 @@ export function installTouchControls(input: Input): void {
   hold('touch-brake', () => (input.touch.handbrake = true), () => (input.touch.handbrake = false));
   hold('touch-boost', () => (input.touch.boost = true), () => (input.touch.boost = false));
   document.getElementById('touch-up')!.addEventListener('click', () => input.trigger('upright'));
+  document.getElementById('touch-reset')!.addEventListener('click', () => input.trigger('respawn'));
   document.getElementById('touch-menu')!.addEventListener('click', () => input.trigger('menu'));
+  // the notices on the screen are buttons too
+  document.getElementById('flipped')!.addEventListener('click', () => input.trigger('upright'));
+  document.getElementById('wrecked')!.addEventListener('click', () => input.trigger('respawn'));
+  document.body.classList.add('touch');
+  // (no long-press menus or text picking on the controls)
+  root.addEventListener('contextmenu', (e) => e.preventDefault());
 }

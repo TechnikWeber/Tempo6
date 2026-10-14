@@ -38,8 +38,9 @@
       <div id="banner"></div>
       <div id="stunt"></div>
       <div id="lights" hidden><i></i><i></i><i></i></div>
-      <div id="flipped" hidden>Umgekippt! <kbd>R</kbd> zum Aufrichten</div>
-      <div id="wrecked" hidden>Totalschaden! <kbd>⌫</kbd> Level neu</div>
+      <div id="flipped" hidden>Umgekippt! <span class="keys-only"><kbd>R</kbd> zum Aufrichten</span><span class="tap-only">Tippen zum Aufrichten</span></div>
+      <div id="wrecked" hidden>Totalschaden! <span class="keys-only"><kbd>⌫</kbd> Level neu</span><span class="tap-only">Tippen: Level neu</span></div>
+      <div id="rotate">Am besten quer halten ↻</div>
 
       <div class="panel dim" id="help">
         <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fahren · <kbd>Leertaste</kbd> Handbremse · <kbd>⇧ Umschalt</kbd> Boost · <kbd>T</kbd> tunen ·
@@ -50,12 +51,17 @@
 
     <div id="touch" hidden>
       <div id="touch-steer"><i></i></div>
-      <button id="touch-menu">☰</button>
-      <button id="touch-up">↻</button>
-      <button id="touch-brake">■</button>
-      <button id="touch-boost">⚡</button>
-      <button id="touch-back">▼</button>
-      <button id="touch-gas">▲</button>
+      <button id="touch-menu" aria-label="Menü">☰</button>
+      <div class="small">
+        <button id="touch-up" aria-label="Aufrichten">↻<small>aufrichten</small></button>
+        <button id="touch-reset" aria-label="Level neu">⟲<small>neu</small></button>
+      </div>
+      <div class="pedals">
+        <button id="touch-boost" aria-label="Boost">⚡</button>
+        <button id="touch-brake" aria-label="Handbremse">■</button>
+        <button id="touch-back" aria-label="Rückwärts">▼</button>
+        <button id="touch-gas" aria-label="Gas">▲</button>
+      </div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
