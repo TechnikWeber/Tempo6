@@ -2,7 +2,7 @@ import { L } from '../i18n';
 import type { BoxDef, PropDef, TrackDef, TrafficDef } from '../sim/Track';
 import { distanceTo, forest } from './scenery';
 import { site } from './site';
-import { at, car, door, gate, hall, lorry, pallets, panel, roadSpan, sidesOf, windows, type Side, type Yard } from './works';
+import { at, breakTable, car, door, gate, hall, lorry, pallets, panel, person, roadSpan, roadworks, sidesOf, tyres, windows, type Side, type Yard } from './works';
 
 // The old works at "Porta Westafrika" (a play on the real town's name): several halls grown together at an angle, the lap all
 // round. The footprint was read off an aerial picture; what is where was told side by side,
@@ -176,6 +176,61 @@ const chairs: PropDef[] = [];
   y.decor.push({ type: 'clock', pos: [cx, 6.3, cz], half: [0.9, 0, 0], yaw: Math.atan2(one.n[0], one.n[1]) });
 }
 
+// People about the old works.
+const SHIRTS = [0x4a7ab5, 0xf2f2f2, 0xd23b3b, 0x3f8f5f, 0x7b2d8e, 0xe3c04a, 0x2a2a2e, 0xc8c8c8];
+const walkers: TrafficDef[] = [];
+// 1: unloading the lorry by hand, along the wall to the pallets, and the driver waiting
+{
+  const s = side(1);
+  for (const o of [0, 9]) walkers.push({ type: 'walker', color: 0x3a3a40, speed: 1.0, worker: true, offset: o, path: [at(s, 29.5, 3.6), at(s, 21.5, 3.6), at(s, 21.5, 3.1), at(s, 29.5, 3.1)] });
+  y.decor.push(
+    person(...at(s, 47.2, 3.2), s.yaw + Math.PI, 0x2b3a5a, 'point', true),
+    person(...at(s, 33.5, 4.4), s.yaw + 2.2, SHIRTS[0], 'phone'),
+    person(...at(s, 55.5, 3), s.yaw - 1.4, 0x3a3a40, 'carry', true),
+  );
+}
+// out by the railway: a gang of track workers, well clear of the trains
+{
+  for (const [k, sAlong, out] of [[0, -40, 3.6], [1, -37, 3.8], [2, -35.5, 3.4]] as const) {
+    const [x, z] = rail(sAlong);
+    y.decor.push(person(x + AWAY[0] * out, z + AWAY[1] * out, Math.atan2(-AWAY[0], -AWAY[1]) + k * 0.7, 0x3a3a40, (['point', 'stand', 'carry'] as const)[k], true));
+  }
+  const [x, z] = rail(-38);
+  y.decor.push({ type: 'box', pos: [x + AWAY[0] * 5.2, 0.4, z + AWAY[1] * 5.2], half: [0.6, 0.4, 1.2], yaw: Math.atan2(ALONG[0], ALONG[1]), color: 0xf2b705 }); // a tool trolley
+}
+// the competition's house: a few of them out front, chatting
+y.decor.push(
+  person(...across(7, 0.12, 2), toBuilding(7), SHIRTS[4], 'wave'),
+  person(...across(7, 0.16, 2.5), toBuilding(7) + 2.4, SHIRTS[1]),
+  person(...across(7, 0.2, 2), toBuilding(7) - 0.6, SHIRTS[5], 'phone'),
+);
+// across from 12, by the small buildings: a break in the sun
+breakTable(y, ...across(12, 0.45, 4.5), side(12).yaw, SHIRTS.slice(2), 4);
+y.decor.push(person(...across(12, 0.52, 2.2), toBuilding(12), SHIRTS[6], 'stand'), person(...across(12, 0.55, 2.5), toBuilding(12) + 2.8, SHIRTS[3], 'point'));
+// at the long side 5, under the oval: people standing at the roadside, watching
+for (const [t, k, pose] of [[0.32, 0, 'wave'], [0.35, 2, 'stand'], [0.38, 7, 'point'], [0.82, 1, 'phone']] as const) {
+  y.decor.push(person(...across(5, t, 1.8), toBuilding(5) + (t - 0.5), SHIRTS[k], pose));
+}
+// old tyres: stacked by the parking at 9 and 10, a few lying on the road at 11 and 12
+{
+  const spots: [number, number][] = [];
+  for (const [k, t] of [[9, 0.05], [10, 0.92]] as const) spots.push(across(k, t, 1.5), across(k, t + 0.04, 2));
+  for (const [k, t, off] of [[11, 0.3, 0.3], [11, 0.7, 0.7], [12, 0.15, 0.5], [12, 0.85, 0.25]] as const) {
+    const [n, f] = road(k, t);
+    spots.push(at(side(k), side(k).len * t, n + (f - n) * off));
+  }
+  tyres(y, spots, [4, 3, 1, 2, 1, 1]);
+}
+// roadworks along 5, past the oval: the outer lane shut
+{
+  const s = side(5);
+  const lane = (along: number): [number, number] => {
+    const [, f] = roadSpan(SITE.line!, s, along, ROAD_WIDTH / 2);
+    return [f - 0.1, f - 2.6];
+  };
+  roadworks(y, s, s.len * 0.45, s.len * 0.45 + 20, lane, L('BAUSTELLE', 'ROADWORKS'));
+}
+
 // Trees beyond the yard.
 const [LX, LZ] = SITE.lot;
 y.decor.push(
@@ -197,5 +252,5 @@ export const WESERTOR: TrackDef = {
   decor: [...SITE.decor, ...y.decor],
   line: SITE.line,
   roadHalf: ROAD_WIDTH / 2,
-  traffic: train,
+  traffic: [...train, ...walkers],
 };
