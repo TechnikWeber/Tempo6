@@ -13,6 +13,7 @@ import { KURVEN } from '../src/tracks/kurven';
 import { dice, distanceTo } from '../src/tracks/scenery';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 import { REHA } from '../src/tracks/reha';
+import { SKY } from '../src/tracks/sky';
 import { Autopilot } from './autopilot';
 
 const FLAT: TrackDef = {
@@ -929,7 +930,7 @@ describe('curve test ground', () => {
 });
 
 // (the Reha-Parcours and the car park are too tight for this; the Reha-Parcours has tests of its own)
-describe.each(TRACKS.filter((t) => t.line && t.id !== TRAINING && t.id !== PARKPLATZ.id).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
+describe.each(TRACKS.filter((t) => t.line && !t.course && t.id !== TRAINING && t.id !== PARKPLATZ.id).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
   it('can be lapped at 30 km/h by following its centre line', () => {
     const core = new GameCore(track, new Progress());
     core.sim.vehicle.setMotor(30 / 3.6, 5);
@@ -1658,6 +1659,37 @@ describe('checkpoints and the road', () => {
     core.sim.vehicle.place(x + 30, 3, z + 30, 0);
     for (let i = 0; i < 70; i++) core.step(idle);
     expect(core.sim.vehicle.offroad).toBe(1);
+    core.dispose();
+  });
+});
+
+describe('sky path', () => {
+  it('can be got through at walking-pace tuning, and a fall puts the vehicle back at the start with the clock running', () => {
+    const p = new Progress();
+    p.tutorialDone = true;
+    p.stageIndex = 1;
+    const core = new GameCore(SKY, p, 'time');
+    const ap = new Autopilot(SKY.line!, 2, false).from(SKY.spawn.pos[0], SKY.spawn.pos[2]);
+    let done: number | null = null;
+    for (let i = 0; i < 60 * 90 && done === null; i++) {
+      core.step(ap.input(core));
+      for (const e of core.events) if (e.type === 'lap') done = e.time;
+      core.events.length = 0;
+    }
+    expect(done).not.toBeNull();
+    expect(done!).toBeLessThan(60);
+    // over the edge on the next run: back to the start, the time going on
+    core.restart();
+    for (let i = 0; i < 60 * 4; i++) core.step(ap.input(core));
+    expect(core.race.running).toBe(true);
+    const before = core.race.lapTime;
+    core.sim.vehicle.place(30, SKY.fallY! - 1, 30, 0);
+    core.step(idle);
+    expect(core.events.some((e) => e.type === 'fell')).toBe(true);
+    const at = core.sim.vehicle.body.translation();
+    expect(Math.hypot(at.x - SKY.spawn.pos[0], at.z - SKY.spawn.pos[2])).toBeLessThan(0.5);
+    expect(core.race.running).toBe(true);
+    expect(core.race.lapTime).toBeGreaterThan(before);
     core.dispose();
   });
 });

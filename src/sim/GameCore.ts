@@ -103,6 +103,8 @@ export class GameCore {
   /** Where on the road's line the vehicle was at the last look. */
   private roadIndex = 0;
   private roadTick = 0;
+  /** Seconds until a finished course run puts the vehicle back at the start. */
+  private courseRestart = 0;
   private lastLight = 0;
   /** Race: the others on the grid. */
   readonly rivals: Rival[] = [];
@@ -276,6 +278,7 @@ export class GameCore {
     this.halted = false;
     this.timeLeft = FREESTYLE.seconds;
     this.sessionTotal = 0;
+    this.courseRestart = 0;
     Object.assign(this.crash, { started: false, score: 0, since: 0, still: 0, over: false, grace: 0 });
     this.sim.vehicle.knock = 0;
     this.flippedFor = 0;
@@ -448,6 +451,13 @@ export class GameCore {
       this.scratched = false;
     }
     if (ev === 'lap' && this.mode === 'race' && race.laps >= RACE.laps) this.finishRace();
+    // a course run is over at the finish: a moment to look, then back to the start for the next
+    if (ev === 'lap' && this.track.course) this.courseRestart = 2;
+    if (this.courseRestart > 0 && (this.courseRestart -= STEP) <= 0) {
+      this.courseRestart = 0;
+      this.sim.respawn();
+      this.race.reset();
+    }
 
     if (paying && this.mode !== 'crash') this.track.pickups.forEach((pk, i) => {
       if (this.pickupTimers[i] > 0) {

@@ -201,6 +201,8 @@ export class View {
   private trafficMeshes: Object3D[] = [];
   private spinnerMeshes: Object3D[] = [];
   private moverMeshes: Object3D[] = [];
+  /** The ground all round; up in the sky there is none. */
+  private lawn: Mesh | null = null;
   /** Exhaust puffs to animate. */
   private smokes: Object3D[] = [];
   /** The opponents of the race on show, and which game they belong to. */
@@ -257,6 +259,7 @@ export class View {
     lawn.rotation.x = -Math.PI / 2;
     lawn.position.y = -0.05;
     this.scene.add(lawn);
+    this.lawn = lawn;
 
     this.skids = new SkidMarks(this.scene);
     this.scene.add(this.camera);
@@ -368,6 +371,7 @@ export class View {
       return g;
     });
     if (gates) this.markGates(level, track, ground);
+    if (this.lawn) this.lawn.visible = !track.sky;
     this.scene.add(level);
     this.skids.clear();
     this.camReady = false;
