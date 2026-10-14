@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
@@ -22,12 +22,12 @@
       </div>
 
       <div class="panel" id="laps">
-        <div><span id="lap-label">Runde</span> <b id="lap-time">–</b></div>
-        <div class="dim"><span id="lap-sub">Bestzeit</span> <b id="lap-best">–</b></div>
+        <div><span id="lap-label">Lap</span> <b id="lap-time">–</b></div>
+        <div class="dim"><span id="lap-sub">Best</span> <b id="lap-best">–</b></div>
       </div>
 
       <div class="panel" id="shop">
-        <div class="money">🔩 <b id="money">0 Schrauben</b></div>
+        <div class="money">🔩 <b id="money">0 screws</b></div>
         <div id="pending" hidden></div>
       </div>
 
@@ -35,29 +35,29 @@
       <div id="banner"></div>
       <div id="stunt"></div>
       <div id="lights" hidden><i></i><i></i><i></i></div>
-      <div id="flipped" hidden>Umgekippt! <span class="keys-only"><kbd>R</kbd> zum Aufrichten</span><span class="tap-only">Tippen zum Aufrichten</span></div>
-      <div id="wrecked" hidden>Totalschaden! <span class="keys-only"><kbd>⌫</kbd> Level neu</span><span class="tap-only">Tippen: Level neu</span></div>
-      <div id="rotate">Am besten quer halten ↻</div>
+      <div id="flipped" hidden data-de="Umgekippt! &lt;span class=&quot;keys-only&quot;&gt;&lt;kbd&gt;R&lt;/kbd&gt; zum Aufrichten&lt;/span&gt;&lt;span class=&quot;tap-only&quot;&gt;Tippen zum Aufrichten&lt;/span&gt;">Tipped over! <span class="keys-only"><kbd>R</kbd> to get back up</span><span class="tap-only">Tap to get back up</span></div>
+      <div id="wrecked" hidden data-de="Totalschaden! &lt;span class=&quot;keys-only&quot;&gt;&lt;kbd&gt;⌫&lt;/kbd&gt; Level neu&lt;/span&gt;&lt;span class=&quot;tap-only&quot;&gt;Tippen: Level neu&lt;/span&gt;">Written off! <span class="keys-only"><kbd>⌫</kbd> restart</span><span class="tap-only">Tap to restart</span></div>
+      <div id="rotate" data-de="Am besten quer halten ↻">Best held sideways ↻</div>
 
-      <div class="panel dim" id="help">
-        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> fahren · <kbd>Leertaste</kbd> Handbremse · <kbd>⇧ Umschalt</kbd> Boost ·
-        <kbd>R</kbd> aufrichten · <kbd>⌫</kbd> Level neu · <kbd>Esc</kbd> Menü ·
-        <kbd>G</kbd> Schatten · <kbd>M</kbd> Ton · <kbd>F2</kbd> Werkstatt
+      <div class="panel dim" id="help" data-de="&lt;kbd&gt;W&lt;/kbd&gt;&lt;kbd&gt;A&lt;/kbd&gt;&lt;kbd&gt;S&lt;/kbd&gt;&lt;kbd&gt;D&lt;/kbd&gt; fahren · &lt;kbd&gt;Leertaste&lt;/kbd&gt; Handbremse · &lt;kbd&gt;⇧ Umschalt&lt;/kbd&gt; Boost · &lt;kbd&gt;R&lt;/kbd&gt; aufrichten · &lt;kbd&gt;⌫&lt;/kbd&gt; Level neu · &lt;kbd&gt;Esc&lt;/kbd&gt; Menü · &lt;kbd&gt;G&lt;/kbd&gt; Schatten · &lt;kbd&gt;M&lt;/kbd&gt; Ton · &lt;kbd&gt;F2&lt;/kbd&gt; Werkstatt">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>Space</kbd> handbrake · <kbd>⇧ Shift</kbd> boost ·
+        <kbd>R</kbd> get up · <kbd>⌫</kbd> restart · <kbd>Esc</kbd> menu ·
+        <kbd>G</kbd> ghost · <kbd>M</kbd> sound · <kbd>F2</kbd> workshop
       </div>
     </div>
 
     <div id="touch" hidden>
       <div id="touch-steer"><i></i></div>
-      <button id="touch-menu" aria-label="Menü">☰</button>
+      <button id="touch-menu" aria-label="Menu">☰</button>
       <div class="small">
-        <button id="touch-up" aria-label="Aufrichten">↻<small>aufrichten</small></button>
-        <button id="touch-reset" aria-label="Level neu">⟲<small>neu</small></button>
+        <button id="touch-up" aria-label="Get up">↻<small data-de="aufrichten">get up</small></button>
+        <button id="touch-reset" aria-label="Restart">⟲<small data-de="neu">restart</small></button>
       </div>
       <div class="pedals">
         <button id="touch-boost" aria-label="Boost">⚡</button>
-        <button id="touch-brake" aria-label="Handbremse">■</button>
-        <button id="touch-back" aria-label="Rückwärts">▼</button>
-        <button id="touch-gas" aria-label="Gas">▲</button>
+        <button id="touch-brake" aria-label="Handbrake">■</button>
+        <button id="touch-back" aria-label="Reverse">▼</button>
+        <button id="touch-gas" aria-label="Throttle">▲</button>
       </div>
     </div>
 

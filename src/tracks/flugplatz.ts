@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import { ramp, type BoxDef, type DecorDef, type PickupDef, type PropDef, type TrackDef } from '../sim/Track';
 import { forest, street } from './scenery';
 
@@ -81,7 +82,7 @@ const decor: DecorDef[] = [
   { type: 'finish', pos: [-10, 0.01, -LINE_Z], half: [0.8, 0, WIDTH / 2] },
   { type: 'box', pos: [-10, 2.2, -ISLAND_Z + 0.3], half: [0.15, 1.6, 0.15], color: 0xd23b3b },
   { type: 'box', pos: [-10, 3.5, -LINE_Z - 0.15], half: [0.12, 0.4, WIDTH / 2 + 0.6], color: 0xf2f2f2 },
-  { type: 'sign', pos: [0, 6, LOT_Z + 10], half: [60, 6, 8], color: 0xd8d4c8, text: 'FLUGPLATZ' },
+  { type: 'sign', pos: [0, 6, LOT_Z + 10], half: [60, 6, 8], color: 0xd8d4c8, text: L('FLUGPLATZ', 'AIRFIELD') },
   { type: 'lamp', pos: [-95, 0.6, 12] },
   { type: 'lamp', pos: [95, 0.6, -12] },
 ];
@@ -136,8 +137,8 @@ decor.push(
 
 export const FLUGPLATZ: TrackDef = {
   id: 'flugplatz',
-  name: 'Alter Flugplatz',
-  blurb: 'Über 500 m pro Runde, breite Bahn, große Schanzen. Erst mit Tuning ein Vergnügen.',
+  name: L('Alter Flugplatz', 'Old Airfield'),
+  blurb: L('Über 500 m pro Runde, breite Bahn, große Schanzen, alte Flugzeuge. Erst mit Tuning ein Vergnügen.', 'Over 500 m a lap, a wide runway, big jumps, old planes. Fun only once tuned.'),
   unlockPrice: 180,
   lapPay: 40,
   spawn: { pos: [-20, 0.6, -LINE_Z], yaw: Math.PI / 2 },

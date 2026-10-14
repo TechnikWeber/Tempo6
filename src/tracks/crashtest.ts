@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import { easedRamp, profile, type BoxDef, type DecorDef, type MoverDef, type PickupDef, type PropDef, type TrackDef } from '../sim/Track';
 
 const GROUND = 0x8a8f86;
@@ -107,9 +108,9 @@ for (let i = 0; i < STEPS; i += 2) pickups.push({ type: 'screw', pos: [STAIRS_X,
 pickups.push({ type: 'toolbox', pos: [28, 4.5, 6] });
 
 decor.push(
-  { type: 'sign', pos: [0, 5, END_Z + 30], half: [20, 5, 6], color: 0xe8e2d0, text: 'CRASHTEST' },
-  { type: 'board', pos: [5, TABLE + 1.5, IN_TO], half: [2, 0.45, 0.05], text: 'VIEL GLÜCK' },
-  { type: 'board', pos: [STAIRS_X + 4, 2, LANDING_Z + 6], half: [1.4, 0.4, 0.05], yaw: Math.PI / 2, text: 'TREPPE' },
+  { type: 'sign', pos: [0, 5, END_Z + 30], half: [20, 5, 6], color: 0xe8e2d0, text: L('CRASHTEST', 'CRASH TEST') },
+  { type: 'board', pos: [5, TABLE + 1.5, IN_TO], half: [2, 0.45, 0.05], text: L('VIEL GLÜCK', 'GOOD LUCK') },
+  { type: 'board', pos: [STAIRS_X + 4, 2, LANDING_Z + 6], half: [1.4, 0.4, 0.05], yaw: Math.PI / 2, text: L('TREPPE', 'STAIRS') },
 );
 // stands either side of the field, people as coloured blocks
 for (const side of [-1, 1]) {
@@ -124,8 +125,8 @@ for (const x of [-12, 12]) decor.push({ type: 'lamp', pos: [x, 0, LIP + 4] });
 
 export const CRASHTEST: TrackDef = {
   id: 'crashtest',
-  name: 'Crashtest-Gelände',
-  blurb: 'Skischanze vom Turm, Pylonenwald, Kartonwand, Einkaufswagen, Betonmauer. Und eine Treppe.',
+  name: L('Crashtest-Gelände', 'Crash Test Ground'),
+  blurb: L('Skischanze vom Turm, Pylonenwald, Kartonwand, Einkaufswagen, Betonmauer. Und eine Treppe.', 'A ski jump off a tower, a forest of cones, a wall of boxes, shopping carts, a concrete wall. And a staircase.'),
   unlockPrice: 0,
   lapPay: 0,
   // (near the edge: a long run on the flat top would only make it hop over the brow)

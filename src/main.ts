@@ -1,3 +1,4 @@
+import { L, num, ordinal, translatePage } from './i18n';
 import { Sound } from './audio/Sound';
 import { modeById } from './config/modes';
 import { formatMoney } from './config/tuning';
@@ -16,6 +17,7 @@ import { Garage } from './ui/Garage';
 import { formatTime, Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
 
+translatePage();
 await initPhysics();
 
 // ?demo: a show round with everything open that keeps nothing (screenshots, trying things
@@ -65,7 +67,7 @@ installTouchControls(input);
 const hud = new Hud();
 const gui = createDebugPanel(() => core, () => {
   const p = core.sim.vehicle.profile;
-  hud.toast(`Fahrprofil: ${p.name}`, p.blurb, 2.5);
+  hud.toast(`${L('Fahrprofil', 'Driving profile')}: ${p.name}`, p.blurb, 2.5);
   reportProfiles();
 });
 gui.hide();
@@ -117,7 +119,7 @@ const menu = new Menu(progress, {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
   async onImport(text) {
-    if (!Progress.importSave(window.localStorage, text)) return 'Das ist kein Tempo6-Spielstand.';
+    if (!Progress.importSave(window.localStorage, text)) return L('Das ist kein Tempo6-Spielstand.', 'That is not a Tempo6 save.');
     // (simplest way to have everything read the loaded save afresh)
     location.reload();
     return null;
@@ -127,10 +129,10 @@ const menu = new Menu(progress, {
       case '1337':
         progress.workshop = true;
         progress.save();
-        return 'Werkstatt freigeschaltet: F2 öffnet sie.';
+        return L('Werkstatt freigeschaltet: F2 öffnet sie.', 'Workshop unlocked: F2 opens it.');
       case 'money':
         progress.earn(1000);
-        return '+1000 Schrauben!';
+        return L('+1000 Schrauben!', '+1000 screws!');
       default:
         return null;
     }
@@ -181,18 +183,18 @@ function handleEvents(): void {
       case 'pickup':
         if (e.kind === 'toolbox') {
           sound.crate();
-          hud.toast(`Werkzeugkiste! +${formatMoney(e.value)}`, '', 1.5);
+          hud.toast(`${L('Werkzeugkiste!', 'Toolbox!')} +${formatMoney(e.value)}`, '', 1.5);
         } else {
           sound.bottle();
         }
         break;
       case 'lap':
         sound.lap();
-        lastLap = e.best ? `Bestzeit! ${formatTime(e.time)}` : `Runde: ${formatTime(e.time)}`;
+        lastLap = e.best ? `${L('Bestzeit!', 'Best lap!')} ${formatTime(e.time)}` : `${L('Runde', 'Lap')}: ${formatTime(e.time)}`;
         break;
       case 'tuned':
         sound.tuned();
-        hud.toast(`${e.stage.name}! Jetzt ${core.topSpeedKmh.toFixed(1).replace('.', ',')} km/h`, e.stage.blurb, 3.5);
+        hud.toast(`${e.stage.name}! ${L('Jetzt', 'Now')} ${num(core.topSpeedKmh)} km/h`, e.stage.blurb, 3.5);
         break;
       case 'land':
         view.bump(e.speed);
@@ -202,15 +204,15 @@ function handleEvents(): void {
         sound.honk();
         break;
       case 'stunt': {
-        const names = { drift: 'Drift', twoWheels: 'Zweirad', wheelie: 'Wheelie', air: 'Flug', looping: 'Looping!', nearMiss: 'Knapp vorbei' };
-        hud.stunt(`${names[e.kind]} +${Math.max(1, Math.round(e.points))}${e.multiplier > 1 ? ` (×${e.multiplier.toFixed(1).replace('.', ',')})` : ''}`);
+        const names = { drift: 'Drift', twoWheels: L('Zweirad', 'Two wheels'), wheelie: 'Wheelie', air: L('Flug', 'Air'), looping: L('Looping!', 'Loop!'), nearMiss: L('Knapp vorbei', 'Near miss') };
+        hud.stunt(`${names[e.kind]} +${Math.max(1, Math.round(e.points))}${e.multiplier > 1 ? ` (×${num(e.multiplier)})` : ''}`);
         break;
       }
       case 'payout': {
-        const parts = [e.lap && `Runde ${e.lap}`, e.best && `Bestzeit ${e.best}`, e.clean && `unfallfrei ${e.clean}`, e.stunts && `Stunts ${e.stunts}`].filter(Boolean);
+        const parts = [e.lap && `${L('Runde', 'lap')} ${e.lap}`, e.best && `${L('Bestzeit', 'best')} ${e.best}`, e.clean && `${L('unfallfrei', 'clean')} ${e.clean}`, e.stunts && `${L('Stunts', 'stunts')} ${e.stunts}`].filter(Boolean);
         sound.crate();
         // (the lap time comes with it, or the two toasts would cover each other)
-        if (ranked) parts.unshift(`Platz ${ranked} der Bestenliste`);
+        if (ranked) parts.unshift(L(`Platz ${ranked} der Bestenliste`, `${ordinal(ranked)} on the leaderboard`));
         hud.toast(lastLap ? `${lastLap} · +${formatMoney(e.total)}` : `+${formatMoney(e.total)}`, parts.join(' · '), 3.5);
         lastLap = '';
         ranked = 0;
@@ -229,35 +231,35 @@ function handleEvents(): void {
         break;
       case 'wreck':
         sound.nope();
-        hud.toast('Totalschaden!', 'Was nicht im Ziel war, ist weg. Rücktaste: Level neu starten.', 4);
+        hud.toast(L('Totalschaden!', 'Written off!'), L('Was nicht im Ziel war, ist weg. Rücktaste: Level neu starten.', 'Whatever was not over the line is gone. Backspace: restart.'), 4);
         break;
       case 'boost':
         sound.zap();
         break;
       case 'boostBought':
         sound.tuned();
-        hud.toast('Autobatterie auf dem Schoß!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
+        hud.toast(L('Autobatterie auf dem Schoß!', 'Car battery on the lap!'), L('Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 'Hold Shift to boost. Charges faster when braking.'), 4);
         break;
       case 'raceOver': {
         sound.lap();
         if (e.place === 1) sound.cheer();
         const medal = ['🥇', '🥈', '🥉'][e.place - 1] ?? '🏁';
-        hud.banner(`${medal} Platz ${e.place} von ${e.of}`, e.pay ? `Preisgeld +${formatMoney(e.pay)}` : 'Kein Preisgeld. Nächstes Mal.', 5);
-        leaveSoon(5, `Rennen auf ${core.track.name}: Platz ${e.place} von ${e.of}${e.pay ? `, +${formatMoney(e.pay)}` : ''}.`);
+        hud.banner(L(`${medal} Platz ${e.place} von ${e.of}`, `${medal} ${ordinal(e.place)} of ${e.of}`), e.pay ? `${L('Preisgeld', 'Prize')} +${formatMoney(e.pay)}` : L('Kein Preisgeld. Nächstes Mal.', 'No prize. Next time.'), 5);
+        leaveSoon(5, L(`Rennen auf ${core.track.name}: Platz ${e.place} von ${e.of}`, `Race at ${core.track.name}: ${ordinal(e.place)} of ${e.of}`) + (e.pay ? `, +${formatMoney(e.pay)}.` : '.'));
         break;
       }
       case 'chain':
         sound.crate();
         if (e.record) sound.cheer();
-        hud.toast(`Kette: +${formatMoney(e.total)}`, e.record ? 'Neuer Rekord auf dieser Strecke!' : '', 2.5);
+        hud.toast(`${L('Kette', 'Chain')}: +${formatMoney(e.total)}`, e.record ? L('Neuer Rekord auf dieser Strecke!', 'New record on this track!') : '', 2.5);
         break;
       case 'chainLost':
         sound.nope();
-        hud.toast('Kette gerissen!', `${formatMoney(e.lost)} futsch.`, 2);
+        hud.toast(L('Kette gerissen!', 'Chain broken!'), L(`${formatMoney(e.lost)} futsch.`, `${formatMoney(e.lost)} gone.`), 2);
         break;
       case 'crashScore':
         if (e.propeller) {
-          hud.banner('Weggefetzt!', `Propeller-Treffer: +${e.points}`, 2);
+          hud.banner(L('Weggefetzt!', 'Swatted!'), `${L('Propeller-Treffer', 'Propeller hit')}: +${e.points}`, 2);
           sound.thud(9);
         }
         hud.stunt(`+${e.points}`);
@@ -265,21 +267,21 @@ function handleEvents(): void {
       case 'crashOver':
         sound.crate();
         if (e.record) sound.cheer();
-        hud.toast(`${e.score} Punkte${e.record ? ' · Rekord!' : ''}`, `+${formatMoney(e.pay)} · Rücktaste: nochmal`, 6);
+        hud.toast(`${e.score} ${L('Punkte', 'points')}${e.record ? L(' · Rekord!', ' · Record!') : ''}`, `+${formatMoney(e.pay)} · ${L('Rücktaste: nochmal', 'Backspace: again')}`, 6);
         break;
       case 'untrained':
         sound.nope();
-        hud.toast('Erst einmal durch den Parcours', 'Dann ist die Drossel raus.', 2);
+        hud.toast(L('Erst einmal durch den Parcours', 'Get through the course first'), L('Dann ist die Drossel raus.', 'Then the limiter comes out.'), 2);
         break;
       case 'graduated':
         sound.tuned();
         sound.cheer();
-        hud.banner('Tutorial abgeschlossen!', `${e.stage.name}: jedes Gefährt fährt jetzt ${e.stage.topSpeedKmh} km/h.`, 3);
-        leaveSoon(3, 'Ausbildung bestanden! Alle Modi und der Parkplatz sind offen, jedes Gefährt hat die Drossel raus.');
+        hud.banner(L('Tutorial abgeschlossen!', 'Tutorial done!'), L(`${e.stage.name}: jedes Gefährt fährt jetzt ${e.stage.topSpeedKmh} km/h.`, `${e.stage.name}: every ride now does ${e.stage.topSpeedKmh} km/h.`), 3);
+        leaveSoon(3, L('Ausbildung bestanden! Alle Modi und der Parkplatz sind offen, jedes Gefährt hat die Drossel raus.', 'Training passed! All modes and the car park are open, and every ride has its limiter out.'));
         break;
       case 'broke':
         sound.nope();
-        hud.toast(`Es fehlen noch ${formatMoney(e.missing)}`, '', 1.5);
+        hud.toast(L(`Es fehlen noch ${formatMoney(e.missing)}`, `${formatMoney(e.missing)} short`), '', 1.5);
         break;
     }
   }
@@ -340,7 +342,7 @@ function frame(now: number): void {
   if (input.take('ghost')) {
     progress.showGhost = !progress.showGhost;
     progress.save();
-    if (racing) hud.toast(progress.showGhost ? 'Schatten an' : 'Schatten aus', 'Die Bestzeit fährt mit.', 1.5);
+    if (racing) hud.toast(progress.showGhost ? L('Schatten an', 'Ghost on') : L('Schatten aus', 'Ghost off'), L('Die Bestzeit fährt mit.', 'Your best lap drives along.'), 1.5);
   }
   // (the workshop only opens once its cheat code has been typed in)
   if (input.take('debug') && progress.workshop) gui.show(gui._hidden);

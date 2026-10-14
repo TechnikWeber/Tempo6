@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
 import { road, terrainFor } from './road';
 import { distanceTo, forest, house, stand } from './scenery';
@@ -65,8 +66,8 @@ decor.push(...forest({ x: [-182, 182], z: [-120, 118], count: 170, seed: 9, avoi
 
 export const SCHLEIFE: TrackDef = {
   id: 'schleife',
-  name: 'Große Schleife',
-  blurb: `Lang, flüssig, bergauf und bergab: ${Math.round(ROAD.length / 10) * 10} m pro Runde, ${Math.round(Math.max(...ROAD.heights))} m Höhenunterschied. Rohbau.`,
+  name: L('Große Schleife', 'Grand Loop'),
+  blurb: L(`Lang, flüssig, bergauf und bergab, durch Wald und Dorf: ${Math.round(ROAD.length / 10) * 10} m pro Runde, ${Math.round(Math.max(...ROAD.heights))} m Höhenunterschied.`, `Long and flowing, uphill and down, through woods and a village: ${Math.round(ROAD.length / 10) * 10} m a lap, ${Math.round(Math.max(...ROAD.heights))} m of climb.`),
   unlockPrice: 275,
   lapPay: 80,
   spawn: ROAD.spawn,

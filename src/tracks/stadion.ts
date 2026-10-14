@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
 import { road, terrainFor } from './road';
 import { floodlight, forest, stand } from './scenery';
@@ -60,8 +61,8 @@ for (let row = 0; row < 3; row++) {
 
 export const STADION: TrackDef = {
   id: 'stadion',
-  name: 'Stadionkurs',
-  blurb: `Schnelle Bögen durch den Wald, Haarnadel, enges Geschlängel vor der Tribüne: ${Math.round(ROAD.length / 10) * 10} m. Rohbau.`,
+  name: L('Stadionkurs', 'Stadium Circuit'),
+  blurb: L(`Schnelle Bögen durch den Wald, Haarnadel, enges Geschlängel vor der Tribüne: ${Math.round(ROAD.length / 10) * 10} m.`, `Fast arcs through the woods, a hairpin, a tight wiggle in front of the stands: ${Math.round(ROAD.length / 10) * 10} m.`),
   unlockPrice: 225,
   lapPay: 50,
   spawn: ROAD.spawn,

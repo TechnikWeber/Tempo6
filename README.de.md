@@ -4,7 +4,7 @@
 
 **▶ Im Browser spielen: [technikweber.github.io/Tempo6](https://technikweber.github.io/Tempo6/)** · am Computer oder quer gehaltenem Handy, ohne Installation, ohne Anmeldung.
 
-Ein Rennspiel mit Elektrorollstühlen und Seniorenmobilen. Jedes Gefährt startet mit 12 km/h (laut Prospekt die erlaubten 6) im Reha-Parcours mit Wippe, Wackelbrücke und Schwebebalken. Wer einmal durch ist, bekommt die Drossel raus, verdient sich mit Runden, Rennen und Kunststücken Schrauben und steckt sie in immer fragwürdigeres Tuning, bis 75 km/h.
+Ein Rennspiel mit Elektrorollstühlen und Seniorenmobilen. Jedes Gefährt startet mit 12 km/h (laut Prospekt die erlaubten 6) im Reha-Parcours mit Wippe, Wackelbrücke und Schwebebalken. Wer einmal durch ist, bekommt die Drossel raus, verdient sich mit Runden, Rennen und Kunststücken Schrauben und steckt sie in immer fragwürdigeres Tuning, bis 75 km/h. Das Spiel ist auf Englisch und mit einem Knopf im Startbildschirm auf Deutsch umschaltbar.
 
 <p align="center">
   <img src="docs/screenshots/01-startbildschirm.jpg" alt="Startbildschirm mit Gefährten, Modi und Strecken" width="49%">

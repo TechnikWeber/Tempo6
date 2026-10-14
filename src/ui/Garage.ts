@@ -1,3 +1,4 @@
+import { L, num } from '../i18n';
 import { BOOST, formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
 import type { GameCore } from '../sim/GameCore';
 
@@ -61,9 +62,9 @@ export class Garage {
   private report(core: GameCore): void {
     for (const e of core.events) {
       if (e.type === 'tuned') this.said = `${e.stage.name}! ${e.stage.blurb}`;
-      if (e.type === 'broke') this.said = `Es fehlen noch ${formatMoney(e.missing)}.`;
-      if (e.type === 'untrained') this.said = 'Erst einmal durch den Reha-Parcours, dann geht die Drossel raus.';
-      if (e.type === 'boostBought') this.said = 'Autobatterie auf dem Schoß! Umschalt halten für den Boost.';
+      if (e.type === 'broke') this.said = L(`Es fehlen noch ${formatMoney(e.missing)}.`, `${formatMoney(e.missing)} short.`);
+      if (e.type === 'untrained') this.said = L('Erst einmal durch den Reha-Parcours, dann geht die Drossel raus.', 'Get through the Rehab Course first, then the limiter comes out.');
+      if (e.type === 'boostBought') this.said = L('Autobatterie auf dem Schoß! Umschalt halten für den Boost.', 'Car battery on the lap! Hold Shift to boost.');
     }
     core.events.length = 0;
     this.render();
@@ -80,8 +81,8 @@ export class Garage {
     STAGES.forEach((s, i) => {
       const row = h('li', i < now ? 'done' : i === now ? 'now' : i === now + 1 ? 'next' : 'later');
       row.append(h('b', '', `${i}`), h('span', 'name', s.name), h('span', 'kmh', `${stageSpeedKmh(s, factor).toFixed(0)} km/h`));
-      if (i <= now) row.append(h('span', 'price', i === now ? 'eingebaut' : '✓'));
-      else if (i === 1 && !progress.trained()) row.append(h('span', 'price', 'Reha-Parcours'));
+      if (i <= now) row.append(h('span', 'price', i === now ? L('eingebaut', 'fitted') : '✓'));
+      else if (i === 1 && !progress.trained()) row.append(h('span', 'price', L('Reha-Parcours', 'Rehab Course')));
       else row.append(h('span', 'price', formatMoney(s.price)));
       ladder.append(row);
     });
@@ -89,23 +90,23 @@ export class Garage {
     const next = progress.nextStage;
     const buy = h('button', 'buy');
     if (!next) {
-      buy.textContent = 'Ausgetunt. Mehr geht nicht. Noch nicht.';
+      buy.textContent = L('Ausgetunt. Mehr geht nicht. Noch nicht.', 'Fully tuned. That is all there is. For now.');
       buy.disabled = true;
     } else if (!progress.trained()) {
-      buy.textContent = 'Erst durch den Reha-Parcours';
+      buy.textContent = L('Erst durch den Reha-Parcours', 'Finish the Rehab Course first');
       buy.disabled = true;
     } else {
-      buy.textContent = `${next.name} einbauen · ${formatMoney(next.price)}`;
+      buy.textContent = L(`${next.name} einbauen · ${formatMoney(next.price)}`, `Fit ${next.name} · ${formatMoney(next.price)}`);
       buy.disabled = progress.money < next.price;
     }
     buy.addEventListener('click', () => this.tune());
 
     const boost = h('button', 'buy boost');
     if (progress.hasBoost) {
-      boost.textContent = '⚡ Boost-Batterie eingebaut';
+      boost.textContent = L('⚡ Boost-Batterie eingebaut', '⚡ Boost battery fitted');
       boost.disabled = true;
     } else {
-      boost.textContent = `⚡ Boost-Batterie · ${formatMoney(BOOST.price)}`;
+      boost.textContent = `⚡ ${L('Boost-Batterie', 'Boost battery')} · ${formatMoney(BOOST.price)}`;
       boost.disabled = progress.money < BOOST.price;
     }
     boost.addEventListener('click', () => this.buyBoost());
@@ -121,17 +122,17 @@ export class Garage {
       profiles.append(b);
     });
 
-    const back = h('button', 'back', '← Zurück');
+    const back = h('button', 'back', L('← Zurück', '← Back'));
     back.addEventListener('click', () => this.handlers.back());
 
     const panel = h('div', 'panel');
     panel.append(
       h('h2', '', `Garage · ${v.spec.label}`),
-      h('p', 'money', `🔩 ${formatMoney(progress.money)} · jetzt ${core.topSpeedKmh.toFixed(1).replace('.', ',')} km/h`),
+      h('p', 'money', `🔩 ${formatMoney(progress.money)} · ${L('jetzt', 'now')} ${num(core.topSpeedKmh)} km/h`),
       ladder,
       buy,
       boost,
-      h('h3', '', 'Fahrprofil'),
+      h('h3', '', L('Fahrprofil', 'Driving profile')),
       profiles,
       h('p', 'said', this.said),
       back,

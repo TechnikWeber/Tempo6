@@ -1,3 +1,4 @@
+import { L, num } from '../i18n';
 import { RACE } from '../config/modes';
 import { BOOST, formatMoney } from '../config/tuning';
 import type { GameCore } from '../sim/GameCore';
@@ -106,27 +107,27 @@ export class Hud {
     const record = progress.records[`${core.mode}:${track.id}`];
     switch (core.mode) {
       case 'time':
-        this.set(this.lapLabel, 'Runde');
+        this.set(this.lapLabel, L('Runde', 'Lap'));
         this.set(this.lapTime, race.running ? formatTime(race.lapTime) : '–');
-        this.set(this.lapSub, 'Bestzeit');
+        this.set(this.lapSub, L('Bestzeit', 'Best'));
         this.set(this.lapBest, formatTime(race.best));
         break;
       case 'race':
-        this.set(this.lapLabel, 'Platz');
+        this.set(this.lapLabel, L('Platz', 'Place'));
         this.set(this.lapTime, `${core.place} / ${core.rivals.length + 1}`);
-        this.set(this.lapSub, core.finished ? 'Im Ziel' : `Runde ${Math.min(RACE.laps, race.laps + 1)} / ${RACE.laps}`);
+        this.set(this.lapSub, core.finished ? L('Im Ziel', 'Finished') : `${L('Runde', 'Lap')} ${Math.min(RACE.laps, race.laps + 1)} / ${RACE.laps}`);
         this.set(this.lapBest, race.running && !core.finished ? formatTime(race.lapTime) : '');
         break;
       case 'freestyle':
-        this.set(this.lapLabel, 'Kette');
-        this.set(this.lapTime, core.stunts.chain ? `${Math.round(core.stunts.pending)} · ×${core.stunts.multiplier.toFixed(1).replace('.', ',')}` : '–');
-        this.set(this.lapSub, 'Beste Kette');
+        this.set(this.lapLabel, L('Kette', 'Chain'));
+        this.set(this.lapTime, core.stunts.chain ? `${Math.round(core.stunts.pending)} · ×${num(core.stunts.multiplier)}` : '–');
+        this.set(this.lapSub, L('Beste Kette', 'Best chain'));
         this.set(this.lapBest, record ? String(record) : '–');
         break;
       case 'crash':
         this.set(this.lapLabel, 'Crash');
-        this.set(this.lapTime, core.crash.started ? `${core.crash.score} Punkte` : 'Gas!');
-        this.set(this.lapSub, 'Rekord');
+        this.set(this.lapTime, core.crash.started ? `${core.crash.score} ${L('Punkte', 'points')}` : L('Gas!', 'Floor it!'));
+        this.set(this.lapSub, L('Rekord', 'Record'));
         this.set(this.lapBest, record ? `${record}` : '–');
         break;
     }
@@ -138,12 +139,12 @@ export class Hud {
     const open = Math.round(core.stunts.pending);
     // (freestyle shows its run in the big panel, the crashtest has no tricks)
     this.pending.hidden = (open === 0 && core.stunts.chain === 0) || core.mode === 'freestyle' || core.mode === 'crash';
-    this.set(this.pending, `+${open} offen${core.stunts.multiplier > 1 ? ` · ×${core.stunts.multiplier.toFixed(1).replace('.', ',')}` : ''}`);
+    this.set(this.pending, `+${open} ${L('offen', 'pending')}${core.stunts.multiplier > 1 ? ` · ×${num(core.stunts.multiplier)}` : ''}`);
     const kmh = Math.abs(sim.vehicle.speed) * 3.6;
-    this.set(this.speed, kmh.toFixed(1).replace('.', ','));
+    this.set(this.speed, num(kmh));
     this.speedBar.style.width = `${Math.min(100, (kmh / core.topSpeedKmh) * 100).toFixed(0)}%`;
     const top = core.topSpeedKmh;
-    this.set(this.top, top.toFixed(top % 1 ? 1 : 0).replace('.', ','));
+    this.set(this.top, num(top, top % 1 ? 1 : 0));
     this.set(this.vehicle, sim.vehicle.spec.label);
     this.lapPanel(core);
     this.set(this.money, formatMoney(progress.money));
@@ -154,7 +155,7 @@ export class Hud {
     this.damageRow.hidden = v.damage === 0;
     if (v.damage > 0) {
       this.damageBar.style.width = `${((1 - v.damage) * 100).toFixed(0)}%`;
-      this.set(this.damageText, v.wrecked ? 'Schrott' : `${Math.round(v.damage * 100)} % Schaden`);
+      this.set(this.damageText, v.wrecked ? L('Schrott', 'Scrap') : `${Math.round(v.damage * 100)} % ${L('Schaden', 'damage')}`);
       this.damageRow.classList.toggle('low', v.impaired > 0);
     }
     this.boostRow.hidden = !v.boostFitted;

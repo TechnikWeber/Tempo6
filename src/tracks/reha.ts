@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import { easedRamp, ramp, type BoxDef, type DecorDef, type MoverDef, type PickupDef, type PropDef, type SpinnerDef, type TrackDef } from '../sim/Track';
 
 const FLOOR = 0x5d8f4e;
@@ -65,7 +66,7 @@ function rails(x: number, z: number, alongX: boolean, halfLen: number, gap: numb
 }
 
 // South, heading east: a slalom round cones, then two bumps.
-sign('SLALOM', -7.5, S - SIGN_OUT, EAST);
+sign(L('SLALOM', 'SLALOM'), -7.5, S - SIGN_OUT, EAST);
 // (on the centre line: round them left, right, left…)
 const SLALOM = [-6, -3.4, -0.8, 1.8, 4.4];
 for (const x of SLALOM) props.push({ type: 'cone', pos: [x, 0.26, S] });
@@ -86,7 +87,7 @@ const movers: MoverDef[] = [
 // the trestle it turns on
 trestle(E, SAW_Z, movers[0].pos[1]);
 rails(E, SAW_Z, false, SAW_HALF + 0.5, LANE);
-sign('WIPPE', E + SIGN_OUT, SAW_Z - SAW_HALF - 1.5, NORTH);
+sign(L('WIPPE', 'SEESAW'), E + SIGN_OUT, SAW_Z - SAW_HALF - 1.5, NORTH);
 pickups.push({ type: 'screw', pos: [E, 1.0, SAW_Z] });
 
 // …then the rocking bridge: up a short ramp onto a plank that rolls from side to side.
@@ -104,16 +105,16 @@ movers.push({ type: 'rocker', pos: [E, ROCK_Y, ROCK_Z], yaw: NORTH, half: [PLANK
 const ROCK_FOOT = (ROCK_Y - 2 * T - 0.03) / 2;
 decor.push({ type: 'box', pos: [E, ROCK_FOOT, ROCK_Z], half: [0.1, ROCK_FOOT, ROCK_HALF - 0.2], color: STEEL });
 rails(E, ROCK_Z, false, ROCK_HALF + RAMP_RUN, LANE);
-sign('WACKELBRÜCKE', E + SIGN_OUT, ROCK_Z - ROCK_HALF - 2, NORTH);
+sign(L('WACKELBRÜCKE', 'WOBBLE BRIDGE'), E + SIGN_OUT, ROCK_Z - ROCK_HALF - 2, NORTH);
 pickups.push({ type: 'screw', pos: [E, ROCK_Y + 0.5, ROCK_Z] });
 
 // North, heading west: across the turntable, then up and down a kerb.
 // (flush with the lawn: the little scooters' wheels would not get up a step)
 const spinners: SpinnerDef[] = [{ pos: [5, 0.015, N], radius: 2.6, speed: 0.95, color: STEEL }];
-sign('DREHSCHEIBE', 9, N + SIGN_OUT, EAST);
+sign(L('DREHSCHEIBE', 'TURNTABLE'), 9, N + SIGN_OUT, EAST);
 const KERB = 0.05;
 statics.push({ pos: [-3, KERB / 2, N], half: [2.5, KERB / 2, WAY], color: CONCRETE });
-sign('BORDSTEIN', 0.5, N + SIGN_OUT, EAST);
+sign(L('BORDSTEIN', 'KERB'), 0.5, N + SIGN_OUT, EAST);
 screws(1.5, N, -8, N, 3);
 
 // West, heading south: first a short, steep seesaw that slams over…
@@ -123,7 +124,7 @@ const KIPPE_TILT = 0.2;
 movers.push({ type: 'seesaw', pos: [W, KIPPE_HALF * Math.sin(KIPPE_TILT) + 0.02, KIPPE_Z], yaw: SOUTH, half: [PLANK, T, KIPPE_HALF], angle: KIPPE_TILT, color: 0xc86a4a });
 trestle(W, KIPPE_Z, movers[2].pos[1]);
 rails(W, KIPPE_Z, false, KIPPE_HALF + 0.5, LANE);
-sign('KIPPE', W - SIGN_OUT, KIPPE_Z + KIPPE_HALF + 1.5, NORTH);
+sign(L('KIPPE', 'TIPPER'), W - SIGN_OUT, KIPPE_Z + KIPPE_HALF + 1.5, NORTH);
 
 // …then the balance beam. Narrow, well up, no rails on it.
 const BEAM_Y = 0.55;
@@ -141,7 +142,7 @@ statics.push(
 // trestles under the beam (its underside is at BEAM_Y - 0.2; they stop short of it)
 for (const dz of [-2, 0, 2]) decor.push({ type: 'box', pos: [W, (BEAM_Y - 0.23) / 2, BEAM_Z + dz], half: [BEAM - 0.1, (BEAM_Y - 0.23) / 2, 0.08], color: STEEL });
 rails(W, BEAM_Z, false, BEAM_HALF + BEAM_RUN, LANE);
-sign('SCHWEBEBALKEN', W - SIGN_OUT, BEAM_Z + BEAM_HALF + 2, NORTH);
+sign(L('SCHWEBEBALKEN', 'BALANCE BEAM'), W - SIGN_OUT, BEAM_Z + BEAM_HALF + 2, NORTH);
 pickups.push({ type: 'screw', pos: [W, BEAM_Y + 0.5, BEAM_Z] });
 
 // Inside the square: a little garden with a pond, benches and the odd tree.
@@ -170,7 +171,7 @@ for (const [x, z, c] of [[-8, -6.5, 0xd2463c], [8, 6.5, 0xe8c23a], [-8, 6.5, 0xb
 }
 // Hedges along the wall, and the clinic beyond it.
 for (const z of [-LOT_Z + 1, LOT_Z - 1]) decor.push({ type: 'box', pos: [0, 0.5, z], half: [LOT_X - 1.5, 0.5, 0.45], color: 0x3c6e34 });
-decor.push({ type: 'sign', pos: [0, 4, LOT_Z + 9], half: [16, 4, 5], color: 0xe8e2d0, text: 'REHA-ZENTRUM' });
+decor.push({ type: 'sign', pos: [0, 4, LOT_Z + 9], half: [16, 4, 5], color: 0xe8e2d0, text: L('REHA-ZENTRUM', 'REHAB CENTRE') });
 // a parked ambulance by the entrance
 const AMBULANCE_Z = LOT_Z + 2.5;
 decor.push(
@@ -193,8 +194,8 @@ const STREET: [number, number][] = [[-190, ROAD_Z + 2], [190, ROAD_Z + 2], [190,
 
 export const REHA: TrackDef = {
   id: 'reha',
-  name: 'Reha-Parcours',
-  blurb: 'Wippe, Wackelbrücke, Drehscheibe, Schwebebalken. Hier lernst du fahren, mit 12 km/h.',
+  name: L('Reha-Parcours', 'Rehab Course'),
+  blurb: L('Wippe, Wackelbrücke, Drehscheibe, Schwebebalken. Hier lernst du fahren, mit 12 km/h.', 'Seesaw, wobble bridge, turntable, balance beam. This is where you learn to drive, at 12 km/h.'),
   unlockPrice: 0,
   lapPay: 8,
   spawn: { pos: [-12, 0.5, S], yaw: EAST },

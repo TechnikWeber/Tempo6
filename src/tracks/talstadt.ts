@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import { BRAND_COLORS } from '../config/vehicles';
 import type { TrackDef } from '../sim/Track';
 import { distanceTo, forest } from './scenery';
@@ -175,8 +176,8 @@ y.decor.push(
 
 export const TALSTADT: TrackDef = {
   id: 'talstadt',
-  name: 'Werk Talstadt',
-  blurb: `Einmal ums Werk: ${Math.round(SITE.length / 10) * 10} m um die große Halle, durch das Vordach am Haupteingang, vorbei an Laderampe, Parkplatz und Lkw-Werkstatt.`,
+  name: L('Werk Talstadt', 'Talstadt Works'),
+  blurb: L(`Einmal ums Werk: ${Math.round(SITE.length / 10) * 10} m um die große Halle, durch das Vordach am Haupteingang, vorbei an Laderampe, Parkplatz und Lkw-Werkstatt.`, `Once round the works: ${Math.round(SITE.length / 10) * 10} m round the big hall, through the canopy at the main entrance, past the loading dock, the car park and the truck workshop.`),
   unlockPrice: 100,
   lapPay: 35,
   spawn: SITE.spawn,

@@ -1,3 +1,4 @@
+import { L, lang, num, switchLanguage } from '../i18n';
 import { MODES, modeById, type ModeId } from '../config/modes';
 import { formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
 import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
@@ -29,8 +30,8 @@ interface Lock {
 
 /** Smallest scale of the vehicle list that is still readable and tappable. */
 const MIN_ZOOM = 0.7;
-const STAT_LABELS = { tempo: 'Tempo', antritt: 'Antritt', wendig: 'Wendigkeit', standfest: 'Standfest' } as const;
-const TUTORIAL_LOCK = '🔒 Erst durch den Reha-Parcours';
+const STAT_LABELS = { tempo: L('Tempo', 'Speed'), antritt: L('Antritt', 'Acceleration'), wendig: L('Wendigkeit', 'Agility'), standfest: L('Standfest', 'Stability') } as const;
+const TUTORIAL_LOCK = L('🔒 Erst durch den Reha-Parcours', '🔒 Finish the Rehab Course first');
 
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -53,7 +54,7 @@ export class Menu {
   private readonly modeList = h('div', 'modes');
   private readonly modeBlurb = h('p', 'mode-blurb');
   private readonly trackList = h('div', 'cards tracks');
-  private readonly start = h('button', 'start', 'Los!');
+  private readonly start = h('button', 'start', L('Los!', 'Go!'));
   private readonly ghost = h('input');
   private readonly garage = h('button', 'garage-btn', '🔧 Garage');
   private readonly buyVehicle = h('button', 'unlock');
@@ -70,7 +71,7 @@ export class Menu {
     this.track = progress.track || TRACKS[0].id;
 
     const head = h('header');
-    head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', 'Verdien dir Schrauben. Tune dein Gefährt. Werde zu schnell.'));
+    head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', L('Verdien dir Schrauben. Tune dein Gefährt. Werde zu schnell.', 'Earn screws. Tune your ride. Get too fast.')));
     const purse = h('p', 'purse', '🔩 ');
     purse.append(this.money);
     // whether the best lap drives along
@@ -80,21 +81,21 @@ export class Menu {
       progress.showGhost = this.ghost.checked;
       progress.save();
     });
-    shadow.append(this.ghost, ' Schatten');
-    shadow.title = 'Die Bestzeit fährt als Schatten mit (Taste G)';
+    shadow.append(this.ghost, L(' Schatten', ' Ghost'));
+    shadow.title = L('Die Bestzeit fährt als Schatten mit (Taste G)', 'Your best lap drives along as a ghost (key G)');
     head.append(shadow, this.tools(), purse);
 
     const left = h('section', 'col');
     this.vehicleList.append(this.vehicleCards);
     left.append(this.vehicleList);
-    this.garage.title = 'Gefährt in der Werkstatt ansehen und tunen (T)';
+    this.garage.title = L('Gefährt in der Werkstatt ansehen und tunen (T)', 'Look at your ride in the workshop and tune it (T)');
     this.garage.addEventListener('click', () => this.openGarage());
     this.buyVehicle.addEventListener('click', () => this.unlockVehicle());
     this.buyTrack.addEventListener('click', () => this.unlockTrack());
     const right = h('section', 'col');
-    right.append(h('h2', '', 'Modus'), this.modeList, this.modeBlurb, h('h2', '', 'Strecke'), this.trackList, this.buyTrack, this.start);
+    right.append(h('h2', '', L('Modus', 'Mode')), this.modeList, this.modeBlurb, h('h2', '', L('Strecke', 'Track')), this.trackList, this.buyTrack, this.start);
     const hint = h('p', 'keys');
-    hint.innerHTML = '<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los';
+    hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
     right.append(hint);
     this.root.append(head, left, this.detail, right);
 
@@ -124,8 +125,8 @@ export class Menu {
   /** Save to a file, load from one, and the box for cheat codes. */
   private tools(): HTMLElement {
     const box = h('div', 'tools');
-    const save = h('button', 'tool', '💾 Speichern');
-    save.title = 'Spielstand als Datei herunterladen. Bleibt, auch wenn der Browser seine Daten löscht.';
+    const save = h('button', 'tool', L('💾 Speichern', '💾 Save'));
+    save.title = L('Spielstand als Datei herunterladen. Bleibt, auch wenn der Browser seine Daten löscht.', 'Download your progress as a file. It stays even if the browser clears its data.');
     save.addEventListener('click', () => this.handlers.onExport());
     const file = h('input');
     file.type = 'file';
@@ -136,30 +137,30 @@ export class Menu {
       file.value = '';
       if (f) this.say((await this.handlers.onImport(await f.text())) ?? '');
     });
-    const load = h('button', 'tool', '📂 Laden');
-    load.title = 'Einen gespeicherten Spielstand laden';
+    const load = h('button', 'tool', L('📂 Laden', '📂 Load'));
+    load.title = L('Einen gespeicherten Spielstand laden', 'Load a saved game');
     load.addEventListener('click', () => file.click());
     const cheat = h('form', 'cheat');
     const code = h('input');
-    code.placeholder = 'Cheatcode';
+    code.placeholder = L('Cheatcode', 'Cheat code');
     code.size = 9;
     code.autocomplete = 'off';
     const ok = h('button', 'tool', '🎮');
-    ok.title = 'Cheatcode eingeben';
+    ok.title = L('Cheatcode eingeben', 'Enter a cheat code');
     cheat.append(code, ok);
     cheat.addEventListener('submit', (e) => {
       e.preventDefault();
       const said = this.handlers.onCheat(code.value);
       code.value = '';
       code.blur();
-      this.say(said ?? 'Nichts passiert.');
+      this.say(said ?? L('Nichts passiert.', 'Nothing happens.'));
       this.render();
     });
     box.append(save, load, file, cheat);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {
-      const full = h('button', 'tool', '⛶ Vollbild');
-      full.title = 'Vollbild an oder aus';
+      const full = h('button', 'tool', L('⛶ Vollbild', '⛶ Full screen'));
+      full.title = L('Vollbild an oder aus', 'Full screen on or off');
       full.addEventListener('click', async () => {
         if (document.fullscreenElement) return void document.exitFullscreen();
         await document.documentElement.requestFullscreen().catch(() => {});
@@ -167,7 +168,11 @@ export class Menu {
       });
       box.append(full);
     }
-    box.append(this.note);
+    // the other language, one tap away
+    const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
+    other.title = L('Switch to English', 'Auf Deutsch umstellen');
+    other.addEventListener('click', () => switchLanguage(lang === 'de' ? 'en' : 'de'));
+    box.append(other, this.note);
     return box;
   }
 
@@ -302,7 +307,7 @@ export class Menu {
   private unlockButton(b: HTMLButtonElement, name: string, lock: Lock | null): void {
     b.hidden = lock?.price === undefined;
     if (lock?.price === undefined) return;
-    b.textContent = `🔓 ${name} freischalten · ${formatMoney(lock.price)}`;
+    b.textContent = L(`🔓 ${name} freischalten · ${formatMoney(lock.price)}`, `🔓 Unlock ${name} · ${formatMoney(lock.price)}`);
     b.classList.toggle('can', this.progress.money >= lock.price);
   }
 
@@ -344,11 +349,11 @@ export class Menu {
     actions.append(this.garage, this.buyVehicle);
     this.detail.replaceChildren(
       h('h3', '', v.label),
-      h('p', 'kind', `${v.kind} · Fahrprofile: ${v.profiles.map((p) => p.name).join(', ')}`),
+      h('p', 'kind', `${v.kind} · ${L('Fahrprofile', 'Driving profiles')}: ${v.profiles.map((p) => p.name).join(', ')}`),
       h('p', '', v.blurb),
       stats,
       actions,
-      h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`),
+      h('p', 'kind', L(`Aktuell ${num(top)} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`, `Now ${num(top)} km/h · tuning stage ${stageNo}: ${stage.name} · driving profile: ${profile.name}`)),
     );
 
     const modeButtons = (list: typeof MODES) => list.map((m) => {
@@ -363,7 +368,7 @@ export class Menu {
       });
     // (what is still being tried out sits apart, under its own label)
     const trial = h('div', 'trial');
-    trial.append(h('small', '', 'Experimentell'), ...modeButtons(MODES.filter((m) => m.experimental)));
+    trial.append(h('small', '', L('Experimentell', 'Experimental')), ...modeButtons(MODES.filter((m) => m.experimental)));
     this.modeList.replaceChildren(...modeButtons(MODES.filter((m) => !m.experimental)), trial);
     this.modeBlurb.textContent = mode.blurb;
 
@@ -379,7 +384,7 @@ export class Menu {
         if (t.id === this.track && !lock && mode.id === 'time') {
           const board = h('ol', 'board');
           for (const e of (this.progress.boards[t.id] ?? []).slice(0, 3)) {
-            board.append(h('li', '', `${formatTime(e.time)} · ${e.name} · ${VEHICLES[e.vehicle].label} · Stufe ${e.stage}`));
+            board.append(h('li', '', `${formatTime(e.time)} · ${L('Du', 'You')} · ${VEHICLES[e.vehicle].label} · ${L('Stufe', 'stage')} ${e.stage}`));
           }
           if (board.children.length) b.append(board);
         }
@@ -399,10 +404,10 @@ export class Menu {
   private record(mode: ModeId, track: string): string {
     const r = this.progress.records[`${mode}:${track}`];
     switch (mode) {
-      case 'time': return `Bestzeit ${formatTime(this.progress.bestLaps[track] ?? null)}`;
-      case 'race': return r ? `Bester Platz ${r}` : 'Noch kein Rennen';
-      case 'freestyle': return r ? `Beste Kette ${formatMoney(r)}` : 'Noch keine Kette';
-      case 'crash': return r ? `Teuerster Crash ${r} Punkte` : 'Noch kein Crash';
+      case 'time': return `${L('Bestzeit', 'Best lap')} ${formatTime(this.progress.bestLaps[track] ?? null)}`;
+      case 'race': return r ? L(`Bester Platz ${r}`, `Best place ${r}`) : L('Noch kein Rennen', 'No race yet');
+      case 'freestyle': return r ? L(`Beste Kette ${formatMoney(r)}`, `Best chain ${formatMoney(r)}`) : L('Noch keine Kette', 'No chain yet');
+      case 'crash': return r ? L(`Teuerster Crash ${r} Punkte`, `Costliest crash ${r} points`) : L('Noch kein Crash', 'No crash yet');
     }
   }
 }

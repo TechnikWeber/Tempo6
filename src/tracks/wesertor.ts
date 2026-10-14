@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import type { BoxDef, PropDef, TrackDef, TrafficDef } from '../sim/Track';
 import { distanceTo, forest } from './scenery';
 import { site } from './site';
@@ -172,8 +173,8 @@ y.decor.push(
 
 export const WESERTOR: TrackDef = {
   id: 'wesertor',
-  name: 'Altwerk Porta Westfalica',
-  blurb: `Einmal ums alte Werk: ${Math.round(SITE.length / 10) * 10} m um verwinkelte Hallen, an der Bahnlinie entlang und mitten durchs Häuschen der Konkurrenz.`,
+  name: L('Altwerk Porta Westfalica', 'Old Works Porta Westfalica'),
+  blurb: L(`Einmal ums alte Werk: ${Math.round(SITE.length / 10) * 10} m um verwinkelte Hallen, an der Bahnlinie entlang und mitten durchs Häuschen der Konkurrenz.`, `Once round the old works: ${Math.round(SITE.length / 10) * 10} m round rambling halls, along the railway and straight through the competition’s little house.`),
   unlockPrice: 150,
   lapPay: 40,
   spawn: SITE.spawn,

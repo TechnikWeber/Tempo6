@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import { ramp, type DecorDef, type PickupDef, type PropDef, type BoxDef, type TrackDef } from '../sim/Track';
 
 const ASPHALT = 0x3b3e44;
@@ -78,7 +79,7 @@ const decor: DecorDef[] = [
   { type: 'tree', pos: [6, 0.6, -0.5] },
   { type: 'lamp', pos: [-9, 0.6, 3] },
   { type: 'lamp', pos: [9, 0.6, -3] },
-  { type: 'sign', pos: [0, 5, LOT_Z + 8], half: [38, 5, 6], color: 0xe8e2d0, text: 'BAUMARKT' },
+  { type: 'sign', pos: [0, 5, LOT_Z + 8], half: [38, 5, 6], color: 0xe8e2d0, text: L('BAUMARKT', 'DIY STORE') },
 ];
 // Parking bays north and south.
 for (const z of [-33, 33]) {
@@ -106,8 +107,8 @@ const MAIN_ROAD: [number, number][] = [[-250, ROAD_Z + 2.2], [250, ROAD_Z + 2.2]
 
 export const PARKPLATZ: TrackDef = {
   id: 'parkplatz',
-  name: 'Baumarkt-Parkplatz',
-  blurb: 'Enger Rundkurs um die Grüninsel, Schanzen daneben. Hier wird zu Ende getunt.',
+  name: L('Baumarkt-Parkplatz', 'DIY Store Car Park'),
+  blurb: L('Enger Rundkurs um die Grüninsel, Schanzen daneben. Hier wird zu Ende getunt.', 'A tight lap round the green island, jumps beside it. This is where the tuning gets finished.'),
   unlockPrice: 0,
   lapPay: 10,
   spawn: { pos: [-3, 0.5, -LINE_Z], yaw: Math.PI / 2 },

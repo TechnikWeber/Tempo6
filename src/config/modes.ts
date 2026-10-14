@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 export type ModeId = 'time' | 'race' | 'freestyle' | 'crash';
 
 export interface ModeDef {
@@ -17,26 +18,26 @@ export interface ModeDef {
 export const MODES: ModeDef[] = [
   {
     id: 'time',
-    name: 'Zeitrennen',
-    blurb: 'Allein gegen die Uhr und den eigenen Schatten. Jede Runde zahlt, Bestzeiten extra.',
+    name: L('Zeitrennen', 'Time Trial'),
+    blurb: L('Allein gegen die Uhr und den eigenen Schatten. Jede Runde zahlt, Bestzeiten extra.', 'Alone against the clock and your own ghost. Every lap pays, best times extra.'),
     tracks: ['reha', 'parkplatz', 'kurven', 'talstadt', 'wesertor', 'flugplatz', 'spielwiese', 'stadion', 'schleife'],
   },
   {
     id: 'race',
-    name: 'Rennen',
-    blurb: 'Drei Runden gegen drei andere. Wer vorn ist, kassiert am meisten.',
+    name: L('Rennen', 'Race'),
+    blurb: L('Drei Runden gegen drei andere. Wer vorn ist, kassiert am meisten.', 'Three laps against three others. Whoever is in front cashes in most.'),
     tracks: ['parkplatz', 'talstadt', 'wesertor', 'stadion', 'schleife'],
   },
   {
     id: 'freestyle',
     name: 'Freestyle',
-    blurb: 'Keine Runden, keine Uhr: Stunts aneinanderreihen. Jede Kette zahlt, sobald sie endet.',
+    blurb: L('Keine Runden, keine Uhr: Stunts aneinanderreihen. Jede Kette zahlt, sobald sie endet.', 'No laps, no clock: string stunts together. Every chain pays as soon as it ends.'),
     tracks: ['spielwiese', 'flugplatz', 'parkplatz', 'crashtest', 'reha'],
   },
   {
     id: 'crash',
-    name: 'Crashtest',
-    blurb: 'Volle Leistung, voller Boost, ein Versuch. Durch den Propeller auf die Schanze, oder eben nicht. Nach dem ersten Einschlag ist Schluss mit Lenken, und jeder Aufprall zählt, bis alles stillsteht.',
+    name: L('Crashtest', 'Crash Test'),
+    blurb: L('Volle Leistung, voller Boost, ein Versuch. Durch den Propeller auf die Schanze, oder eben nicht. Nach dem ersten Einschlag ist Schluss mit Lenken, und jeder Aufprall zählt, bis alles stillsteht.', 'Full power, full boost, one go. Through the propeller onto the jump, or not. After the first impact the steering is gone, and every knock counts until it all lies still.'),
     tracks: ['crashtest'],
     experimental: true,
   },
