@@ -167,12 +167,16 @@ export class GameCore {
     this.rivals.forEach((r, k) => (r.grid = this.slot(order[k + 1])));
   }
 
-  /** The others go as fast as the player could at the same stage, give or take their skill. */
+  /**
+   * The others go as fast as the player does, give or take their skill. Measured against the
+   * player's own top speed, not their vehicles': those differ by half, which spread the field
+   * from crawling to out of reach.
+   */
   private tuneRivals(): void {
     const s = this.progress.stage;
+    const top = this.sim.vehicle.topSpeed;
     this.rivals.forEach((r, k) => {
-      const spec = r.vehicle.spec;
-      r.vehicle.setMotor((stageSpeedKmh(s, spec.speedFactor) * RACE.skill[k]) / 3.6, s.accel * spec.accelFactor);
+      r.vehicle.setMotor(top * RACE.skill[k], s.accel * r.vehicle.spec.accelFactor);
       r.vehicle.boostFitted = this.progress.hasBoost;
     });
   }

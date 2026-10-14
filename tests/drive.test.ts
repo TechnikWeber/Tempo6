@@ -1505,9 +1505,10 @@ describe('modes', () => {
       for (const r of core.rivals) expect(Math.hypot(r.grid.x - p.x, r.grid.z - p.z)).toBeGreaterThan(1);
     }
     expect(rows.size).toBeGreaterThan(1);
-    // and the others are tuned to the player's stage, at their share of what their vehicle does there
+    // and the others are tuned to the player's top speed, whatever they drive, all a little under it
     for (const [k, r] of core.rivals.entries()) {
-      expect(r.vehicle.topSpeed * 3.6).toBeCloseTo(stageSpeedKmh(STAGES[4], r.vehicle.spec.speedFactor) * RACE.skill[k]);
+      expect(r.vehicle.topSpeed).toBeCloseTo(core.sim.vehicle.topSpeed * RACE.skill[k]);
+      expect(r.vehicle.topSpeed).toBeLessThan(core.sim.vehicle.topSpeed);
     }
     core.dispose();
   });
