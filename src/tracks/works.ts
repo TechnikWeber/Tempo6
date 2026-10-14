@@ -388,3 +388,32 @@ export function roadworks(y: Yard, s: Side, from: number, to: number, lane: (alo
     y.decor.push(person(px, pz, s.yaw + turn, CREW[k % 2], pose, true));
   });
 }
+
+/**
+ * A sausage stand: a booth with a counter and an awning (solid), the seller behind it and a
+ * queue in front. `yaw` faces out over the counter.
+ */
+export function snackStand(y: Yard, x: number, z: number, yaw: number, shirts: number[], queue = 3): void {
+  const f = frame(x, z, yaw);
+  const solid = (lx: number, ly: number, lz: number, hx: number, hy: number, hz: number, color: number) => {
+    const [px, pz] = f(lx, lz);
+    y.statics.push({ pos: [px, ly, pz], half: [hx, hy, hz], quat: quat(yaw), color });
+  };
+  solid(0, 1.2, -0.85, 1.5, 1.2, 0.15, 0xf2f2f2); // back wall
+  for (const sd of [-1, 1]) solid(sd * 1.4, 1.2, 0, 0.1, 1.2, 0.7, 0xf2f2f2); // sides
+  solid(0, 0.55, 0.85, 1.5, 0.55, 0.15, 0xd23b3b); // counter front
+  y.decor.push(
+    part(f, yaw, 0, 1.12, 0.85, 1.55, 0.02, 0.25, 0x8a5a32), // the counter top
+    part(f, yaw, 0, 2.45, 0.1, 1.65, 0.05, 1.2, 0xd23b3b), // roof
+    part(f, yaw, 0, 2.38, 1.31, 1.65, 0.1, 0.02, 0xf2f2f2), // white edge to the roof
+    part(f, yaw, 0.85, 1.2, 0.85, 0.3, 0.06, 0.18, 0x3a3c40), // the grill
+  );
+  const [gx, gz] = f(0.85, 0.85);
+  y.decor.push(smoke(gx, 1.3, gz), person(...f(-0.3, 0.1), yaw, 0xf2f2f2));
+  for (let k = 0; k < queue; k++) {
+    const [qx, qz] = f(-0.2 + (k % 2) * 0.25, 1.75 + k * 0.85);
+    y.decor.push(person(qx, qz, yaw + Math.PI + (k % 2 ? 0.2 : -0.15), shirts[k % shirts.length], k === queue - 1 ? 'phone' : 'stand'));
+  }
+  // somebody already eating, off to the side
+  y.decor.push(person(...f(2.6, 2), yaw + 2.4, shirts[(queue + 1) % shirts.length], 'phone'));
+}

@@ -1,5 +1,6 @@
 import { L } from '../i18n';
 import { ramp, type DecorDef, type PickupDef, type PropDef, type BoxDef, type TrackDef } from '../sim/Track';
+import { car, person, snackStand, tyres, type Yard } from './works';
 
 const ASPHALT = 0x3b3e44;
 const CONCRETE = 0x9a9a94;
@@ -102,6 +103,32 @@ decor.push(
   { type: 'box', pos: [-20, 0.6, ROAD_Z - 6.95], half: [1.9, 0.55, 0.03], color: 0x9fc4d8 },
   { type: 'board', pos: [-17.4, 2, ROAD_Z - 5.6], half: [0.3, 0.3, 0.03], text: 'H' },
 );
+// Cars in about half the bays, a sausage stand by the slalom, people about.
+const yard: Yard = { statics, decor, props };
+{
+  const colours = [0x2f6db5, 0xd23b3b, 0xc8c8c8, 0x404850, 0x2e7d4f, 0xe3c04a, 0xf2f2f2, 0x8a2c5a, 0x1c1c1f];
+  let k = 0;
+  for (const z of [-33, 33]) {
+    for (let x = -58.65; x < 58; x += 2.7) {
+      k++;
+      if ((k * 7) % 11 < 5) continue;
+      decor.push(...car(x, z, (k % 3 ? 0 : Math.PI) + (z > 0 ? Math.PI : 0), colours[k % colours.length]));
+    }
+  }
+}
+const SHIRTS = [0x4a7ab5, 0xf2f2f2, 0xd23b3b, 0x3f8f5f, 0x7b2d8e, 0xe3c04a, 0x2a2a2e, 0xc8c8c8];
+snackStand(yard, -6, 26, Math.PI, SHIRTS, 4);
+// staff in their red shirts and vests: one gathering the carts, one waving people in
+decor.push(person(-29.5, 24, Math.PI, 0xd23b3b, 'point', true), person(-46, 19, 0.6, 0xd23b3b, 'wave', true));
+// people watching the jumps from beside the big ramp
+for (const [x, z, k, pose] of [[46.5, -2, 0, 'wave'], [47.2, -0.6, 4, 'stand'], [46.8, 1, 6, 'phone'], [-34.5, 2, 2, 'point'], [-35, 3.3, 5, 'stand']] as const) {
+  decor.push(person(x, z, x > 0 ? -Math.PI / 2 : Math.PI / 2, SHIRTS[k], pose));
+}
+// shoppers carrying their boxes along the front, between the store and their cars
+const SHOPPERS: [number, number][] = [[-30, 43.2], [30, 43.2], [30, 42.8], [-30, 42.8]];
+// a stack of tyres for sale, and a few rolled off it
+tyres(yard, [[52, 18], [52.8, 18.6], [51.4, 19.2], [49, 15], [55, 13]], [4, 3, 2, 1, 1]);
+
 // (keeping right: eastwards on the near side, back westwards on the far one)
 const MAIN_ROAD: [number, number][] = [[-250, ROAD_Z + 2.2], [250, ROAD_Z + 2.2], [250, ROAD_Z - 2.2], [-250, ROAD_Z - 2.2]];
 
@@ -130,6 +157,8 @@ export const PARKPLATZ: TrackDef = {
     { type: 'car', color: 0x3a6ea5, speed: 5, offset: 200, path: [[-64, -40], [64, -40], [64, 40], [-64, 40]] },
     // the delivery van takes the aisles, the other way round
     { type: 'van', color: 0xe8e4d8, speed: 4.5, offset: 40, path: [[-58, 27.5], [-58, -27.5], [58, -27.5], [58, 27.5]] },
+    { type: 'walker', color: 0x3f8f5f, speed: 1.2, carry: true, path: SHOPPERS },
+    { type: 'walker', color: 0xe3c04a, speed: 1.1, offset: 60, path: SHOPPERS },
     // and the main road outside
     { type: 'car', color: 0x2e7d4f, speed: 13, path: MAIN_ROAD },
     { type: 'van', color: 0xd9a23a, speed: 11, offset: 300, path: MAIN_ROAD },

@@ -1,7 +1,8 @@
 import { L } from '../i18n';
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
 import { road, terrainFor } from './road';
-import { floodlight, forest, stand } from './scenery';
+import { distanceTo, floodlight, forest, stand } from './scenery';
+import { person } from './works';
 
 const GRASS = 0x5c9447;
 const CONCRETE = 0x9a9a94;
@@ -57,6 +58,23 @@ for (let row = 0; row < 3; row++) {
       { type: 'box', pos: [x, 1.25, z - 0.2], half: [0.8, 0.25, 1.1], color: 0x9fc4d8 },
     );
   }
+}
+
+// Marshals in orange at a few bends, well off the road, and a photographer.
+{
+  const line = ROAD.line, n = line.length;
+  const cx = line.reduce((t, p) => t + p[0], 0) / n, cz = line.reduce((t, p) => t + p[1], 0) / n;
+  [0.12, 0.3, 0.47, 0.63, 0.8, 0.92].forEach((share, k) => {
+    const i = Math.floor(share * n);
+    const [x, z] = line[i], [nx, nz] = line[(i + 1) % n];
+    const len = Math.hypot(nx - x, nz - z) || 1;
+    let ox = (nz - z) / len, oz = -(nx - x) / len;
+    if ((x - cx) * ox + (z - cz) * oz < 0) [ox, oz] = [-ox, -oz];
+    const px = x + ox * 7, pz = z + oz * 7;
+    if (distanceTo(line, px, pz) < 6) return;
+    decor.push(person(px, pz, Math.atan2(x - px, z - pz), 0xff7a1a, k % 3 === 1 ? 'wave' : 'stand', true));
+    if (k === 2) decor.push(person(px + ox * 1.5 + oz, pz + oz * 1.5 - ox, Math.atan2(x - px, z - pz) + 0.5, 0x2a2a2e, 'point'));
+  });
 }
 
 export const STADION: TrackDef = {

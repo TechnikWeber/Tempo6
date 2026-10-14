@@ -1,6 +1,7 @@
 import { L } from '../i18n';
 import { ramp, type BoxDef, type DecorDef, type PickupDef, type PropDef, type TrackDef } from '../sim/Track';
 import { forest, street } from './scenery';
+import { person } from './works';
 
 const TARMAC = 0x45484d;
 const CONCRETE = 0x9a9a94;
@@ -123,6 +124,19 @@ decor.push(
   { type: 'box', pos: [140, 1.4, 72], half: [3.5, 1.2, 1.2], color: 0xe3c04a }, // fuel truck tank
   { type: 'box', pos: [144.2, 1.3, 72], half: [0.7, 1.1, 1.1], color: 0xd23b3b }, // its cab
 );
+// People: mechanics at the planes, a pilot, the fuel man, the tower crew at its door, and
+// visitors watching from the south side of the lap.
+decor.push(
+  person(-148, 66.4, 0.3, 0x2b3a5a, 'point', true),
+  person(-145.5, 66.6, -0.4, 0x2b3a5a, 'stand', true),
+  person(-104, 70.2, Math.PI / 2, 0x6b4a2b, 'wave'),
+  person(-66, 64.3, 2.6, 0x2b3a5a, 'carry', true),
+  person(140, 74, Math.PI, 0xd23b3b, 'stand', true),
+  person(161.5, 66, -1.2, 0xf4f4f4, 'phone'),
+);
+for (const [x, k, pose] of [[-60, 0, 'wave'], [-58.6, 1, 'stand'], [-57.4, 2, 'point'], [20, 3, 'stand'], [21.2, 4, 'phone'], [70, 5, 'wave'], [71.4, 6, 'stand']] as const) {
+  decor.push(person(x, -OUTER_Z - 6, (k % 3) * 0.2, [0x4a7ab5, 0xf2f2f2, 0xd23b3b, 0x3f8f5f, 0x7b2d8e, 0xe3c04a, 0x2a2a2e][k], pose));
+}
 // A balloon or two over the field.
 decor.push({ type: 'balloon', pos: [-120, 38, 120], color: 0xe3c04a }, { type: 'balloon', pos: [150, 30, -130], color: 0x7b2d8e });
 // Edge lights along both straights of the lap.

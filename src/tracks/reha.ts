@@ -1,4 +1,5 @@
 import { L } from '../i18n';
+import { person } from './works';
 import { easedRamp, ramp, type BoxDef, type DecorDef, type MoverDef, type PickupDef, type PropDef, type SpinnerDef, type TrackDef } from '../sim/Track';
 
 const FLOOR = 0x5d8f4e;
@@ -165,6 +166,21 @@ function bench(x: number, z: number, back: 1 | -1): void {
 }
 bench(-1, 4.2, 1);
 bench(2, -4.6, -1);
+// somebody resting on each bench, the therapists at the stations in white, with their notes,
+// and a visitor or two watching from beside the way
+const WHITE = 0xf4f4f4;
+decor.push(
+  person(-1.3, 4.25, SOUTH, 0x7b2d8e, 'sit', false, 0.04),
+  person(2.4, -4.65, NORTH, 0x3f8f5f, 'sit', false, 0.04),
+  person(1.6, -4.6, NORTH, 0xe3c04a, 'sit', false, 0.04),
+  person(E + 3.6, SAW_Z + 0.8, WEST, WHITE, 'point'),
+  person(E + 3.7, ROCK_Z + 3.4, WEST - 0.4, WHITE, 'stand'),
+  person(W - 3.6, BEAM_Z - 0.5, EAST, WHITE, 'point'),
+  person(-7.5 + 3, S - 3.7, NORTH, WHITE, 'wave'),
+  person(4.2, N + 3.7, SOUTH, 0x4a7ab5, 'phone'),
+  person(5.2, N + 3.9, SOUTH + 0.5, 0xd23b3b),
+  person(W - 3.7, KIPPE_Z - 0.4, EAST + 0.3, 0x2a2a2e, 'stand'),
+);
 // flower beds along the inside of the way
 for (const [x, z, c] of [[-8, -6.5, 0xd2463c], [8, 6.5, 0xe8c23a], [-8, 6.5, 0xb04fb0], [8, -6.5, 0xe8833a]] as const) {
   decor.push({ type: 'box', pos: [x, 0.1, z], half: [1.6, 0.1, 0.8], color: 0x6b4a2b }, { type: 'box', pos: [x, 0.25, z], half: [1.4, 0.05, 0.6], color: c });

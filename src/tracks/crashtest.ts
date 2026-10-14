@@ -1,4 +1,5 @@
 import { L } from '../i18n';
+import { person } from './works';
 import { easedRamp, profile, type BoxDef, type DecorDef, type MoverDef, type PickupDef, type PropDef, type TrackDef } from '../sim/Track';
 
 const GROUND = 0x8a8f86;
@@ -118,10 +119,17 @@ for (const side of [-1, 1]) {
   for (let r = 0; r < 4; r++) decor.push({ type: 'box', pos: [x + side * r * 1.2, 0.3 + r * 0.6, LIP + 15], half: [0.6, 0.3 + r * 0.6, 14], color: 0x6b7078 });
   for (let k = 0; k < 18; k++) {
     const r = k % 4;
-    decor.push({ type: 'box', pos: [x + side * r * 1.2, 1.2 * r + 0.95, LIP + 2.5 + k * 1.5], half: [0.2, 0.35, 0.2], color: [0xd23b3b, 0x2f6db5, 0xe3c04a, 0x4f8a3c][k % 4] });
+    decor.push(person(x + side * r * 1.2, LIP + 2.5 + k * 1.5, -side * (Math.PI / 2), [0xd23b3b, 0x2f6db5, 0xe3c04a, 0x4f8a3c][k % 4], 'sit', false, 0.6 + 1.2 * r - 0.45));
   }
 }
 for (const x of [-12, 12]) decor.push({ type: 'lamp', pos: [x, 0, LIP + 4] });
+// the engineers in white, taking notes well out of the way, and a mechanic standing by
+decor.push(
+  person(-14, LIP + 1, 0.6, 0xf4f4f4, 'point'),
+  person(-15.2, LIP + 0.4, 0.9, 0xf4f4f4, 'phone'),
+  person(15, WALL_Z - 6, -1.2, 0xf4f4f4, 'stand'),
+  person(14.5, WALL_Z - 4.5, -1.6, 0x2b3a5a, 'stand', true),
+);
 
 export const CRASHTEST: TrackDef = {
   id: 'crashtest',

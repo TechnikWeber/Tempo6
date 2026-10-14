@@ -141,6 +141,13 @@ for (const [x, z] of [[0, 10], [5, 32], [10, 49.5], [10, 78.7], [3, 92.6], [-4, 
   pickups.push({ type: 'screw', pos: [x, Y + 0.5, z] });
 }
 
+// Somebody waving them in at the finish, and a marshal with the clock.
+decor.push(
+  { type: 'person', pos: [13.6, Y, LAND + 3.5], yaw: -2.6, color: 0xd23b3b, pose: 'wave' },
+  { type: 'person', pos: [6.4, Y, LAND + 3], yaw: 2.4, color: 0xf2f2f2, pose: 'point' },
+  { type: 'person', pos: [3, Y, -7.2], yaw: 0.6, color: 0x4a7ab5, pose: 'wave' },
+);
+
 // The finish arch, and a sign at the start.
 decor.push(
   { type: 'box', pos: [5.5, Y + 1.6, LAND + 1], half: [0.15, 1.6, 0.15], color: 0xd23b3b },

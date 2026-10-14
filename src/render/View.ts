@@ -657,7 +657,7 @@ export class View {
       const swing = Math.sin(c.dist * 3.4) * 0.5 * Math.min(1, c.speed / 0.8);
       p.legs[0].rotation.x = swing;
       p.legs[1].rotation.x = -swing;
-      const carrying = !!c.def.worker && core.sim.traffic.leg(i) === 0;
+      const carrying = (c.def.carry ?? !!c.def.worker) && core.sim.traffic.leg(i) === 0;
       if (p.load) p.load.visible = carrying;
       p.arms.forEach((a, k) => (a.rotation.x = carrying ? -1.15 : (k ? swing : -swing) * 0.8));
     });

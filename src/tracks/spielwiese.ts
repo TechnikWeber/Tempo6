@@ -1,6 +1,7 @@
 import { L } from '../i18n';
 import { looping, ramp, type BoxDef, type DecorDef, type MoverDef, type PropDef, type TrackDef } from '../sim/Track';
 import { forest, house, street } from './scenery';
+import { person } from './works';
 
 const TARMAC = 0x45484d;
 const CONCRETE = 0x9a9a94;
@@ -81,6 +82,16 @@ let booth = 0;
 for (let x = -90; x <= 90; x += 15) {
   if (Math.abs(x) < 26) continue;
   decor.push(...house(x, LOT_Z + 12, Math.PI, 7, 5, 2.6, booth++));
+}
+// People at the fair, a queue for the big wheel, and some watching over the wall.
+{
+  const shirts = [0x4a7ab5, 0xf2f2f2, 0xd23b3b, 0x3f8f5f, 0x7b2d8e, 0xe3c04a, 0x2a2a2e, 0xc8c8c8];
+  let k = 0;
+  for (const x of [-80, -66, -50, -38, 34, 47, 61, 78]) {
+    for (const dx of [-1, 0.4]) decor.push(person(x + dx, LOT_Z + 7.5 + (k % 2), Math.PI + (k++ % 3) * 0.4, shirts[k % shirts.length], (['stand', 'phone', 'wave', 'point'] as const)[k % 4]));
+  }
+  for (let q = 0; q < 6; q++) decor.push(person(-4 - q * 0.8, WHEEL_Z - 4 + (q % 2) * 0.3, Math.PI / 2, shirts[(q + 3) % shirts.length], q === 5 ? 'phone' : 'stand'));
+  decor.push(person(3, WHEEL_Z - 3.2, -Math.PI / 2, 0xd23b3b, 'point', true));
 }
 // Hot-air balloons hanging over the fair.
 decor.push({ type: 'balloon', pos: [-60, 34, LOT_Z + 40], color: 0xd23b3b }, { type: 'balloon', pos: [70, 42, LOT_Z + 60], color: 0x2f6db5 });

@@ -2,6 +2,7 @@ import { L } from '../i18n';
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
 import { road, terrainFor } from './road';
 import { distanceTo, forest, house, stand } from './scenery';
+import { person } from './works';
 
 const GRASS = 0x55903f;
 const CONCRETE = 0x9a9a94;
@@ -60,6 +61,17 @@ for (const share of [0.17, 0.36, 0.55, 0.78]) {
   if (distanceTo(ROAD.line, sx, sz) < 9) continue;
   decor.push(...stand(sx, sz, Math.atan2(x - sx, z - sz), 14, 3, 30 + i));
   clearings.push([[sx - 1, sz - 1], [sx + 1, sz - 1], [sx + 1, sz + 1], [sx - 1, sz + 1]]);
+}
+// The village is out to watch: people at their garden gates, a few at a table.
+{
+  const shirts = [0x4a7ab5, 0xf2f2f2, 0xd23b3b, 0x3f8f5f, 0x7b2d8e, 0xe3c04a, 0x2a2a2e];
+  let k = 0;
+  for (let x = -45; x <= 105; x += 9) {
+    const z = -108.5 + (k % 2) * 0.6;
+    if (distanceTo(ROAD.line, x, z) < 6) continue;
+    decor.push(person(x, z, Math.PI + 0.3 * ((k % 3) - 1), shirts[k % shirts.length], (['wave', 'stand', 'phone', 'point'] as const)[k % 4]));
+    k++;
+  }
 }
 // Woods over the hills, clear of the road and of the village.
 decor.push(...forest({ x: [-182, 182], z: [-120, 118], count: 170, seed: 9, avoid: [ROAD.line, ...clearings], clear: 10 }));

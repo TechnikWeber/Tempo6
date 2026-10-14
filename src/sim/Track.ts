@@ -76,8 +76,10 @@ export interface TrafficDef {
   speed: number;
   /** Metres along the loop where it starts. */
   offset?: number;
-  /** A walker in a hard hat and hi-vis vest, carrying a box along the first leg of its loop. */
+  /** A walker in a hard hat and hi-vis vest. */
   worker?: boolean;
+  /** A walker carrying a box along the first leg of its loop (workers do unless told not to). */
+  carry?: boolean;
 }
 
 /** Hilly ground instead of a flat floor: a grid of heights over the whole lot, centred on the origin. */
