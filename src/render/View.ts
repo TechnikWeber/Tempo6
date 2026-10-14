@@ -12,7 +12,7 @@ import { drumSlats } from '../sim/Movers';
 import { SPINNER_HALF } from '../sim/Sim';
 import { heightAt, type DecorDef, type TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
-import { box, buildPickup, buildProp, buildTraffic, buildVehicle, cyl, mat, type VehicleRig } from './models';
+import { box, buildPerson, buildPickup, buildProp, buildTraffic, buildVehicle, cyl, mat, type PersonRig, type VehicleRig } from './models';
 import { Sparks, SpeedLines } from './Boost';
 import { SkidMarks } from './Skid';
 import { Wreckage } from './Wreckage';
@@ -219,6 +219,10 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       m.rotation.x = -Math.PI / 2;
       m.receiveShadow = true;
       g.add(m);
+      break;
+    }
+    case 'person': {
+      g.add(buildPerson({ pose: d.pose, color: d.color, worker: d.worker, seed: d.pos[0] * 31 + d.pos[2] * 17 }).root);
       break;
     }
     case 'sign': {
@@ -644,7 +648,19 @@ export class View {
 
     this.placeGhost(core, showroom);
     core.sim.props.forEach((p, i) => place(this.propMeshes[i], p.tracked, alpha));
-    core.sim.traffic.cars.forEach((c, i) => place(this.trafficMeshes[i], c.tracked, alpha));
+    core.sim.traffic.cars.forEach((c, i) => {
+      const m = this.trafficMeshes[i];
+      place(m, c.tracked, alpha);
+      const p = m.userData.person as PersonRig | undefined;
+      if (!p) return;
+      // walking: legs swing with the distance gone; a box out to the far end, empty-handed back
+      const swing = Math.sin(c.dist * 3.4) * 0.5 * Math.min(1, c.speed / 0.8);
+      p.legs[0].rotation.x = swing;
+      p.legs[1].rotation.x = -swing;
+      const carrying = !!c.def.worker && core.sim.traffic.leg(i) === 0;
+      if (p.load) p.load.visible = carrying;
+      p.arms.forEach((a, k) => (a.rotation.x = carrying ? -1.15 : (k ? swing : -swing) * 0.8));
+    });
     core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));
     core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
     this.placeRivals(core, alpha);

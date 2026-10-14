@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Box3, BoxGeometry, Mesh, type MeshStandardMaterial, Vector3 } from 'three';
+import { Box3, BoxGeometry, Mesh, type MeshStandardMaterial, type Object3D, Vector3 } from 'three';
 import { VEHICLE_ORDER, VEHICLES } from '../src/config/vehicles';
-import { buildVehicle } from '../src/render/models';
+import { buildPerson, buildVehicle } from '../src/render/models';
 
 interface Face {
   mesh: number;
@@ -19,12 +19,11 @@ interface Face {
  * whichever wins, so only differently coloured pairs count. Boxes turned off the axes are
  * not looked at.
  */
-function flickering(id: (typeof VEHICLE_ORDER)[number]): string[] {
-  const rig = buildVehicle(VEHICLES[id], true);
-  rig.root.updateMatrixWorld(true);
+function flickering(root: Object3D): string[] {
+  root.updateMatrixWorld(true);
   const faces: Face[] = [];
   let n = 0;
-  rig.root.traverse((o) => {
+  root.traverse((o) => {
     if (!(o instanceof Mesh) || !(o.geometry instanceof BoxGeometry)) return;
     n++;
     const e = o.matrixWorld.elements;
@@ -51,6 +50,13 @@ function flickering(id: (typeof VEHICLE_ORDER)[number]): string[] {
 
 describe('vehicle models', () => {
   it.each(VEHICLE_ORDER)('%s has no two faces in the same plane (they would flicker)', (id) => {
-    expect(flickering(id)).toEqual([]);
+    expect(flickering(buildVehicle(VEHICLES[id], true).root)).toEqual([]);
+  });
+});
+
+describe('people', () => {
+  const poses = ['stand', 'sit', 'carry', 'wave', 'phone', 'point', 'walk'] as const;
+  it.each(poses.flatMap((pose) => [[pose, false], [pose, true]] as const))('%s (worker: %s) has no two faces in the same plane', (pose, worker) => {
+    for (let seed = 0; seed < 6; seed++) expect(flickering(buildPerson({ pose, worker, seed }).root)).toEqual([]);
   });
 });

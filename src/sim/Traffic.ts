@@ -87,6 +87,17 @@ export class Traffic {
     }
   }
 
+  /** Which leg of its loop car `i` is on. */
+  leg(i: number): number {
+    const { legs, total } = this.loops[i];
+    let d = ((this.cars[i].dist % total) + total) % total;
+    for (let k = 0; k < legs.length; k++) {
+      if (d <= legs[k]) return k;
+      d -= legs[k];
+    }
+    return 0;
+  }
+
   /** Everybody back to where they start. */
   reset(): void {
     this.cars.forEach((car, i) => {
@@ -110,7 +121,8 @@ export class Traffic {
       const aside = dx * cos - dz * sin;
       const half = TRAFFIC_SHAPES[car.def.type].half;
       const blocked = ahead > half[2] - 0.5 && ahead < half[2] + 1.5 + car.def.speed * 0.6 && Math.abs(aside) < half[0] + 0.7;
-      if (blocked && !car.blocked) this.honk = true;
+      // (somebody on foot just stops and waits)
+      if (blocked && !car.blocked && car.def.type !== 'walker') this.honk = true;
       car.blocked = blocked;
       const want = blocked ? 0 : car.def.speed;
       car.speed += Math.max(-9 * dt, Math.min(2.5 * dt, want - car.speed));

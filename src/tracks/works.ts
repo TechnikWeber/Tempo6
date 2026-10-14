@@ -1,4 +1,4 @@
-import type { BoxDef, DecorDef, PropDef } from '../sim/Track';
+import type { BoxDef, DecorDef, PersonPose, PropDef } from '../sim/Track';
 import { WALL_HALF } from './site';
 import { distanceTo } from './scenery';
 
@@ -143,7 +143,7 @@ export function quat(yaw: number): [number, number, number, number] {
 }
 
 /** A point in an object's own frame (+Z ahead, +X to its left), out into the world. */
-function frame(x: number, z: number, yaw: number) {
+export function frame(x: number, z: number, yaw: number) {
   const s = Math.sin(yaw), c = Math.cos(yaw);
   return (lx: number, lz: number): [number, number] => [x + lx * c + lz * s, z - lx * s + lz * c];
 }
@@ -285,4 +285,106 @@ export function hall(y: Yard, x: number, z: number, yaw: number, w: number, d: n
     y.decor.push(part(f, yaw, 0, Math.min(h - 0.5, 4.5) / 2, d / 2 + 0.05, gateW / 2, Math.min(h - 0.5, 4.5) / 2, 0.05, 0x9aa1a8));
     for (let gy = 0.4; gy < Math.min(h - 0.5, 4.5); gy += 0.45) y.decor.push(part(f, yaw, 0, gy, d / 2 + 0.12, gateW / 2 - 0.05, 0.03, 0.02, 0x7d858c));
   }
+}
+
+/** Somebody standing about (solid), facing along `yaw`. */
+export function person(x: number, z: number, yaw: number, color: number, pose: PersonPose = 'stand', worker = false, up = 0): DecorDef {
+  return { type: 'person', pos: [x, up, z], yaw, color, pose, worker };
+}
+
+/** Hi-vis colours, one or the other, for a crew. */
+const CREW = [0x2b3a5a, 0x3a3a40];
+
+/**
+ * A break: a picnic table with benches (solid table), people sitting either side, one more
+ * standing at its end on the phone. `yaw` is along the table.
+ */
+export function breakTable(y: Yard, x: number, z: number, yaw: number, shirts: number[], sitting = 3): void {
+  const f = frame(x, z, yaw);
+  // a top on two trestles, both solid
+  y.statics.push({ pos: [x, 0.72, z], half: [0.4, 0.03, 0.95], quat: quat(yaw), color: 0x8a5a32 });
+  for (const lz of [-0.7, 0.7]) {
+    const [tx, tz] = f(0, lz);
+    y.statics.push({ pos: [tx, 0.345, tz], half: [0.32, 0.345, 0.05], quat: quat(yaw), color: 0x6b4a2b });
+  }
+  for (const sd of [-1, 1]) y.decor.push(part(f, yaw, sd * 0.75, 0.2, 0, 0.16, 0.2, 0.9, 0x6b4a2b)); // benches
+  const seats: [number, number][] = [[-0.75, -0.45], [0.75, 0.4], [-0.75, 0.45], [0.75, -0.5]];
+  seats.slice(0, sitting).forEach(([lx, lz], k) => {
+    const [px, pz] = f(lx, lz);
+    // facing the table
+    y.decor.push(person(px, pz, yaw + (lx < 0 ? Math.PI / 2 : -Math.PI / 2), shirts[k % shirts.length], 'sit', false, -0.05));
+  });
+  const [sx, sz] = f(0, 1.6);
+  y.decor.push(person(sx, sz, yaw + Math.PI, shirts[(sitting + 1) % shirts.length], 'phone'));
+  // a coffee pot and cups on the table
+  y.decor.push(part(f, yaw, 0, 0.82, 0.1, 0.07, 0.08, 0.07, 0x2a2a2e), part(f, yaw, 0.15, 0.78, -0.3, 0.04, 0.04, 0.04, 0xf2f2f2), part(f, yaw, -0.15, 0.78, 0.4, 0.04, 0.04, 0.04, 0xd23b3b));
+}
+
+/** Old tyres: stacks of `heights` lying about; knocked, they topple and roll away. */
+export function tyres(y: Yard, spots: [number, number][], heights: number[] = [1]): void {
+  spots.forEach(([x, z], i) => {
+    const n = heights[i % heights.length];
+    for (let k = 0; k < n; k++) y.props.push({ type: 'tyre', pos: [x + (k % 2) * 0.04, 0.115 + k * 0.23, z], yaw: k });
+  });
+}
+
+/**
+ * Roadworks: one lane of the road shut off from `from` to `to` metres along a side. `lane` says
+ * where the shut lane is at a spot along the side: from `near` (the road's edge) to `mid`
+ * metres out. Movable cones along its edge and tapering in at either end, a striped barrier
+ * at each end, steel plates and a heap of earth inside, and the crew.
+ */
+export function roadworks(y: Yard, s: Side, from: number, to: number, lane: (along: number) => [number, number], label: string): void {
+  /** A spot in the shut lane: `along` the side, `share` of the way from its edge to the open lane. */
+  const inner = (along: number, share: number) => {
+    const [near, mid] = lane(along);
+    return at(s, along, near + (mid - near) * share);
+  };
+  const taper = 4;
+  // cones along the open lane, and slanting in at both ends
+  for (let a = from + taper; a <= to - taper + 0.01; a += 2) {
+    const [x, z] = inner(a, 1);
+    y.props.push({ type: 'cone', pos: [x, 0.26, z] });
+  }
+  for (let k = 1; k < 4; k++) {
+    for (const [a0, dir] of [[from, 1], [to, -1]] as const) {
+      const [x, z] = inner(a0 + (dir * taper * k) / 4, k / 4);
+      y.props.push({ type: 'cone', pos: [x, 0.26, z] });
+    }
+  }
+  // barriers across the shut lane, red and white, on feet (solid)
+  for (const a of [from + 1.5, to - 1.5]) {
+    const [near, mid] = lane(a);
+    const w = Math.abs(mid - near) - 0.8;
+    const [bx, bz] = inner(a, 0.5);
+    const yaw = s.yaw + Math.PI / 2;
+    y.statics.push({ pos: [bx, 0.5, bz], half: [0.05, 0.5, w / 2], quat: quat(yaw), color: 0xd23b3b, works: true });
+    const f = frame(bx, bz, yaw);
+    for (let k = -2; k <= 2; k += 2) y.decor.push(part(f, yaw, 0, 0.7, (k * w) / 10, 0.07, 0.15, w / 10, 0xf4f4f4));
+    for (const e of [-1, 1]) y.decor.push(part(f, yaw, 0, 1.15, (e * w) / 2, 0.08, 0.08, 0.08, 0xf2b705)); // warning lamps
+  }
+  // the sign, just off the road before it
+  const [near0, mid0] = lane(from - 1);
+  const [gx, gz] = at(s, from - 1, near0 - Math.sign(mid0 - near0) * 1.2);
+  y.decor.push({ type: 'board', pos: [gx, 1.6, gz], half: [1.1, 0.35, 0.05], yaw: s.yaw + Math.PI, text: label });
+  // inside: steel plates over the trench, a heap of earth, a wheelbarrow, the crew
+  const len = to - from - 2 * taper;
+  const width = (a: number) => Math.abs(lane(a)[1] - lane(a)[0]) - 0.8;
+  for (let a = from + taper + 1.5; a < from + taper + len * 0.45; a += 2.1) {
+    const [px, pz] = inner(a, 0.5);
+    y.decor.push({ type: 'box', pos: [px, 0.04, pz], half: [width(a) / 2 - 0.3, 0.025, 1.0], yaw: s.yaw, color: 0x6b7078 });
+  }
+  const ha = from + taper + len * 0.7;
+  const [hx, hz] = inner(ha, 0.5);
+  y.decor.push(
+    { type: 'box', pos: [hx, 0.35, hz], half: [width(ha) / 2 - 0.5, 0.35, 1.4], yaw: s.yaw + 0.15, color: 0x7a5a3a },
+    { type: 'box', pos: [hx, 0.75, hz], half: [width(ha) / 2 - 0.9, 0.25, 0.8], yaw: s.yaw - 0.2, color: 0x6b4e32 },
+  );
+  const [wx, wz] = inner(from + taper + len * 0.55, 0.7);
+  y.decor.push({ type: 'box', pos: [wx, 0.45, wz], half: [0.3, 0.15, 0.5], yaw: s.yaw, color: 0x3d7a3d }, { type: 'box', pos: [wx, 0.2, wz], half: [0.05, 0.2, 0.05], yaw: s.yaw, color: TYRE });
+  const crew: [number, PersonPose, number][] = [[0.3, 'point', 0.5], [0.5, 'stand', -2.4], [0.85, 'carry', 1.6]];
+  crew.forEach(([t, pose, turn], k) => {
+    const [px, pz] = inner(from + taper + len * t, 0.35);
+    y.decor.push(person(px, pz, s.yaw + turn, CREW[k % 2], pose, true));
+  });
 }

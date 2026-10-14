@@ -4,8 +4,8 @@ import type { TrackDef, TrafficDef } from '../sim/Track';
 import { distanceTo, forest } from './scenery';
 import { site } from './site';
 import {
-  armyTruck, at, baler, barrels, bikeShed, canopy, car, container, door, gate, glassFront, hall, lorry, panel, roadSpan,
-  shelter, sidesOf, smoke, tractor, unimog, windows, wingDoors, type Yard,
+  armyTruck, at, baler, barrels, bikeShed, breakTable, canopy, car, container, door, frame, gate, glassFront, hall, lorry, pallets, panel, person,
+  roadSpan, roadworks, shelter, sidesOf, smoke, tractor, tyres, unimog, windows, wingDoors, type Yard,
 } from './works';
 
 // The works in Talstadt: one big two-storey building (high halls, about 6 m a floor) with a
@@ -182,6 +182,78 @@ y.decor.push(...wingDoors(side(10), 7, 4, 4.8), ...wingDoors(side(10), 17.5, 4, 
   y.decor.push({ type: 'clock', pos: [x, FLOOR + 3, z], half: [1.1, 0, 0], yaw: Math.atan2(s.n[0], s.n[1]) });
 }
 
+// People about the place. Shirts for the office, the canteen and the shop floor.
+const SHIRTS = [0x4a7ab5, 0xf2f2f2, 0xd23b3b, 0x3f8f5f, 0x7b2d8e, 0xe3c04a, 0x2a2a2e, 0xc8c8c8];
+const walkers: TrafficDef[] = [];
+/** A spot `out` metres beyond the far edge of the road (negative: towards the wall), facing the building. */
+const beside = (k: number, t: number, out: number) => across(k, t, out);
+// at the smokers' shelter by 6: two standing, one on the bench
+{
+  const [x, z] = across(6, 0.85, 3);
+  const f = frame(x, z, toBuilding(6));
+  const yaw = toBuilding(6);
+  y.decor.push(
+    person(...f(-0.6, -0.45), yaw, SHIRTS[3], 'sit', false, 0.05),
+    person(...f(0.6, 0.35), yaw - 0.6, SHIRTS[2], 'phone'),
+    person(...f(2.3, 0.6), yaw + 2.2, SHIRTS[0]),
+  );
+}
+// the canteen at 11: tables across the road for the break, people on the way over
+{
+  const yaw = side(11).yaw;
+  for (const [t, n] of [[0.3, 3], [0.62, 4]] as const) breakTable(y, ...beside(11, t, 4.5), yaw, SHIRTS.slice(n), n);
+  y.decor.push(person(...beside(11, 0.46, 3), outward(11), SHIRTS[5], 'wave'), person(...beside(11, 0.48, 4), outward(11) + 2.6, SHIRTS[1]));
+  // going over for lunch and back, across the road
+  const s = side(11);
+  walkers.push({ type: 'walker', color: SHIRTS[6], speed: 1.2, path: [at(s, s.len * 0.5, 3), across(11, 0.5, 1.5), across(11, 0.52, 1.5), at(s, s.len * 0.52, 3)] });
+}
+// by the main entrance at 14: visitors waiting under the canopy, beyond the road
+{
+  y.decor.push(
+    person(...beside(14, 0.36, 1.6), toBuilding(14), SHIRTS[7]),
+    person(...beside(14, 0.4, 1.8), toBuilding(14) + 0.8, SHIRTS[4], 'point'),
+    person(...beside(14, 0.66, 2), toBuilding(14) - 0.4, SHIRTS[0], 'phone'),
+  );
+}
+// at the truck workshop: the mechanics, and old tyres lying about and stacked
+{
+  y.decor.push(person(...across(14, 0.15, 3.3), side(14).yaw + 1.2, 0x2b3a5a, 'point', true), person(...across(14, 0.9, 7.6), outward(14), 0x2b3a5a, 'stand', true));
+  const spots: [number, number][] = [];
+  for (const [t, d] of [[0.25, 3], [0.28, 4.2], [0.31, 3.4], [0.72, 2.5], [0.75, 3.6], [0.4, 0.6], [0.6, 0.2]] as const) spots.push(across(14, t, d));
+  tyres(y, spots, [3, 2, 1, 2, 4, 1, 1]);
+}
+// the yard at 2 and 3: a few tyres among the drums, and the crew round the baler
+{
+  const spots: [number, number][] = [];
+  for (const [k, t, off] of [[2, 0.5, 0.15], [3, 0.35, 0.6], [3, 0.7, 0.1]] as const) {
+    const [n, fr] = road(k, t);
+    spots.push(at(side(k), side(k).len * t, n + (fr - n) * off));
+  }
+  tyres(y, spots, [1, 2, 1]);
+  y.decor.push(person(...at(side(3), 13, 2.2), side(3).yaw + Math.PI, 0x3a3a40, 'carry', true), person(...at(side(2), 4.5, 3.3), outward(2) + 0.3, 0x2b3a5a, 'stand', true));
+}
+// the dock at 8: somebody up on the dock seeing the lorries in, workers carrying boxes from
+// the lorries to the pallets and back
+{
+  const s = side(8);
+  y.decor.push(person(...at(s, 5.8, 1.4), outward(8), 0x3a3a40, 'point', true, 1.2), person(...at(s, 10.5, 2.4), outward(8) + 1.2, 0x2b3a5a, 'carry', true, 1.2));
+  // (over the road to the pallets beyond it)
+  const [, far] = roadSpan(SITE.line!, s, 0, ROAD_WIDTH / 2);
+  for (const o of [0, 11]) {
+    walkers.push({ type: 'walker', color: 0x2b3a5a, speed: 1.1, worker: true, offset: o, path: [at(s, -0.4, 7), at(s, -0.4, far + 1.5), at(s, 0.1, far + 1.5), at(s, 0.1, 7)] });
+  }
+  pallets(y, ...at(s, -1.6, far + 2.6), s.yaw + Math.PI / 2, 3);
+}
+// Roadworks: the inner lane shut along 13, the outer one along 7 (the way through swaps over).
+{
+  const lane = (k: number, inner: boolean) => (along: number): [number, number] => {
+    const [n, f] = roadSpan(SITE.line!, side(k), along, ROAD_WIDTH / 2);
+    return inner ? [n + 0.1, n + 2.6] : [f - 0.1, f - 2.6];
+  };
+  roadworks(y, side(13), 8, 30, lane(13, true), L('BAUSTELLE', 'ROADWORKS'));
+  roadworks(y, side(7), 6, 24, lane(7, false), L('BAUSTELLE', 'ROADWORKS'));
+}
+
 // Trees beyond the yard.
 const [LX, LZ] = SITE.lot;
 y.decor.push(
@@ -203,5 +275,5 @@ export const TALSTADT: TrackDef = {
   decor: [...SITE.decor, ...y.decor],
   line: SITE.line,
   roadHalf: ROAD_WIDTH / 2,
-  traffic: forklift,
+  traffic: [...forklift, ...walkers],
 };

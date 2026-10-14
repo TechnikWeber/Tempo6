@@ -4,9 +4,11 @@ export interface BoxDef {
   half: [number, number, number];
   quat?: [number, number, number, number];
   color: number;
+  /** Part of roadworks: it may stand on the road, as long as it leaves a lane open. */
+  works?: boolean;
 }
 
-export type PropType = 'cone' | 'bigcone' | 'carton' | 'cart' | 'barrel' | 'chair';
+export type PropType = 'cone' | 'bigcone' | 'carton' | 'cart' | 'barrel' | 'chair' | 'tyre';
 
 /** Loose physics object that can be shoved around. */
 export interface PropDef {
@@ -38,9 +40,10 @@ export interface DecorDef {
    * filling the outline `points` at the height of `pos`, `smoke` puffs rising from `pos`
    * (an engine running, say), `clock` a wall clock telling the real time (`half[0]` its
    * radius), `oval` a flat oval sign in `color` with a white rim (`half` its half width and
-   * height), `balloon` a hot-air balloon bobbing in the air.
+   * height), `balloon` a hot-air balloon bobbing in the air, `person` somebody standing
+   * about in `color` (`pose`, `worker` in a hard hat and hi-vis vest); people are solid.
    */
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon';
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon' | 'person';
   pos: [number, number, number];
   half?: [number, number, number];
   color?: number;
@@ -49,9 +52,19 @@ export interface DecorDef {
   yaw?: number;
   /** Corners of a `path` or `slab`, x and z. */
   points?: [number, number][];
+  pose?: PersonPose;
+  worker?: boolean;
 }
 
-export type TrafficType = 'car' | 'van' | 'train' | 'forklift';
+/** How a person stands: `sit` is on whatever is under them, 0.45 m up. */
+export type PersonPose = 'stand' | 'sit' | 'carry' | 'wave' | 'phone' | 'point' | 'walk';
+
+/** A person's collider: half extents round the middle of the body, by pose. */
+export function personHalf(pose: PersonPose = 'stand'): [number, number, number] {
+  return pose === 'sit' ? [0.26, 0.6, 0.36] : [0.26, 0.85, 0.22];
+}
+
+export type TrafficType = 'car' | 'van' | 'train' | 'forklift' | 'walker';
 
 /** A vehicle that drives round a closed loop on its own. */
 export interface TrafficDef {
@@ -63,6 +76,8 @@ export interface TrafficDef {
   speed: number;
   /** Metres along the loop where it starts. */
   offset?: number;
+  /** A walker in a hard hat and hi-vis vest, carrying a box along the first leg of its loop. */
+  worker?: boolean;
 }
 
 /** Hilly ground instead of a flat floor: a grid of heights over the whole lot, centred on the origin. */
@@ -176,6 +191,8 @@ export const PROP_SHAPES = {
   cart: { half: [0.3, 0.45, 0.5] as [number, number, number], mass: 18 },
   /** An empty plastic drum: light, it goes flying. */
   barrel: { half: [0.29, 0.44, 0.29] as [number, number, number], mass: 9 },
+  /** An old car tyre lying flat; stacked, they topple. */
+  tyre: { halfHeight: 0.11, radius: 0.33, mass: 8 },
   /** An empty manual wheelchair, rolls like a cart. */
   chair: { half: [0.3, 0.45, 0.4] as [number, number, number], mass: 14 },
 };
@@ -187,6 +204,8 @@ export const TRAFFIC_SHAPES = {
   /** One carriage; a train is several following each other on one path. */
   train: { half: [1.5, 1.9, 9.5] as [number, number, number] },
   forklift: { half: [0.6, 1.1, 1.25] as [number, number, number] },
+  /** Somebody walking to and fro, carrying things. */
+  walker: { half: [0.28, 0.88, 0.28] as [number, number, number] },
 };
 
 /**

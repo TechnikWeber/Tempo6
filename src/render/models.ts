@@ -1,5 +1,5 @@
 import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
-import { PROP_SHAPES, TRAFFIC_SHAPES, type PickupType, type PropType, type TrafficDef } from '../sim/Track';
+import { PROP_SHAPES, TRAFFIC_SHAPES, type PersonPose, type PickupType, type PropType, type TrafficDef } from '../sim/Track';
 import { BRAND_COLORS, groundY, type VehicleSpec, type WheelSpec } from '../config/vehicles';
 
 const materials = new Map<number, MeshStandardMaterial>();
@@ -549,6 +549,13 @@ export function buildTraffic(def: TrafficDef): Group {
     for (const z of [-hz + 2, hz - 2]) box(g, hx * 2 - 0.4, 0.5, 2.6, 0x2a2a2e, 0, floor + 0.15, z); // bogies
     return g;
   }
+  if (def.type === 'walker') {
+    const p = buildPerson({ pose: 'walk', color: def.color, worker: def.worker, seed: def.path[0][0] * 31 + def.path[0][1] });
+    p.root.position.y = -hy;
+    g.add(p.root);
+    g.userData.person = p;
+    return g;
+  }
   if (def.type === 'forklift') {
     // yellow body with a counterweight behind, a cage over the seat, the mast and forks in front
     box(g, hx * 2, 0.7, 1.5, def.color, 0, floor + 0.55, -0.3);
@@ -587,6 +594,99 @@ export function buildTraffic(def: TrafficDef): Group {
   return g;
 }
 
+const SKINS = [0xe8b48c, 0xc68e5e, 0x8d5a3b, 0xf1c9a5, 0xb07850];
+const HAIRS = [0x2a2018, 0x5a3a22, 0xc9a227, 0xcfcfcf, 0x1c1c1c, 0x8a4a2a];
+const TROUSERS = [0x2b3a5a, 0x3a3a40, 0x5a5048, 0x24457a, 0x4a4a52];
+const HIVIS = [0xff7a1a, 0xe8e030];
+
+export interface PersonLook {
+  pose?: PersonPose;
+  /** Shirt, or the overall colour of a worker. */
+  color?: number;
+  worker?: boolean;
+  /** Any number; the same one gives the same face, hair and trousers. */
+  seed?: number;
+}
+
+export interface PersonRig {
+  root: Group;
+  /** Hip and shoulder pivots, left then right, for walking. */
+  legs: Group[];
+  arms: Group[];
+  /** What a carrying person holds, to be shown or hidden. */
+  load: Object3D | null;
+}
+
+/**
+ * A standing (or sitting) blocky person, feet on the ground at the origin, facing +Z. Workers
+ * get a hard hat and a hi-vis vest with a silver band.
+ */
+export function buildPerson(look: PersonLook): PersonRig {
+  const pose = look.pose ?? 'stand';
+  const seed = Math.abs(Math.floor(look.seed ?? 0));
+  const pick = <T>(list: T[], k: number) => list[(seed * 7 + k * 13 + (seed >> 3)) % list.length];
+  const skin = pick(SKINS, 1), hair = pick(HAIRS, 2), trousers = look.worker ? 0x2b3a5a : pick(TROUSERS, 3);
+  const shirt = look.color ?? 0x4a7ab5;
+  const root = new Group();
+  const sit = pose === 'sit';
+  // hips: standing at 0.86, sitting on a seat at 0.45
+  const hip = sit ? 0.47 : 0.86;
+  const legs: Group[] = [];
+  for (const s of [-1, 1]) {
+    const leg = new Group();
+    leg.position.set(s * 0.1, hip, 0);
+    if (sit) {
+      box(leg, 0.13, 0.13, 0.44, trousers, 0, -0.03, 0.2); // thigh
+      box(leg, 0.12, 0.4, 0.13, trousers, 0, -0.25, 0.4); // shin
+      box(leg, 0.14, 0.08, 0.26, 0x2a2a2a, 0, -0.43, 0.46); // shoe
+    } else {
+      box(leg, 0.12, 0.78, 0.13, trousers, 0, -0.39, 0);
+      box(leg, 0.14, 0.08, 0.26, 0x2a2a2a, 0, -0.82, 0.04);
+    }
+    root.add(leg);
+    legs.push(leg);
+  }
+  const top = hip + 0.56;
+  box(root, 0.38, 0.56, 0.22, shirt, 0, hip + 0.28, 0);
+  box(root, 0.22, 0.22, 0.22, skin, 0, top + 0.12, 0); // head
+  if (look.worker) {
+    const hat = pick(HIVIS, 4) === 0xff7a1a ? 0xf2f2f2 : 0xf2c230;
+    box(root, 0.26, 0.1, 0.26, hat, 0, top + 0.27, 0);
+    box(root, 0.24, 0.025, 0.1, hat, 0, top + 0.23, 0.16); // brim
+    const vest = pick(HIVIS, 4);
+    box(root, 0.4, 0.42, 0.24, vest, 0, hip + 0.32, 0);
+    box(root, 0.41, 0.05, 0.25, 0xd9dde2, 0, hip + 0.22, 0); // reflective band
+  } else {
+    // (hair stops just behind the face, or forehead and fringe fight over the same plane)
+    box(root, 0.24, 0.08, 0.23, hair, 0, top + 0.25, -0.015);
+  }
+  box(root, 0.08, 0.03, 0.02, 0x1d1d1f, 0, top + 0.15, 0.115); // eyes, a dark band
+  const arms: Group[] = [];
+  for (const s of [-1, 1]) {
+    const arm = new Group();
+    arm.position.set(s * 0.25, top - 0.04, 0);
+    box(arm, 0.1, 0.52, 0.11, look.worker ? pick(HIVIS, 4) : shirt, 0, -0.24, 0);
+    box(arm, 0.09, 0.09, 0.09, skin, 0, -0.54, 0);
+    arm.rotation.z = s * 0.07;
+    if (pose === 'carry' || pose === 'walk' || sit) arm.rotation.x = sit ? -0.9 : -1.15;
+    if (pose === 'wave' && s > 0) arm.rotation.z = 2.7;
+    if (pose === 'phone' && s > 0) arm.rotation.set(-0.5, 0, 2.5);
+    if (pose === 'point' && s > 0) arm.rotation.set(-1.5, 0, 0.5);
+    root.add(arm);
+    arms.push(arm);
+  }
+  let load: Object3D | null = null;
+  if (pose === 'carry' || pose === 'walk') {
+    load = box(root, 0.42, 0.32, 0.36, 0xc19a6b, 0, top - 0.4, 0.42);
+    box(load, 0.07, 0.325, 0.365, 0xa67c4e);
+  }
+  if (pose === 'walk') {
+    // (the arms swing when walking; with a box they are held out in front)
+    for (const a of arms) a.rotation.x = -1.15;
+  }
+  return { root, legs, arms, load };
+}
+
 export function buildProp(type: PropType): Group {
   const g = new Group();
   if (type === 'cone') {
@@ -601,6 +701,11 @@ export function buildProp(type: PropType): Group {
     const big = buildProp('cone');
     big.scale.setScalar(PROP_SHAPES.bigcone.halfHeight / PROP_SHAPES.cone.halfHeight);
     g.add(big);
+  } else if (type === 'tyre') {
+    // a fat black ring lying flat, the grey rim in the middle a hair proud of it
+    const s = PROP_SHAPES.tyre;
+    cyl(g, s.radius, s.halfHeight * 2, TYRE, 0, 0, 0, 16);
+    cyl(g, s.radius * 0.55, s.halfHeight * 2 + 0.01, 0x6b7078, 0, 0, 0, 12);
   } else if (type === 'barrel') {
     // a blue plastic drum with two rings and a lid
     const [x, y] = PROP_SHAPES.barrel.half;

@@ -1,6 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { VehicleSpec } from '../config/vehicles';
-import { PROP_SHAPES, type PropDef, type TrackDef } from './Track';
+import { heightAt, personHalf, PROP_SHAPES, type PropDef, type TrackDef } from './Track';
 import { Mover } from './Movers';
 import { Tracked } from './Tracked';
 import { Traffic } from './Traffic';
@@ -42,6 +42,20 @@ export class Sim {
       if (b.quat) desc.setRotation({ x: b.quat[0], y: b.quat[1], z: b.quat[2], w: b.quat[3] });
       this.world.createCollider(desc);
     }
+    // people standing about are in the way like posts
+    for (const d of track.decor) {
+      if (d.type !== 'person') continue;
+      const half = personHalf(d.pose);
+      const yaw = d.yaw ?? 0;
+      // (sitting, the body reaches forward over the knees)
+      const fwd = d.pose === 'sit' ? 0.1 : 0;
+      this.world.createCollider(
+        RAPIER.ColliderDesc.cuboid(...half)
+          .setTranslation(d.pos[0] + Math.sin(yaw) * fwd, d.pos[1] + heightAt(track.terrain, d.pos[0], d.pos[2]) + half[1], d.pos[2] + Math.cos(yaw) * fwd)
+          .setRotation({ x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) })
+          .setFriction(0.5),
+      );
+    }
     for (const def of track.props) this.props.push({ def, tracked: new Tracked(this.createProp(def)) });
 
     if (track.terrain) {
@@ -75,7 +89,10 @@ export class Sim {
         .setAngularDamping(0.6),
     );
     let desc: RAPIER.ColliderDesc;
-    if (def.type === 'cone' || def.type === 'bigcone') {
+    if (def.type === 'tyre') {
+      const s = PROP_SHAPES.tyre;
+      desc = RAPIER.ColliderDesc.cylinder(s.halfHeight, s.radius).setMass(s.mass).setFriction(0.8);
+    } else if (def.type === 'cone' || def.type === 'bigcone') {
       const s = PROP_SHAPES[def.type];
       desc = RAPIER.ColliderDesc.cone(s.halfHeight, s.radius).setMass(s.mass).setFriction(0.7);
     } else {

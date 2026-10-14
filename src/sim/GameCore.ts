@@ -378,7 +378,7 @@ export class GameCore {
     this.wreckSeen = v.wrecked;
     // (a crashtest is about the knocks, not the tricks)
     const tricks = paying && this.mode !== 'crash';
-    for (const s of this.stunts.update(v, sim.traffic.cars.map((c) => c.tracked), STEP)) if (tricks) this.events.push({ type: 'stunt', ...s });
+    for (const s of this.stunts.update(v, sim.traffic.cars.filter((c) => c.def.type !== 'walker').map((c) => c.tracked), STEP)) if (tricks) this.events.push({ type: 'stunt', ...s });
     if (this.mode === 'freestyle' && !this.halted) {
       if (this.stunts.chain === 0 && this.stunts.pending > 0) this.bankChain();
       if (this.countdown === 0 && (this.timeLeft = Math.max(0, this.timeLeft - STEP)) === 0) this.finishFreestyle();

@@ -1244,8 +1244,12 @@ describe('traffic', () => {
         for (let k = 0; k <= steps; k++) {
           const px = x + ((nx - x) * k) / steps, pz = z + ((nz - z) * k) / steps;
           for (const b of boxes) {
-            // distance to the box's footprint; 1.3 m is half a van and a bit
-            const dx = Math.max(0, Math.abs(px - b.pos[0]) - b.half[0]), dz = Math.max(0, Math.abs(pz - b.pos[2]) - b.half[2]);
+            // distance to the box's footprint, turned as it stands; 1.3 m is half a van and a bit
+            const q = b.quat ?? [0, 0, 0, 1];
+            const yaw = 2 * Math.atan2(q[1], q[3]);
+            const ox = px - b.pos[0], oz = pz - b.pos[2];
+            const lx = ox * Math.cos(yaw) - oz * Math.sin(yaw), lz = ox * Math.sin(yaw) + oz * Math.cos(yaw);
+            const dx = Math.max(0, Math.abs(lx) - b.half[0]), dz = Math.max(0, Math.abs(lz) - b.half[2]);
             expect(Math.hypot(dx, dz) > 1.3, `traffic at ${px},${pz} hits the box at ${b.pos}`).toBe(true);
           }
         }
@@ -1586,9 +1590,15 @@ describe('road circuits', () => {
         for (let j = -1; j <= 1; j += 0.25) {
           if (Math.abs(i) !== 1 && Math.abs(j) !== 1) continue;
           const lx = i * b.half[0], lz = j * b.half[2];
-          expect(distanceTo(t.line!, b.pos[0] + lx * c + lz * s, b.pos[2] - lx * s + lz * c), `box at ${b.pos}`).toBeGreaterThan(3.8);
+          // (roadworks shut one lane, the other one stays open)
+          expect(distanceTo(t.line!, b.pos[0] + lx * c + lz * s, b.pos[2] - lx * s + lz * c), `box at ${b.pos}`).toBeGreaterThan(b.works ? 0.85 : 3.8);
         }
       }
+    }
+    // people stand beside the road; only the roadworks crew stands on it, in the shut lane
+    for (const d of t.decor) {
+      if (d.type !== 'person') continue;
+      expect(distanceTo(t.line!, d.pos[0], d.pos[2]), `person at ${d.pos}`).toBeGreaterThan(d.worker ? 1.4 : 3.9);
     }
   });
 });
