@@ -2,15 +2,31 @@
 
 # Tempo6
 
-A browser racing game with power wheelchairs and mobility scooters. Every vehicle starts at 12 km/h (on paper: the legal 6) in the Reha-Parcours, a training course with seesaws, a rocking bridge and a balance beam. Get through once and the throttle comes off; then earn Schrauben (screws) with laps and stunts and spend them on increasingly questionable tuning until 75 km/h.
+**▶ Play in your browser: [technikweber.github.io/Tempo6](https://technikweber.github.io/Tempo6/)** · on a computer or a phone held sideways, nothing to install, no sign-up.
 
-Status: playable prototype with a start screen, two tracks, five more roughed in, a curve test ground, thirteen vehicles and a tuning ladder.
+A racing game with power wheelchairs and mobility scooters. Every vehicle starts at 12 km/h (on paper: the legal 6) in the Reha-Parcours, a training course with a seesaw, a rocking bridge and a balance beam. Get through once and the throttle comes off; then earn Schrauben (screws) with laps, races and stunts and spend them on increasingly questionable tuning until 75 km/h. The game itself is in German.
+
+<p align="center">
+  <img src="docs/screenshots/01-startbildschirm.jpg" alt="Start screen with vehicles, modes and tracks" width="49%">
+  <img src="docs/screenshots/03-rennen-startaufstellung.jpg" alt="Starting grid of a race on the DIY-store car park" width="49%">
+  <img src="docs/screenshots/02-reha-parcours-wippe.jpg" alt="A wheelchair on the seesaw in the Reha-Parcours" width="49%">
+  <img src="docs/screenshots/04-werk-vordach-haupteingang.jpg" alt="Under the canopy of the main entrance at the Talstadt works" width="49%">
+  <img src="docs/screenshots/05-altwerk-zug.jpg" alt="A train passing the old works" width="49%">
+  <img src="docs/screenshots/06-garage.jpg" alt="Tuning garage with the stage ladder and driving profiles" width="49%">
+</p>
+
+## What's in it
+
+- **Modes:** time trial against the clock and your own ghost, a three-lap race against three others, freestyle for stunt chains, and an experimental crashtest.
+- **Tracks:** Reha-Parcours, DIY-store car park, curve test ground, Talstadt works, the old works at Porta Westfalica, an old airfield, a playground of ramps, a stadium circuit, a long hill circuit and the crashtest ground.
+- **Tuning:** eight stages up to 75 km/h, a boost battery, three driving profiles per vehicle, all in the garage too.
+- **Save:** kept in the browser, and with "Speichern"/"Laden" as a file that survives clearing the browser's data.
 
 ## Vehicles
 
 All model names are made up; the vehicles are loosely inspired by real product categories. There are no maker names, only a colour badge.
 
-Every vehicle has three candidate driving profiles to try out in the workshop (F2). While the dev server runs, the chosen ones are written to `profile-choices.json`.
+Every vehicle has three driving profiles to choose from in the garage. While the dev server runs, the chosen ones are written to `profile-choices.json`.
 
 | Model | Category | Character |
 | --- | --- | --- |
@@ -28,7 +44,7 @@ Every vehicle has three candidate driving profiles to try out in the workshop (F
 | Covid Pro | Mobility scooters | The classic with a basket |
 | Olivion | Mobility scooters | Long, heavy, fast, huge turning circle |
 
-Vehicles and tracks are unlocked with Schrauben; `UNLOCK_ALL` in `src/config/vehicles.ts` opens everything for testing.
+Vehicles and tracks are unlocked with Schrauben. To try everything: add `?demo` to the address for a show round with everything open that saves nothing.
 
 ## Run
 
@@ -37,7 +53,10 @@ npm install
 npm run dev      # http://localhost:5173
 npm test         # headless physics and game logic tests
 npm run build    # static build in dist/
+npm run deploy   # publish the build to technikweber.github.io/Tempo6/
 ```
+
+The source stays in this repo; `npm run deploy` puts only the built game into the `Tempo6/` folder of the blog repo, which GitHub Pages serves.
 
 ## Controls
 
@@ -52,9 +71,10 @@ npm run build    # static build in dist/
 | Restart the level | Backspace | Back |
 | Back to the start screen | Esc | Start |
 | Sound on/off | M | |
-| Workshop (live handling tuning, cheats) | F2 | |
+| Garage (on the start screen) | T | |
+| Workshop (live handling tuning; after a cheat code) | F2 | |
 
-Touch devices get on-screen controls.
+On a phone held sideways: steering strip bottom left with "aufrichten" (upright) and "neu" (restart) above it, throttle (big), reverse, handbrake and boost bottom right, menu top left. "Vollbild" on the start screen goes full screen.
 
 ## Architecture
 
