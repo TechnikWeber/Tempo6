@@ -140,6 +140,20 @@ export interface TrackDef {
   traffic?: TrafficDef[];
   spinners?: SpinnerDef[];
   movers?: MoverDef[];
+  /**
+   * Point to point instead of a lap: the first gate is the start, the last the finish. (A run
+   * ends there; the next one starts back at the start.)
+   */
+  course?: boolean;
+  /** Falling below this height puts the vehicle back at the start, the clock running on. */
+  fallY?: number;
+  /** Up in the sky: no lawn far below, only the drop. */
+  sky?: boolean;
+  /**
+   * Half the width of the road, on circuits laid out as a road: beyond it (and a little
+   * margin) the ground is slow, so cutting across is no use.
+   */
+  roadHalf?: number;
   /** With terrain the track brings no floor of its own in `statics`. */
   terrain?: TerrainDef;
 }

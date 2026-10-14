@@ -187,4 +187,5 @@ export const TALSTADT: TrackDef = {
   pickups: [],
   decor: [...SITE.decor, ...y.decor],
   line: SITE.line,
+  roadHalf: ROAD_WIDTH / 2,
 };

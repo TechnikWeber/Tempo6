@@ -1,3 +1,4 @@
+import { L } from '../i18n';
 import {
   AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
   Float32BufferAttribute, Fog, Group,
@@ -270,7 +271,11 @@ export class View {
   }
 
   /** Swap the level geometry. */
-  setTrack(track: TrackDef): void {
+  /**
+   * Swap the level geometry.
+   * @param gates mark the checkpoints (in the modes that time laps)
+   */
+  setTrack(track: TrackDef, gates = false): void {
     if (this.level) {
       this.scene.remove(this.level);
       this.level.traverse((o) => {
@@ -362,9 +367,43 @@ export class View {
       level.add(g);
       return g;
     });
+    if (gates) this.markGates(level, track, ground);
     this.scene.add(level);
     this.skids.clear();
     this.camReady = false;
+  }
+
+  /**
+   * The checkpoints made visible: a striped post either side of the way and the number painted
+   * on the road between them. The finish has its own line; on a course it gets posts too.
+   */
+  private markGates(level: Group, track: TrackDef, ground: (x: number, z: number) => number): void {
+    const n = track.gates.length;
+    track.gates.forEach((g, i) => {
+      if (g.x > 400) return; // (a gate parked out of reach: nothing timed there)
+      const last = track.course && i === n - 1;
+      if (i === 0 && !track.course) return;
+      // the way through: along the line where there is one, else along the gate's short side
+      let yaw = g.hx < g.hz ? Math.PI / 2 : 0;
+      if (track.line) {
+        let best = 0, bd = Infinity;
+        track.line.forEach(([x, z], k) => {
+          const d = (x - g.x) ** 2 + (z - g.z) ** 2;
+          if (d < bd) [best, bd] = [k, d];
+        });
+        const a = track.line[best], b = track.line[(best + 1) % track.line.length];
+        yaw = Math.atan2(b[0] - a[0], b[1] - a[1]);
+      }
+      const half = track.roadHalf ? track.roadHalf + 0.5 : Math.max(g.hx, g.hz) - 0.3;
+      const lx = Math.cos(yaw), lz = -Math.sin(yaw);
+      for (const s of [-1, 1]) {
+        const x = g.x + lx * half * s, z = g.z + lz * half * s, y = ground(x, z);
+        for (let k = 0; k < 4; k++) box(level, 0.14, 0.4, 0.14, k % 2 ? 0x1d1d1f : 0xf2c230, x, y + 0.2 + k * 0.4, z).castShadow = false;
+        box(level, 0.02, 0.35, 0.5, i === 0 || last ? 0xd23b3b : 0x2f6db5, x, y + 1.45, z + 0.27).rotation.y = yaw;
+      }
+      const label: DecorDef = { type: 'label', pos: [g.x, 0.11, g.z], half: [1.0, 0, Math.min(2.4, half - 0.8)], yaw: yaw + Math.PI, text: i === 0 ? 'START' : last ? L('ZIEL', 'FINISH') : `CP ${i}` };
+      level.add(buildDecor(label, ground));
+    });
   }
 
   /** The others in a race: built once per game, then moved along with their bodies. */

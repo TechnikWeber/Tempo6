@@ -51,7 +51,7 @@ function build(track: TrackDef): void {
   // (the tutorial is a time trial; the garage is nothing in particular)
   const mode = progress.tutorialDone && track !== GARAGE && modeById(progress.mode).tracks.includes(track.id) ? progress.mode : 'time';
   core = new GameCore(track, progress, mode);
-  view.setTrack(track);
+  view.setTrack(track, core.laps);
   view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
 }
 // Before the tutorial there is only the Reha-Parcours; and a track that was only looked at
@@ -272,6 +272,14 @@ function handleEvents(): void {
         sound.crate();
         if (e.record) sound.cheer();
         hud.toast(`${e.score} ${L('Punkte', 'points')}${e.record ? L(' · Rekord!', ' · Record!') : ''}`, `+${formatMoney(e.pay)} · ${L('Rücktaste: nochmal', 'Backspace: again')}`, 6);
+        break;
+      case 'missed':
+        sound.nope();
+        hud.toast(L('Checkpoint verpasst!', 'Checkpoint missed!'), L('Die Runde zählt nicht. Alle CP-Schilder der Reihe nach durchfahren.', 'The lap does not count. Drive through every CP marker in order.'), 3);
+        break;
+      case 'fell':
+        sound.nope();
+        hud.toast(L('Runtergefallen!', 'Fell off!'), L('Zurück zum Start, die Uhr läuft weiter.', 'Back to the start, the clock keeps running.'), 2.5);
         break;
       case 'untrained':
         sound.nope();

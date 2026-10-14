@@ -72,5 +72,6 @@ export const STADION: TrackDef = {
   pickups: [],
   decor,
   line: ROAD.line,
+  roadHalf: WIDTH / 2,
   terrain: TERRAIN,
 };

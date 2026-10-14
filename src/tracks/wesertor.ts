@@ -184,5 +184,6 @@ export const WESERTOR: TrackDef = {
   pickups: [],
   decor: [...SITE.decor, ...y.decor],
   line: SITE.line,
+  roadHalf: ROAD_WIDTH / 2,
   traffic: train,
 };

@@ -1612,3 +1612,52 @@ describe('road circuits', () => {
     }
   });
 });
+
+describe('checkpoints and the road', () => {
+  const trained = (stage = 1) => {
+    const p = new Progress();
+    p.tutorialDone = true;
+    p.stageIndex = stage;
+    return p;
+  };
+  const gates = [
+    { x: 0, z: 0, hx: 1, hz: 3 },
+    { x: 10, z: 10, hx: 3, hz: 1 },
+    { x: 0, z: 20, hx: 1, hz: 3 },
+  ];
+
+  it('tells when the finish is crossed with a checkpoint left out, and does not count the lap', () => {
+    const r = new Race(gates);
+    expect(r.update(0, 0, 1)).toBe('start');
+    expect(r.update(10, 10, 1)).toBe(null);
+    // straight back over the line, the third gate left out
+    expect(r.update(0, 5, 1)).toBe(null);
+    expect(r.update(0, 0, 1)).toBe('missed');
+    expect(r.laps).toBe(0);
+  });
+
+  it('runs a course from the first gate to the last, and back to the start after a fall', () => {
+    const r = new Race(gates, null, true);
+    expect(r.update(0, 0, 1)).toBe('start');
+    expect(r.update(10, 10, 1)).toBe(null);
+    r.backToStart();
+    expect(r.next).toBe(1);
+    expect(r.update(10, 10, 1)).toBe(null);
+    expect(r.update(0, 20, 1)).toBe('lap');
+    expect(r.lastLap).toBe(3);
+    expect(r.running).toBe(false);
+  });
+
+  it('slows a vehicle that leaves the road of a road circuit', () => {
+    const t = trackById('stadion');
+    const core = new GameCore(t, trained(3), 'time');
+    core.step(idle);
+    expect(core.sim.vehicle.offroad).toBe(0);
+    // well off the road, out on the grass
+    const [x, z] = t.line![0];
+    core.sim.vehicle.place(x + 30, 3, z + 30, 0);
+    for (let i = 0; i < 70; i++) core.step(idle);
+    expect(core.sim.vehicle.offroad).toBe(1);
+    core.dispose();
+  });
+});

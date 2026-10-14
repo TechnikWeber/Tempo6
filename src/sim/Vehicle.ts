@@ -6,6 +6,8 @@ import { Tracked } from './Tracked';
 
 /** Seconds of wheelspin when the boost fires. */
 const BOOST_KICK = 0.6;
+/** Share of the top speed lost right off the road. */
+const OFFROAD_SLOW = 0.6;
 
 export interface DriveInput {
   /** -1 (reverse) … 1 (forward) */
@@ -83,6 +85,8 @@ export class Vehicle {
    * although it is already rolling. Only for the look and the marks; the grip is unchanged.
    */
   boostKick = 0;
+  /** 0…1: how far off the road it is (grass, gravel), as the game reckons it. It takes speed away. */
+  offroad = 0;
   /** Seconds since the last wheel left the ground; 0 while driving. */
   airTime = 0;
   /** Sink rate in m/s at the moment of touchdown; consumed by the game. */
@@ -267,7 +271,7 @@ export class Vehicle {
     // Tyres bite harder the faster it goes, or the tight lines at speed would be a slide.
     const grip = HANDLING.grip * spec.gripFactor * p.grip * (1 + HANDLING.gripAtSpeed * Math.abs(v));
     this.updateBoost(input, dt);
-    const topSpeed = (this.topSpeed * (1 + BOOST.speed * this.boost) + BOOST.extraSpeed * this.boost) * (1 - DAMAGE.slow * this.impaired);
+    const topSpeed = (this.topSpeed * (1 + BOOST.speed * this.boost) + BOOST.extraSpeed * this.boost) * (1 - DAMAGE.slow * this.impaired) * (1 - OFFROAD_SLOW * this.offroad);
     const accel = this.accel * (1 + BOOST.accel * this.boost);
     const throttle = this.boosting ? 1 : input.throttle;
     // Measured, not derived from the yaw rate: in a slide the two are far apart.

@@ -92,7 +92,8 @@ export function road(points: RoadPoint[], width: number, gateCount = 8): Road {
   const gates: Gate[] = [];
   for (let k = 0; k < gateCount; k++) {
     const [x, z] = line[Math.round((k * n) / gateCount) % n];
-    gates.push({ x, z, hx: width / 2 + 1, hz: width / 2 + 1 });
+    // (wider than the road by the grace the slow ground leaves, so no lap is lost on the edge)
+    gates.push({ x, z, hx: width / 2 + 3, hz: width / 2 + 3 });
   }
   const back = Math.round(8 / STEP);
   const [sx, sz] = line[(n - back) % n];

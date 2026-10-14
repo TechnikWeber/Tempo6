@@ -58,6 +58,10 @@ export type GameEvent =
   | { type: 'chain'; total: number }
   /** Freestyle: a knock ended the run, and what it had earned is gone. */
   | { type: 'chainLost'; lost: number }
+  /** Over the finish line with a checkpoint left out: the lap does not count. */
+  | { type: 'missed' }
+  /** Fallen off a course in the sky: back at the start, the clock running on. */
+  | { type: 'fell' }
   /** Freestyle: time is up; what the session earned, and whether it is the best here. */
   | { type: 'freestyleOver'; total: number; record: boolean }
   /** Crashtest: a knock (or the write-off) scored. */
@@ -70,6 +74,8 @@ const PICKUP_RADIUS = 1.0;
 const LIGHT = 0.75;
 const START_LIGHTS = 3 * LIGHT;
 const PICKUP_RESPAWN = 15;
+/** Metres beyond the edge of the road before the ground starts to slow. */
+const OFFROAD_GRACE = 1.5;
 
 /** Everything that makes up a running game except rendering, input devices and audio. */
 export class GameCore {
@@ -94,6 +100,9 @@ export class GameCore {
   /** The lap in progress, recorded like a ghost. */
   private recording: number[] = [];
   private steps = 0;
+  /** Where on the road's line the vehicle was at the last look. */
+  private roadIndex = 0;
+  private roadTick = 0;
   private lastLight = 0;
   /** Race: the others on the grid. */
   readonly rivals: Rival[] = [];
@@ -111,7 +120,7 @@ export class GameCore {
 
   constructor(readonly track: TrackDef, readonly progress: Progress, readonly mode: ModeId = 'time') {
     this.sim = new Sim(track, VEHICLES[progress.vehicle]);
-    this.race = new Race(track.gates, mode === 'time' ? (progress.bestLaps[track.id] ?? null) : null);
+    this.race = new Race(track.gates, mode === 'time' ? (progress.bestLaps[track.id] ?? null) : null, !!track.course);
     this.pickupTimers = track.pickups.map(() => 0);
     this.ghost = mode === 'time' ? progress.loadGhost(track.id) : null;
     if (mode === 'race' && track.line) this.lineUp(track.line);
@@ -389,7 +398,11 @@ export class GameCore {
       this.recording.push(...[p.x, p.y, p.z].map((n) => Math.round(n * 100) / 100), ...[r.x, r.y, r.z, r.w].map((n) => Math.round(n * 1000) / 1000));
     }
     // (and after the finish of a race, the laps no longer count)
-    const ev = this.laps && !this.finished ? race.update(p.x, p.z, STEP) : null;
+    const raw = this.laps && !this.finished ? race.update(p.x, p.z, STEP) : null;
+    if (raw === 'missed') this.events.push({ type: 'missed' });
+    const ev = raw === 'missed' ? null : raw;
+    this.watchRoad(p.x, p.z);
+    this.watchFall(p.y);
     if (ev === 'start') this.events.push({ type: 'lapStart' });
     if (ev === 'lap') {
       const best = this.mode === 'time' && race.best === race.lastLap;
@@ -529,5 +542,41 @@ export class GameCore {
     if (record) this.progress.records[key] = c.score;
     this.progress.save();
     this.events.push({ type: 'crashOver', score: c.score, pay, record });
+  }
+
+  /** Off the road on a road circuit (in the modes that time laps): the ground is slow there. */
+  private watchRoad(x: number, z: number): void {
+    const half = this.track.roadHalf;
+    const v = this.sim.vehicle;
+    if (!half || !this.laps || !this.track.line) {
+      v.offroad = 0;
+      return;
+    }
+    // (looking near where it was last time is enough; once a second, the whole line)
+    const line = this.track.line;
+    const n = line.length;
+    const full = this.roadTick++ % 60 === 0;
+    let best = Infinity;
+    const from = full ? 0 : this.roadIndex - 12, to = full ? n : this.roadIndex + 12;
+    for (let k = from; k < to; k++) {
+      const i = ((k % n) + n) % n;
+      const [ax, az] = line[i], [bx, bz] = line[(i + 1) % n];
+      const dx = bx - ax, dz = bz - az;
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+      const d = Math.hypot(ax + dx * t - x, az + dz * t - z);
+      if (d < best) [best, this.roadIndex] = [d, i];
+    }
+    // a metre and a half of grace beyond the edge, then over two metres down to slow
+    v.offroad = Math.max(0, Math.min(1, (best - half - OFFROAD_GRACE) / 2));
+  }
+
+  /** On a course in the sky: fallen off, so back to the start, the clock running on. */
+  private watchFall(y: number): void {
+    const fallY = this.track.fallY;
+    if (fallY === undefined || y > fallY) return;
+    this.sim.respawn();
+    this.race.backToStart();
+    this.stunts.reset();
+    this.events.push({ type: 'fell' });
   }
 }
