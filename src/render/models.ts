@@ -539,6 +539,16 @@ export function buildTraffic(def: TrafficDef): Group {
   const floor = -hy;
   const GLASS = 0x26323d;
   const r = 0.32;
+  if (def.type === 'train') {
+    // a regional train carriage, red and white, doors and a band of windows
+    box(g, hx * 2, hy * 2 - 0.5, hz * 2, 0xe8e4d8, 0, 0.25, 0);
+    box(g, hx * 2 + 0.02, 0.5, hz * 2 - 0.4, 0xc22a2a, 0, floor + 0.85, 0);
+    box(g, hx * 2 + 0.02, 0.9, hz * 2 - 2, 0x26323d, 0, floor + 2.3, 0);
+    box(g, hx * 2 - 0.3, 0.25, hz * 2 - 0.4, 0x6b7078, 0, hy + 0.125, 0); // roof gear, on top
+    for (const z of [-hz * 0.55, hz * 0.55]) box(g, hx * 2 + 0.04, 1.9, 1.2, 0xc22a2a, 0, floor + 1.55, z); // doors
+    for (const z of [-hz + 2, hz - 2]) box(g, hx * 2 - 0.4, 0.5, 2.6, 0x2a2a2e, 0, floor + 0.15, z); // bogies
+    return g;
+  }
   if (def.type === 'van') {
     box(g, hx * 2, hy * 2 - 0.45, hz * 2 - 1.0, def.color, 0, 0.2, -0.5); // load space
     box(g, hx * 2, 0.75, 1.0, def.color, 0, floor + 0.3 + 0.375, hz - 0.5); // bonnet
@@ -579,6 +589,29 @@ export function buildProp(type: PropType): Group {
     const big = buildProp('cone');
     big.scale.setScalar(PROP_SHAPES.bigcone.halfHeight / PROP_SHAPES.cone.halfHeight);
     g.add(big);
+  } else if (type === 'barrel') {
+    // a blue plastic drum with two rings and a lid
+    const [x, y] = PROP_SHAPES.barrel.half;
+    cyl(g, x, y * 2, 0x2f6db5, 0, 0, 0, 12);
+    for (const ry of [-y * 0.45, y * 0.45]) cyl(g, x + 0.015, 0.04, 0x24548c, 0, ry, 0, 12);
+    cyl(g, x * 0.25, 0.03, 0x1d1d1f, x * 0.45, y + 0.015, 0, 8);
+  } else if (type === 'chair') {
+    // an empty manual wheelchair: frame, sling seat and back, push rims, casters
+    const [hx, hy, hz] = PROP_SHAPES.chair.half;
+    const frame = 0x8d9299, sling = 0x26262b;
+    box(g, hx * 2 - 0.1, 0.03, hz * 1.1, sling, 0, -0.02, 0.02); // seat
+    box(g, hx * 2 - 0.1, 0.4, 0.03, sling, 0, 0.2, -hz + 0.1); // back
+    for (const s of [1, -1]) {
+      box(g, 0.025, 0.6, 0.025, frame, s * (hx - 0.06), 0.1, -hz + 0.07); // back tube
+      box(g, 0.025, 0.025, hz * 1.5, frame, s * (hx - 0.06), -0.05, 0.05); // seat rail
+      const big = cyl(g, 0.3, 0.03, TYRE, s * hx, -hy + 0.3, -0.08, 14);
+      big.rotation.z = Math.PI / 2;
+      const rim = cyl(g, 0.26, 0.012, frame, s * (hx + 0.025), -hy + 0.3, -0.08, 14);
+      rim.rotation.z = Math.PI / 2;
+      const caster = cyl(g, 0.07, 0.03, TYRE, s * (hx - 0.1), -hy + 0.07, hz - 0.1, 8);
+      caster.rotation.z = Math.PI / 2;
+      box(g, 0.025, 0.3, 0.025, frame, s * (hx - 0.1), -hy + 0.25, hz - 0.1); // fork tube
+    }
   } else if (type === 'carton') {
     const [x, y, z] = PROP_SHAPES.carton.half;
     box(g, x * 2, y * 2, z * 2, 0xc19a6b);

@@ -598,7 +598,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
   { id: 'power', title: 'Bordstein-Brecher', vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
   { id: 'folder', title: 'Falt(en)wunder', vehicles: ['arrivo'] },
-  { id: 'push', title: 'Schubshilfen', vehicles: ['eskalation', 'enix', 'schubs'] },
+  { id: 'push', title: 'Power Addons', vehicles: ['eskalation', 'enix', 'schubs'] },
   { id: 'tractor', title: 'Vorderlader', vehicles: ['ekaptn'] },
   { id: 'scooter', title: 'Seniorenraketen', vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
 ];

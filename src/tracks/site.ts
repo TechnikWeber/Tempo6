@@ -16,6 +16,46 @@ export interface SiteOptions {
   wallColor: number;
   roofColor: number;
   height: number;
+  /** Yard beyond the road to the boundary wall (m); 25 if not given. */
+  yard?: number;
+  /** Lines that pass through the boundary wall (a railway): the wall leaves a gap there. */
+  crossings?: [number, number][][];
+}
+
+/** Half the thickness of the building's walls: their outer faces stand this far out from the outline. */
+export const WALL_HALF = 0.4;
+
+/** Where a straight piece from p to q crosses another, as a share along p→q, or null. */
+function cross(p: [number, number], q: [number, number], a: [number, number], b: [number, number]): number | null {
+  const rx = q[0] - p[0], rz = q[1] - p[1], sx = b[0] - a[0], sz = b[1] - a[1];
+  const d = rx * sz - rz * sx;
+  if (Math.abs(d) < 1e-9) return null;
+  const t = ((a[0] - p[0]) * sz - (a[1] - p[1]) * sx) / d;
+  const u = ((a[0] - p[0]) * rz - (a[1] - p[1]) * rx) / d;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : null;
+}
+
+/** A straight boundary wall from p to q, with a 20 m gap wherever one of the lines crosses it. */
+function boundary(p: [number, number], q: [number, number], crossings: [number, number][][]): BoxDef[] {
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+  const cuts: number[] = [];
+  for (const line of crossings) for (let i = 0; i + 1 < line.length; i++) {
+    const t = cross(p, q, line[i], line[i + 1]);
+    if (t !== null) cuts.push(t * len);
+  }
+  const pieces: [number, number][] = [];
+  let from = 0;
+  for (const c of cuts.sort((x, y) => x - y)) {
+    if (c - 10 > from) pieces.push([from, c - 10]);
+    from = Math.max(from, c + 10);
+  }
+  if (from < len) pieces.push([from, len]);
+  const ux = (q[0] - p[0]) / len, uz = (q[1] - p[1]) / len;
+  return pieces.map(([a, b]) => {
+    const m = (a + b) / 2;
+    const alongX = Math.abs(ux) > 0.5;
+    return { pos: [p[0] + ux * m, 0.5, p[1] + uz * m], half: alongX ? [(b - a) / 2, 0.5, 0.3] : [0.3, 0.5, (b - a) / 2], color: CONCRETE };
+  });
 }
 
 /** Convex hull, clockwise in picture coordinates (y down), i.e. counter-clockwise seen with north up. */
@@ -38,7 +78,7 @@ function hull(points: [number, number][]): [number, number][] {
  * A works site: one building with the given footprint, and a lap round it. Rough layout,
  * to be dressed later.
  */
-export function site(o: SiteOptions): Pick<TrackDef, 'statics' | 'decor' | 'gates' | 'spawn' | 'line'> & { length: number } {
+export function site(o: SiteOptions): Pick<TrackDef, 'statics' | 'decor' | 'gates' | 'spawn' | 'line'> & { length: number; outline: [number, number][]; lot: [number, number] } {
   const [w, h] = o.picture;
   // north is up in the picture: +X east, +Z north
   const outline = o.outline.map(([px, py]): [number, number] => [(px - w / 2) * o.scale, (h / 2 - py) * o.scale]);
@@ -71,14 +111,12 @@ export function site(o: SiteOptions): Pick<TrackDef, 'statics' | 'decor' | 'gate
   for (let i = 1; i <= n; i++) points.push(pushed[(longest + i) % n]);
   const lap = road(points, o.roadWidth, 8);
 
-  const reach = (axis: 0 | 1) => Math.max(...lap.line.map((p) => Math.abs(p[axis]))) + 25;
+  const reach = (axis: 0 | 1) => Math.max(...lap.line.map((p) => Math.abs(p[axis]))) + (o.yard ?? 25);
   const lotX = reach(0), lotZ = reach(1);
+  const corners: [number, number][] = [[-lotX, -lotZ], [lotX, -lotZ], [lotX, lotZ], [-lotX, lotZ]];
   const statics: BoxDef[] = [
     { pos: [0, -0.5, 0], half: [lotX, 0.5, lotZ], color: TARMAC },
-    { pos: [0, 0.5, lotZ], half: [lotX, 0.5, 0.3], color: CONCRETE },
-    { pos: [0, 0.5, -lotZ], half: [lotX, 0.5, 0.3], color: CONCRETE },
-    { pos: [lotX, 0.5, 0], half: [0.3, 0.5, lotZ], color: CONCRETE },
-    { pos: [-lotX, 0.5, 0], half: [0.3, 0.5, lotZ], color: CONCRETE },
+    ...corners.flatMap((c, i) => boundary(c, corners[(i + 1) % 4], o.crossings ?? [])),
   ];
   // The building: a wall along every side of the footprint, and a lid on top.
   outline.forEach((p, i) => {
@@ -86,11 +124,11 @@ export function site(o: SiteOptions): Pick<TrackDef, 'statics' | 'decor' | 'gate
     const yaw = Math.atan2(q[0] - p[0], q[1] - p[1]);
     statics.push({
       pos: [(p[0] + q[0]) / 2, o.height / 2, (p[1] + q[1]) / 2],
-      half: [0.4, o.height / 2, Math.hypot(q[0] - p[0], q[1] - p[1]) / 2 + 0.4],
+      half: [WALL_HALF, o.height / 2, Math.hypot(q[0] - p[0], q[1] - p[1]) / 2 + WALL_HALF],
       quat: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
       color: o.wallColor,
     });
   });
   const decor: DecorDef[] = [...lap.decor, { type: 'slab', pos: [0, o.height, 0], points: outline, color: o.roofColor }];
-  return { statics, decor, gates: lap.gates, spawn: lap.spawn, line: lap.line, length: lap.length };
+  return { statics, decor, gates: lap.gates, spawn: lap.spawn, line: lap.line, length: lap.length, outline, lot: [lotX, lotZ] };
 }

@@ -377,6 +377,8 @@ export class Menu {
     this.unlockButton(this.buyTrack, t?.name ?? '', this.trackLock(this.track));
     this.start.disabled = !this.ready;
     this.fit();
+    // (the chosen track scrolls into view, as the chosen vehicle does)
+    this.trackList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
   }
 
   /** The best a track has seen in a mode, for its card. */

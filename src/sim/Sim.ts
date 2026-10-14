@@ -80,8 +80,8 @@ export class Sim {
       desc = RAPIER.ColliderDesc.cone(s.halfHeight, s.radius).setMass(s.mass).setFriction(0.7);
     } else {
       const s = PROP_SHAPES[def.type];
-      // Carts roll, so they get next to no friction.
-      desc = RAPIER.ColliderDesc.cuboid(...s.half).setMass(s.mass).setFriction(def.type === 'cart' ? 0.05 : 0.6);
+      // Carts and chairs roll, so they get next to no friction.
+      desc = RAPIER.ColliderDesc.cuboid(...s.half).setMass(s.mass).setFriction(def.type === 'cart' || def.type === 'chair' ? 0.05 : def.type === 'barrel' ? 0.4 : 0.6);
     }
     this.world.createCollider(desc.setRestitution(0.2), body);
     return body;

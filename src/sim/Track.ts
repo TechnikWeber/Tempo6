@@ -6,7 +6,7 @@ export interface BoxDef {
   color: number;
 }
 
-export type PropType = 'cone' | 'bigcone' | 'carton' | 'cart';
+export type PropType = 'cone' | 'bigcone' | 'carton' | 'cart' | 'barrel' | 'chair';
 
 /** Loose physics object that can be shoved around. */
 export interface PropDef {
@@ -35,9 +35,10 @@ export interface DecorDef {
    * `board` is an upright panel with `text` on both sides, `label` the same painted flat on
    * the ground, `ring` a painted circle (`half` is radius, 0, half line width), `path` a
    * painted closed band along `points` (`half[0]` is half its width), `slab` a flat lid
-   * filling the outline `points` at the height of `pos`.
+   * filling the outline `points` at the height of `pos`, `smoke` puffs rising from `pos`
+   * (an engine running, say).
    */
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab';
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke';
   pos: [number, number, number];
   half?: [number, number, number];
   color?: number;
@@ -48,7 +49,7 @@ export interface DecorDef {
   points?: [number, number][];
 }
 
-export type TrafficType = 'car' | 'van';
+export type TrafficType = 'car' | 'van' | 'train';
 
 /** A vehicle that drives round a closed loop on its own. */
 export interface TrafficDef {
@@ -150,12 +151,18 @@ export const PROP_SHAPES = {
   bigcone: { halfHeight: 1.0, radius: 0.6, mass: 30 },
   carton: { half: [0.25, 0.25, 0.25] as [number, number, number], mass: 2 },
   cart: { half: [0.3, 0.45, 0.5] as [number, number, number], mass: 18 },
+  /** An empty plastic drum: light, it goes flying. */
+  barrel: { half: [0.29, 0.44, 0.29] as [number, number, number], mass: 9 },
+  /** An empty manual wheelchair, rolls like a cart. */
+  chair: { half: [0.3, 0.45, 0.4] as [number, number, number], mass: 14 },
 };
 
 /** Collider half extents per kind of traffic, shared by physics and visuals. */
 export const TRAFFIC_SHAPES = {
   car: { half: [0.85, 0.7, 2.0] as [number, number, number] },
   van: { half: [0.95, 1.05, 2.5] as [number, number, number] },
+  /** One carriage; a train is several following each other on one path. */
+  train: { half: [1.5, 1.9, 9.5] as [number, number, number] },
 };
 
 /**

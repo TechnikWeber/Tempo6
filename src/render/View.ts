@@ -1,7 +1,7 @@
 import {
   AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
   Float32BufferAttribute, Fog, Group,
-  HemisphereLight, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
+  HemisphereLight, IcosahedronGeometry, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Quaternion, RingGeometry, Scene, Shape, ShapeGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
 } from 'three';
 import { HANDLING, VEHICLES, type VehicleSpec } from '../config/vehicles';
@@ -151,6 +151,16 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       g.add(m);
       break;
     }
+    case 'smoke': {
+      // puffs that the view lets rise, swell and fade, over and over
+      for (let i = 0; i < 7; i++) {
+        const puff = new Mesh(new IcosahedronGeometry(0.35, 0), new MeshStandardMaterial({ color: 0x8f9295, transparent: true, opacity: 0.6, roughness: 1, depthWrite: false }));
+        puff.userData.phase = i / 7;
+        g.add(puff);
+      }
+      g.userData.smoke = true;
+      break;
+    }
     case 'slab': {
       const m = new Mesh(new ShapeGeometry(new Shape((d.points ?? []).map(([x, z]) => new Vector2(x, -z)))), mat(d.color ?? 0xffffff));
       m.rotation.x = -Math.PI / 2;
@@ -190,6 +200,8 @@ export class View {
   private trafficMeshes: Object3D[] = [];
   private spinnerMeshes: Object3D[] = [];
   private moverMeshes: Object3D[] = [];
+  /** Exhaust puffs to animate. */
+  private smokes: Object3D[] = [];
   /** The opponents of the race on show, and which game they belong to. */
   private rivals: { core: GameCore | null; rigs: Object3D[] } = { core: null, rigs: [] };
   private level: Group | null = null;
@@ -289,7 +301,12 @@ export class View {
       m.receiveShadow = true;
       level.add(m);
     }
-    for (const d of track.decor) level.add(buildDecor(d, ground));
+    this.smokes = [];
+    for (const d of track.decor) {
+      const m = buildDecor(d, ground);
+      if (m.userData.smoke) this.smokes.push(m);
+      level.add(m);
+    }
     for (const p of track.props) {
       const m = buildProp(p.type);
       this.propMeshes.push(m);
@@ -473,6 +490,14 @@ export class View {
     core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));
     core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
     this.placeRivals(core, alpha);
+    for (const s of this.smokes) {
+      s.children.forEach((puff, i) => {
+        const f = (this.time * 0.45 + (puff.userData.phase as number)) % 1;
+        puff.position.set(Math.sin(i * 2.1 + this.time) * 0.15 + f * 0.6, f * 3.2, Math.cos(i * 1.7) * 0.12);
+        puff.scale.setScalar(0.4 + f * 2.2);
+        ((puff as Mesh).material as MeshStandardMaterial).opacity = 0.55 * (1 - f);
+      });
+    }
     this.pickupMeshes.forEach((m, i) => {
       m.visible = !showroom && core.paying && !core.halted && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;
