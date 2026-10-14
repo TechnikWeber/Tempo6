@@ -1,4 +1,4 @@
-// The game speaks English by default and German on request. Every text in the game is
+// The game speaks German by default and English on request. Every text in the game is
 // written as a pair, L('Deutsch', 'English'), and the language is settled once, before
 // anything else is loaded; switching reloads the page.
 
@@ -7,9 +7,9 @@ const KEY = 'tempo6.lang';
 
 function stored(): Lang {
   try {
-    return globalThis.localStorage?.getItem(KEY) === 'de' ? 'de' : 'en';
+    return globalThis.localStorage?.getItem(KEY) === 'en' ? 'en' : 'de';
   } catch {
-    return 'en';
+    return 'de';
   }
 }
 

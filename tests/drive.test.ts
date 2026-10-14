@@ -271,12 +271,12 @@ describe('profiles', () => {
     const progress = new Progress();
     const core = new GameCore(PARKPLATZ, progress);
     core.setProfile(2);
-    expect(core.sim.vehicle.profile.name).toBe('Sedan Chair');
+    expect(core.sim.vehicle.profile.name).toBe(VEHICLES.trex.profiles[2].name);
     expect(core.topSpeedKmh).toBeCloseTo(STAGES[0].topSpeedKmh * 1.1);
     core.setVehicle('orkan');
     expect(core.profileIndex).toBe(0);
     core.setVehicle('trex');
-    expect(core.sim.vehicle.profile.name).toBe('Sedan Chair');
+    expect(core.sim.vehicle.profile.name).toBe(VEHICLES.trex.profiles[2].name);
     core.dispose();
   });
 });
