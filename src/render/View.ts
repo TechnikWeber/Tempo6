@@ -458,7 +458,7 @@ export class View {
     core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
     this.placeRivals(core, alpha);
     this.pickupMeshes.forEach((m, i) => {
-      m.visible = !showroom && core.paying && core.pickupTimers[i] === 0;
+      m.visible = !showroom && core.paying && !core.halted && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;
       m.position.y = track.pickups[i].pos[1] + Math.sin(this.time * 3 + i) * 0.08;
     });

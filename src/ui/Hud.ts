@@ -17,6 +17,8 @@ export class Hud {
   private readonly speedBar = el('speed-bar');
   private readonly top = el('top');
   private readonly vehicle = el('vehicle');
+  private readonly bannerEl = el('banner');
+  private bannerTimer = 0;
   private readonly lapLabel = el('lap-label');
   private readonly lapSub = el('lap-sub');
   private readonly lapTime = el('lap-time');
@@ -56,6 +58,26 @@ export class Hud {
     if (this.cache.get(e) === text) return;
     this.cache.set(e, text);
     e.textContent = text;
+  }
+
+  /** Big and in the middle of the screen, for the end of something. */
+  banner(title: string, sub = '', seconds = 3): void {
+    const b = document.createElement('b');
+    b.textContent = title;
+    this.bannerEl.replaceChildren(b);
+    if (sub) {
+      const s = document.createElement('small');
+      s.textContent = sub;
+      this.bannerEl.append(s);
+    }
+    this.bannerEl.classList.add('show');
+    clearTimeout(this.bannerTimer);
+    this.bannerTimer = window.setTimeout(() => this.bannerEl.classList.remove('show'), seconds * 1000);
+  }
+
+  hideBanner(): void {
+    clearTimeout(this.bannerTimer);
+    this.bannerEl.classList.remove('show');
   }
 
   toast(title: string, sub = '', seconds = 2.5): void {

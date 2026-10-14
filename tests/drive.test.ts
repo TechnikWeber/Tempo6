@@ -1315,8 +1315,13 @@ describe('Reha-Parcours', () => {
     expect(progress.stageIndex).toBe(1);
     expect(progress.stages[id]).toBe(1);
     expect(core.topSpeedKmh).toBeCloseTo(stageSpeedKmh(STAGES[1], spec.speedFactor * core.sim.vehicle.profile.speed));
-    // learning to drive pays nothing: no screws lying about, no lap money
+    // learning to drive pays nothing: no screws lying about, no lap money…
     expect(progress.money).toBe(0);
+    // …and once through it stops and stays stopped until the menu, collecting nothing
+    expect(core.halted).toBe(true);
+    for (let i = 0; i < 60 * 3; i++) core.step(ap.input(core));
+    expect(progress.money).toBe(0);
+    expect(Math.abs(core.sim.vehicle.speed)).toBeLessThan(0.3);
     core.dispose();
   });
 

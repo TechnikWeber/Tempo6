@@ -96,6 +96,8 @@ export class GameCore {
   readonly rivals: Rival[] = [];
   /** Race: the place the player finished in, 0 while still racing. */
   finished = 0;
+  /** The run is over (the tutorial done): the vehicle stops and nothing more is paid. */
+  halted = false;
   /** Crashtest: the run so far. */
   readonly crash = { started: false, score: 0, since: 0, still: 0, over: false, grace: 0 };
 
@@ -222,6 +224,7 @@ export class GameCore {
       r.pilot.from(r.grid.x, r.grid.z);
     }
     this.finished = 0;
+    this.halted = false;
     Object.assign(this.crash, { started: false, score: 0, since: 0, still: 0, over: false, grace: 0 });
     this.sim.vehicle.knock = 0;
     this.flippedFor = 0;
@@ -264,7 +267,7 @@ export class GameCore {
 
   step(input: GameInput): void {
     const { sim, progress, race } = this;
-    const paying = this.paying;
+    const paying = this.paying && !this.halted;
 
     if (input.respawn) {
       this.restart(true);
@@ -287,6 +290,7 @@ export class GameCore {
       }
       input = { ...input, throttle: 0, steer: 0, handbrake: true, boost: false };
     }
+    if (this.halted) input = { ...input, throttle: 0, steer: 0, handbrake: true, boost: false };
     // Crashtest: after the first knock nobody is driving any more.
     if (this.crash.started) input = { ...input, throttle: 0, steer: 0, handbrake: false, boost: false, limp: true };
     for (const [k, r] of this.rivals.entries()) {
@@ -352,6 +356,7 @@ export class GameCore {
       if (this.track.id === TRAINING && !progress.trained()) {
         progress.graduate();
         this.applyStage();
+        this.halted = true;
         this.events.push({ type: 'graduated', stage: progress.stage });
       }
       if (this.mode === 'time') {

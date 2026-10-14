@@ -141,6 +141,7 @@ function setRacing(on: boolean): void {
   } else {
     core.restart();
     hud.lightsOff();
+    hud.hideBanner();
     view.clearMarks();
     menu.show();
   }
@@ -225,7 +226,7 @@ function handleEvents(): void {
       case 'raceOver': {
         sound.lap();
         const medal = ['🥇', '🥈', '🥉'][e.place - 1] ?? '🏁';
-        hud.toast(`${medal} Platz ${e.place} von ${e.of}`, e.pay ? `Preisgeld +${formatMoney(e.pay)}` : 'Kein Preisgeld. Nächstes Mal.', 5);
+        hud.banner(`${medal} Platz ${e.place} von ${e.of}`, e.pay ? `Preisgeld +${formatMoney(e.pay)}` : 'Kein Preisgeld. Nächstes Mal.', 5);
         leaveSoon(5, `Rennen auf ${core.track.name}: Platz ${e.place} von ${e.of}${e.pay ? `, +${formatMoney(e.pay)}` : ''}.`);
         break;
       }
@@ -250,7 +251,7 @@ function handleEvents(): void {
         break;
       case 'graduated':
         sound.tuned();
-        hud.toast(`Geschafft! ${e.stage.name}`, `Ausbildung bestanden: jedes Gefährt fährt jetzt ${e.stage.topSpeedKmh} km/h. ${e.stage.blurb}`, 3);
+        hud.banner('Tutorial abgeschlossen!', `${e.stage.name}: jedes Gefährt fährt jetzt ${e.stage.topSpeedKmh} km/h.`, 3);
         leaveSoon(3, 'Ausbildung bestanden! Alle Modi und der Parkplatz sind offen, jedes Gefährt hat die Drossel raus.');
         break;
       case 'broke':

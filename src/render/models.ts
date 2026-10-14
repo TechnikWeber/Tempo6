@@ -133,9 +133,10 @@ function driver(st: DriverStyle): { group: Group; arms: Group[] } {
   const arms: Group[] = [];
   box(g, 0.36, 0.44, 0.24, st.shirt, 0, 0.26, -0.02);
   box(g, 0.22, 0.22, 0.22, SKIN, 0, 0.62, 0);
-  box(g, 0.24, 0.08, 0.24, st.hair, 0, 0.75, -0.01);
+  // (hair stops just behind the face, or forehead and fringe fight over the same plane)
+  box(g, 0.24, 0.08, 0.23, st.hair, 0, 0.75, -0.015);
   box(g, 0.23, 0.05, 0.06, 0x111111, 0, 0.64, 0.1); // sunglasses
-  box(g, 0.06, 0.04, 0.03, 0xb85c4a, 0, 0.55, 0.11); // grin
+  box(g, 0.06, 0.04, 0.03, 0xb85c4a, 0, 0.55, 0.117); // grin (just in front of a beard)
   if (st.hat !== undefined) {
     box(g, 0.25, 0.07, 0.25, st.hat, 0, 0.79, -0.01);
     box(g, 0.22, 0.02, 0.12, st.hat, 0, 0.765, 0.17);
@@ -149,7 +150,7 @@ function driver(st: DriverStyle): { group: Group; arms: Group[] } {
   for (const s of [1, -1]) {
     box(g, 0.14, 0.13, 0.42, st.trousers, s * 0.1, 0.06, 0.2);
     box(g, 0.12, 0.38, 0.12, st.trousers, s * 0.1, -0.16, 0.36);
-    box(g, 0.13, 0.07, 0.24, 0x2a2a2a, s * 0.1, -0.36, 0.42);
+    box(g, 0.13, 0.07, 0.25, 0x2a2a2a, s * 0.1, -0.36, 0.42);
     if (st.arms === 'forward') {
       // Straight from the shoulder to the hand on the bars.
       const sy = 0.43, sz = 0.02, hy = 0.36, hz = 0.44;
@@ -168,7 +169,7 @@ function driver(st: DriverStyle): { group: Group; arms: Group[] } {
     } else {
       // Upper arm down from the shoulder, forearm on the armrest.
       box(g, 0.1, 0.32, 0.1, st.shirt, s * 0.24, 0.32, -0.02);
-      box(g, 0.1, 0.09, 0.3, SKIN, s * 0.24, 0.17, 0.12);
+      box(g, 0.09, 0.09, 0.3, SKIN, s * 0.24, 0.17, 0.12); // (thinner than the upper arm)
     }
   }
   return { group: g, arms };
@@ -216,7 +217,7 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
     base(0.2, -0.3, 0.3);
     box(root, baseW - 0.04, 0.14, 0.04, accent, 0, -0.08, -0.31); // rear panel
     for (const s of [1, -1]) {
-      box(root, railW, 0.14, 0.04, accent, s * railX, -0.08, 0.31); // front panels
+      box(root, railW - 0.006, 0.14, 0.04, accent, s * railX, -0.08, 0.31); // front panels, a touch narrower than the rails
       box(root, 0.11, 0.05, 0.44, accent, s * driveX, g + 0.37, 0); // fender over the drive wheel
       for (const z of [0.34, -0.34]) box(root, 0.05, 0.05, 0.22, body, s * 0.22, g + 0.2, z); // caster arms
     }
@@ -226,7 +227,7 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
     box(root, baseW - 0.1, 0.04, 0.02, 0xff2a2a, 0, -0.02, -0.465); // tail light
     for (const s of [1, -1]) {
       box(root, 0.13, 0.05, 0.5, accent, s * driveX, g + 0.43, -0.28); // fender over the drive wheel
-      box(root, 0.02, 0.16, 0.44, accent, s * (baseW / 2 + 0.005), -0.06, 0.12); // side panel
+      box(root, 0.02, 0.15, 0.43, accent, s * (baseW / 2 + 0.005), -0.065, 0.115); // side panel, inside the base's top and front
       box(root, 0.07, 0.2, 0.07, STEEL, s * 0.27, g + 0.26, 0.42); // caster fork
       box(root, 0.07, 0.05, 0.05, 0xfff3b0, s * railX, -0.02, 0.35); // headlights
     }
@@ -248,13 +249,14 @@ function buildPowerchair(spec: VehicleSpec): VehicleModel {
   if (seatY > 0.06 && !heavy) box(root, 0.24, seatY - 0.04, 0.24, body, 0, (seatY - 0.04) / 2, -0.02); // seat post
   box(root, 0.46, 0.08, 0.46, seat, 0, seatY, -0.02);
   box(root, 0.46, 0.56, 0.08, seat, 0, seatY + 0.32, -0.27);
-  box(root, 0.22, 0.14, 0.07, seat, 0, seatY + 0.7, -0.27); // headrest
+  box(root, 0.2, 0.13, 0.07, seat, 0, seatY + 0.7, -0.27); // headrest (narrower and lower than the head)
   if (spec.look === 'rear' || spec.look === 'front') box(root, 0.3, 0.4, 0.02, accent, 0, seatY + 0.34, -0.315); // back panel
   for (const s of [1, -1]) {
     box(root, 0.06, 0.05, 0.38, seat, s * 0.27, seatY + 0.21, -0.04);
     box(root, 0.04, 0.2, 0.04, body, s * 0.27, seatY + 0.1, -0.18);
-    box(root, 0.04, 0.3, 0.04, body, s * 0.21, seatY + 0.66, -0.31); // push handles
-    box(root, 0.04, 0.04, 0.14, accent, s * 0.21, seatY + 0.8, -0.36);
+    // push handles: clear of the backrest's sides, the grip thicker than its post
+    box(root, 0.04, 0.3, 0.04, body, s * 0.22, seatY + 0.66, -0.31);
+    box(root, 0.05, 0.05, 0.14, accent, s * 0.22, seatY + 0.8, -0.365);
   }
   // One-piece footplate right under the shoes, hung from the back wall of the well.
   const plateY = seatY - 0.365;
@@ -301,18 +303,18 @@ function buildManual(spec: VehicleSpec): VehicleModel {
   box(root, 0.42, 0.4, 0.04, seat, 0, seatY + 0.24, seatZ - 0.27);
   box(root, 0.56, 0.035, 0.035, STEEL, 0, axleY, axleZ); // axle tube
   for (const s of [1, -1]) {
-    box(root, 0.03, 0.03, frontZ + 0.015 - (seatZ - 0.23), accent, s * 0.2, railY, (frontZ + 0.015 + seatZ - 0.23) / 2); // seat rail
+    box(root, 0.034, 0.03, frontZ + 0.015 - (seatZ - 0.23), accent, s * 0.2, railY, (frontZ + 0.015 + seatZ - 0.23) / 2); // seat rail
     box(root, 0.03, seatY - axleY, 0.03, body, s * 0.2, (seatY + axleY) / 2, axleZ);
     box(root, 0.03, railY - 0.015 - swivelY, 0.03, accent, s * 0.2, (railY - 0.015 + swivelY) / 2, frontZ); // front tube
     box(root, 0.03, 0.5, 0.03, body, s * 0.2, seatY + 0.3, seatZ - 0.27); // back tube
-    box(root, 0.03, 0.03, 0.12, 0x111111, s * 0.2, seatY + 0.54, seatZ - 0.28); // push handle
+    box(root, 0.04, 0.04, 0.12, 0x111111, s * 0.2, seatY + 0.54, seatZ - 0.28); // push handle, thicker than the tube
     box(root, 0.02, 0.16, 0.26, 0x1b1b1f, s * 0.225, seatY + 0.1, seatZ - 0.02); // side guard
   }
   box(root, 0.32, 0.02, 0.24, body, 0, g + 0.09, seatZ + 0.34); // footplate
 
   if (spec.addon === 'joystick') {
     box(root, 0.3, 0.1, 0.22, 0x1a1a1d, 0, seatY - 0.09, seatZ); // battery pack under the seat
-    box(root, 0.305, 0.02, 0.225, accent, 0, seatY - 0.05, seatZ);
+    box(root, 0.305, 0.02, 0.225, accent, 0, seatY - 0.055, seatZ); // stripe, below the pack's top
     for (const s of [1, -1]) box(root, 0.05, 0.03, 0.3, seat, s * 0.24, seatY + 0.2, seatZ); // armrest pads
     // joystick on the right armrest (right is -X)
     box(root, 0.07, 0.04, 0.09, 0x1a1a1d, -0.24, seatY + 0.22, seatZ + 0.19);
@@ -326,7 +328,7 @@ function buildManual(spec: VehicleSpec): VehicleModel {
     // Drive unit hanging under the axle, with the little wheel trailing behind.
     const unit = spec.wheels.find((w) => w.drive)!;
     box(root, 0.11, 0.13, 0.24, 0x1a1a1d, 0, g + 0.2, unit.z + 0.06);
-    box(root, 0.115, 0.03, 0.1, accent, 0, g + 0.25, unit.z + 0.06);
+    box(root, 0.115, 0.03, 0.1, accent, 0, g + 0.245, unit.z + 0.06);
     const link = box(root, 0.04, 0.04, 0.3, STEEL, 0, (axleY + g + 0.2) / 2, (axleZ + unit.z) / 2 + 0.03);
     link.rotation.x = -0.5;
     box(root, 0.05, 0.04, 0.06, accent, -0.23, seatY + 0.2, seatZ + 0.16); // control dial
@@ -400,8 +402,9 @@ function buildScooter(spec: VehicleSpec): VehicleModel {
   const barY = 0.7;
   const tiller = box(root, 0.06, 0.82, 0.06, 0x888888, 0, 0.33, (footZ + barZ) / 2);
   tiller.rotation.x = -0.38;
-  box(root, 0.5, 0.05, 0.05, DARK, 0, barY, barZ);
-  box(root, 0.16, 0.1, 0.08, BODY, 0, barY + 0.03, barZ + 0.02);
+  // (thinner than the driver's hands, which close round it)
+  box(root, 0.5, 0.04, 0.04, DARK, 0, barY, barZ);
+  box(root, 0.16, 0.1, 0.08, BODY, 0, barY + 0.035, barZ + 0.025);
   // shopping basket
   box(root, 0.36 * sx, 0.2, 0.24, 0x9aa0a8, 0, 0.17, L - 0.1); // sits on the front fairing
   box(root, 0.3 * sx, 0.02, 0.18, 0x3a3d42, 0, 0.275, L - 0.1);
@@ -430,7 +433,7 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
   const axleY = g + drive.radius;
   const seatY = 0.06;
   box(root, 0.42, 0.04, 0.42, seat, 0, seatY, 0);
-  box(root, 0.42, 0.46, 0.035, seat, 0, seatY + 0.27, -0.27);
+  box(root, 0.42, 0.46, 0.03, seat, 0, seatY + 0.27, -0.27); // (thinner than the back tubes beside it)
   box(root, 0.3, 0.08, 0.2, 0x25252a, 0, seatY - 0.08, -0.04); // battery under the seat
   box(root, 0.305, 0.02, 0.205, accent, 0, seatY - 0.045, -0.04);
   for (const s of [1, -1]) {
@@ -440,16 +443,16 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
     const front = box(root, 0.035, 0.05, 0.5, body, s * 0.22, (seatY + g) / 2 + 0.06, 0.2);
     front.rotation.x = 0.7;
     box(root, 0.035, 0.035, 0.44, body, s * 0.22, seatY - 0.02, 0); // seat rail
-    box(root, 0.012, 0.02, 0.44, accent, s * 0.24, seatY - 0.02, 0); // pinstripe
+    box(root, 0.012, 0.02, 0.43, accent, s * 0.24, seatY - 0.02, 0); // pinstripe
     box(root, 0.035, 0.52, 0.035, body, s * 0.22, seatY + 0.28, -0.27); // back tube
-    box(root, 0.035, 0.035, 0.12, 0x111111, s * 0.22, seatY + 0.54, -0.29); // push handle
+    box(root, 0.045, 0.045, 0.12, 0x111111, s * 0.22, seatY + 0.54, -0.29); // push handle, thicker than the tube
     box(root, 0.05, 0.035, 0.32, seat, s * 0.25, seatY + 0.2, 0); // armrest
     box(root, 0.03, 0.2, 0.03, body, s * 0.25, seatY + 0.1, -0.14);
   }
   box(root, 0.34, 0.02, 0.16, body, 0, g + 0.08, 0.44); // one-piece footplate
   for (const w of spec.wheels) if (w.caster) box(root, 0.03, 0.12, 0.03, STEEL, w.x, g + w.radius + 0.09, w.z);
   // joystick on the right armrest (right is -X)
-  box(root, 0.07, 0.04, 0.09, body, -0.25, seatY + 0.22, 0.2);
+  box(root, 0.07, 0.04, 0.09, body, -0.255, seatY + 0.22, 0.2);
   cyl(root, 0.011, 0.08, STEEL, -0.25, seatY + 0.28, 0.2, 5);
   box(root, 0.035, 0.035, 0.035, accent, -0.25, seatY + 0.33, 0.2);
 
@@ -489,9 +492,9 @@ function rod(parent: Object3D, a: Vector3, b: Vector3, thick: number, color: num
 function lapBattery(driver: Group, to: Vector3): Vector3 {
   const y = 0.225, z = 0.21;
   box(driver, 0.3, 0.2, 0.19, 0x1b1d22, 0, y, z);
-  box(driver, 0.31, 0.03, 0.2, 0x2c3038, 0, y + 0.085, z); // lid
+  box(driver, 0.31, 0.03, 0.2, 0x2c3038, 0, y + 0.09, z); // lid
   box(driver, 0.24, 0.07, 0.006, 0xf2c230, 0, y - 0.01, z + 0.096); // label
-  box(driver, 0.1, 0.02, 0.008, 0x1b1d22, 0, y - 0.01, z + 0.097);
+  box(driver, 0.1, 0.02, 0.008, 0x1b1d22, 0, y - 0.01, z + 0.099);
   for (let i = -2; i <= 2; i++) box(driver, 0.025, 0.012, 0.025, 0xd9a400, i * 0.045, y + 0.104, z - 0.04); // filler caps
   const top = y + 0.1;
   for (const [x, color] of [[0.1, 0xc62828], [-0.1, 0x111111]] as const) {

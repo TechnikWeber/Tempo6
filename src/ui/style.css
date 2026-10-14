@@ -99,6 +99,11 @@ html, body {
 }
 #toast.show { opacity: 1; transition: none; }
 #toast small { display: block; font-size: 17px; font-weight: 600; margin-top: 4px; }
+/* The big one in the middle of the screen: the tutorial done, a race over. */
+#banner { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%) scale(0.9); padding: 22px 40px; border-radius: 18px; background: rgb(10 12 16 / 0.82); text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.4s, transform 0.4s; max-width: calc(100vw - 32px); }
+#banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#banner b { display: block; font-size: clamp(30px, 6vw, 64px); font-weight: 900; color: var(--accent); text-shadow: 0 3px 0 #000; }
+#banner small { display: block; margin-top: 8px; font-size: clamp(15px, 2vw, 20px); font-weight: 600; }
 
 #lights {
   position: absolute;
