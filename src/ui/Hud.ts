@@ -24,6 +24,7 @@ export class Hud {
   private readonly lapSub = el('lap-sub');
   private readonly lapTime = el('lap-time');
   private readonly lapBest = el('lap-best');
+  private readonly cpWarn = el('cp-warn');
   private readonly money = el('money');
   private readonly toastEl = el('toast');
   private readonly flipped = el('flipped');
@@ -148,6 +149,11 @@ export class Hud {
     this.set(this.top, num(top, top % 1 ? 1 : 0));
     this.set(this.vehicle, sim.vehicle.spec.label);
     this.lapPanel(core);
+    // a checkpoint left out stays on show until it is made up
+    const { race } = core;
+    const owed = race.running && race.skipped >= 0 && race.skipped === race.next;
+    this.cpWarn.hidden = !owed;
+    if (owed) this.set(this.cpWarn, `⚠ ${race.next === 0 ? L('Ziel', 'Finish') : `CP ${race.next}`} ${L('fehlt', 'missing')}`);
     this.set(this.money, formatMoney(progress.money));
     const v = sim.vehicle;
     this.wrecked.hidden = !v.wrecked;

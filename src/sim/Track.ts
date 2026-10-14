@@ -23,6 +23,8 @@ export interface Gate {
   z: number;
   hx: number;
   hz: number;
+  /** Counts only exactly as drawn, e.g. through an obstacle that could otherwise be driven round. */
+  exact?: boolean;
 }
 
 export type PickupType = 'screw' | 'toolbox';

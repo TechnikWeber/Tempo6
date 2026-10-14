@@ -2,8 +2,12 @@ import type { Gate } from './Track';
 
 /**
  * `missed`: over the finish line with a checkpoint left out, so the lap does not count.
+ * `skipped`: through a later checkpoint with the one before left out (`skipped` says which).
  */
-export type RaceEvent = 'start' | 'lap' | 'missed' | null;
+export type RaceEvent = 'start' | 'lap' | 'missed' | 'skipped' | null;
+
+/** A checkpoint counts this far (m) beyond its posts on every side: nobody has to thread it. */
+export const GATE_SLACK = 2;
 
 /**
  * Lap timing over ordered checkpoints. Pure logic, no physics.
@@ -20,11 +24,24 @@ export class Race {
   laps = 0;
   /** Whether the vehicle was on the finish line at the last look, so a missed lap is told once. */
   private onFinish = false;
+  /** The checkpoint last told as left out, so it is told once; -1 for none. */
+  skipped = -1;
 
   constructor(private readonly gates: Gate[], public best: number | null = null, readonly course = false) {}
 
   private inside(g: Gate, x: number, z: number): boolean {
-    return Math.abs(x - g.x) <= g.hx && Math.abs(z - g.z) <= g.hz;
+    const slack = g.exact ? 0 : GATE_SLACK;
+    return Math.abs(x - g.x) <= g.hx + slack && Math.abs(z - g.z) <= g.hz + slack;
+  }
+
+  /** Through a checkpoint further on than the next one: the next one was left out. Told once. */
+  private skippedAhead(x: number, z: number): boolean {
+    if (!this.running || this.skipped === this.next) return false;
+    const n = this.gates.length;
+    const prev = (this.next + n - 1) % n;
+    const later = this.gates.some((g, i) => i !== this.next && i !== prev && (i !== 0 || this.course) && this.inside(g, x, z));
+    if (later) this.skipped = this.next;
+    return later;
   }
 
   update(x: number, z: number, dt: number): RaceEvent {
@@ -37,7 +54,7 @@ export class Race {
       if (missed) return 'missed';
     }
     const g = this.gates[this.next];
-    if (!this.inside(g, x, z)) return null;
+    if (!this.inside(g, x, z)) return this.skippedAhead(x, z) ? 'skipped' : null;
 
     if (this.course) {
       if (!this.running) {
@@ -82,6 +99,7 @@ export class Race {
   reset(): void {
     this.next = 0;
     this.laps = 0;
+    this.skipped = -1;
     this.running = false;
     this.lapTime = 0;
     this.onFinish = false;

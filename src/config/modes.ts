@@ -56,7 +56,13 @@ export const RACE = {
    * line, so even the quickest stays a little under it; with the boost battery bought, they get
    * one too.
    */
-  skill: [0.955, 0.97, 0.98],
+  skill: [0.96, 0.97, 0.98],
+  /**
+   * Keeping the field together: an opponent this far ahead of the player (m) or more eases off
+   * by `catchUp`, one as far behind pushes on by as much, never past the player's top speed.
+   */
+  catchUp: 0.07,
+  catchUpRange: 40,
   /** Grid slots behind the start line: how far back and how far to the left (m). Who gets which is drawn. */
   grid: [[0.5, 1.2], [0.5, -1.2], [3.1, 1.2], [3.1, -1.2]] as [number, number][],
   /** Prize for the places, in lap money of the track. */

@@ -277,6 +277,12 @@ function handleEvents(): void {
         sound.nope();
         hud.toast(L('Checkpoint verpasst!', 'Checkpoint missed!'), L('Die Runde zählt nicht. Alle CP-Schilder der Reihe nach durchfahren.', 'The lap does not count. Drive through every CP marker in order.'), 3);
         break;
+      case 'skipped': {
+        sound.nope();
+        const cp = e.gate === 0 ? L('das Ziel', 'the finish') : `CP ${e.gate}`;
+        hud.toast(L(`${cp} ausgelassen!`, `${cp} left out!`), L(`Zurück und durch ${cp}, sonst zählt die Runde nicht.`, `Go back through ${cp}, or the lap will not count.`), 3.5);
+        break;
+      }
       case 'fell':
         sound.nope();
         hud.toast(L('Runtergefallen!', 'Fell off!'), L('Zurück zum Start, die Uhr läuft weiter.', 'Back to the start, the clock keeps running.'), 2.5);

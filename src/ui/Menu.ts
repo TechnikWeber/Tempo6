@@ -115,7 +115,7 @@ export class Menu {
     const hint = h('p', 'keys');
     hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
     right.append(hint);
-    this.root.append(head, left, right, this.bar(), bigPrev, bigNext);
+    this.root.append(head, left, right, this.bar(), bigPrev, bigNext, h('p', 'version', `Version ${__VERSION__}`));
 
     this.start.addEventListener('click', () => this.go());
     window.addEventListener('keydown', (e) => {

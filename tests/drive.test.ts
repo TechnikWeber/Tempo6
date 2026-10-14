@@ -658,6 +658,9 @@ describe('race', () => {
     const race = new Race(PARKPLATZ.gates);
     const at = (i: number) => race.update(PARKPLATZ.gates[i].x, PARKPLATZ.gates[i].z, 1);
     expect(at(0)).toBe('start');
+    // a checkpoint left out is told at once, and only once
+    expect(at(2)).toBe('skipped');
+    expect(race.skipped).toBe(1);
     expect(at(2)).toBe(null);
     expect(at(0)).toBe(null);
     expect(at(1)).toBe(null);
@@ -1546,6 +1549,21 @@ describe('modes', () => {
     core.dispose();
   });
 
+  it('keeps the field together: ahead of the player the others ease off, behind they push on, never past the player', () => {
+    const core = new GameCore(PARKPLATZ, trained(4), 'race');
+    core.random = dice(2);
+    core.restart(true);
+    const ap = new Autopilot(PARKPLATZ.line!, 2.5).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
+    // the player crawls round the first lap, so the others get well ahead
+    for (let i = 0; i < 60 * 14; i++) core.step(ap.input(core, 0.5));
+    const top = core.sim.vehicle.topSpeed;
+    expect(core.place).toBeGreaterThan(1);
+    // (those in front are told by the place: as many as are ahead go slower than their own pace)
+    expect(core.rivals.filter((r) => r.vehicle.topSpeed < r.pace).length).toBe(core.place - 1);
+    for (const r of core.rivals) expect(r.vehicle.topSpeed).toBeLessThanOrEqual(Math.max(r.pace, top) + 1e-9);
+    core.dispose();
+  });
+
   it("leaves the player's boost unanswered, so it is the way past", () => {
     const progress = trained(5);
     progress.unlockEverything([]);
@@ -1667,9 +1685,20 @@ describe('checkpoints and the road', () => {
     expect(r.update(0, 0, 1)).toBe('start');
     expect(r.update(10, 10, 1)).toBe(null);
     // straight back over the line, the third gate left out
-    expect(r.update(0, 5, 1)).toBe(null);
+    expect(r.update(0, 9, 1)).toBe(null);
     expect(r.update(0, 0, 1)).toBe('missed');
     expect(r.laps).toBe(0);
+  });
+
+  it("counts a checkpoint a little beyond its posts, but an obstacle's only as drawn", () => {
+    const r = new Race([{ x: 0, z: 0, hx: 1, hz: 3 }, { x: 10, z: 10, hx: 3, hz: 1 }, { x: 20, z: 20, hx: 1, hz: 1, exact: true }]);
+    expect(r.update(2.5, 4.5, 1)).toBe('start');
+    expect(r.update(14.5, 10, 1)).toBe(null);
+    expect(r.next).toBe(2);
+    expect(r.update(21.5, 20, 1)).toBe(null);
+    expect(r.next).toBe(2);
+    expect(r.update(20.5, 20, 1)).toBe(null);
+    expect(r.next).toBe(0);
   });
 
   it('runs a course from the first gate to the last, and back to the start after a fall', () => {
@@ -1719,7 +1748,7 @@ describe('sky path', () => {
     expect(done).not.toBeNull();
     expect(done!).toBeLessThan(60);
     // (and it went all the way, through the drum and over the jump)
-    expect(core.sim.vehicle.body.translation().z).toBeGreaterThan(175);
+    expect(core.sim.vehicle.body.translation().z).toBeGreaterThan(172);
     // over the edge on the next run: back to the start, the time going on
     core.restart();
     for (let i = 0; i < 60 * 4; i++) core.step(ap.input(core));

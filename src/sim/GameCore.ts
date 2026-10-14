@@ -17,6 +17,8 @@ export interface Rival {
   race: Race;
   /** Where it started on the grid. */
   grid: { x: number; z: number; yaw: number };
+  /** Its own top speed (m/s), before keeping up with the player. */
+  pace: number;
 }
 
 export interface GameInput extends DriveInput {
@@ -60,6 +62,7 @@ export type GameEvent =
   | { type: 'chainLost'; lost: number }
   /** Over the finish line with a checkpoint left out: the lap does not count. */
   | { type: 'missed' }
+  | { type: 'skipped'; gate: number }
   /** Fallen off a course in the sky: back at the start, the clock running on. */
   | { type: 'fell' }
   /** Freestyle: time is up; what the session earned, and whether it is the best here. */
@@ -151,7 +154,7 @@ export class GameCore {
       const spec = VEHICLES[others[(first + k * 4) % others.length]];
       const grid = this.slot(k + 1);
       const vehicle = this.sim.addOther(spec, grid.x, pos[1], grid.z, yaw);
-      this.rivals.push({ vehicle, pilot: new Autopilot(line, 2.5).from(grid.x, grid.z), race: new Race(this.track.gates), grid });
+      this.rivals.push({ vehicle, pilot: new Autopilot(line, 2.5).from(grid.x, grid.z), race: new Race(this.track.gates), grid, pace: vehicle.topSpeed });
     });
   }
 
@@ -176,13 +179,28 @@ export class GameCore {
     const s = this.progress.stage;
     const top = this.sim.vehicle.topSpeed;
     this.rivals.forEach((r, k) => {
-      r.vehicle.setMotor(top * RACE.skill[k], s.accel * r.vehicle.spec.accelFactor);
+      r.pace = top * RACE.skill[k];
+      r.vehicle.setMotor(r.pace, s.accel * r.vehicle.spec.accelFactor);
       r.vehicle.boostFitted = this.progress.hasBoost;
     });
   }
 
+  /** Ahead of the player, an opponent eases off a little; behind, it pushes on. */
+  private keepUp(r: Rival): void {
+    const me = this.sim.vehicle;
+    const p = me.body.translation(), q = r.vehicle.body.translation();
+    const mine = this.standing(this.race, p.x, p.z), theirs = this.standing(r.race, q.x, q.z);
+    let f = 1;
+    if (mine >= 0 && theirs >= 0 && !this.finished) {
+      const pull = Math.min(1, Math.hypot(q.x - p.x, q.z - p.z) / RACE.catchUpRange) * RACE.catchUp;
+      f = theirs > mine ? 1 - pull : 1 + pull;
+    }
+    r.vehicle.setMotor(Math.min(r.pace * f, Math.max(r.pace, me.topSpeed)), r.vehicle.accel);
+  }
+
   /** How an opponent drives this step: the line, and the boost on the straights. */
   private rivalInput(r: Rival): DriveInput {
+    this.keepUp(r);
     const input = r.pilot.drive(r.vehicle);
     const v = r.vehicle;
     // on a straight, at speed, once the battery is full, and then until the straight ends. They
@@ -407,7 +425,8 @@ export class GameCore {
     // (and after the finish of a race, the laps no longer count)
     const raw = this.laps && !this.finished ? race.update(p.x, p.z, STEP) : null;
     if (raw === 'missed') this.events.push({ type: 'missed' });
-    const ev = raw === 'missed' ? null : raw;
+    if (raw === 'skipped') this.events.push({ type: 'skipped', gate: race.skipped });
+    const ev = raw === 'missed' || raw === 'skipped' ? null : raw;
     this.watchRoad(p.x, p.z);
     this.watchFall(p.y);
     if (ev === 'start') this.events.push({ type: 'lapStart' });

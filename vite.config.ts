@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { defineConfig, type Plugin } from 'vite';
 
@@ -28,9 +29,20 @@ function profileChoices(): Plugin {
   };
 }
 
+/** The version shown at the foot of the menu: the commit the build was made from, and when. */
+function version(): string {
+  try {
+    const out = execSync("git log -1 --date=format-local:'%d.%m.%Y %H:%M' --format='%h · %cd'", { env: { ...process.env, TZ: 'Europe/Berlin' } });
+    return out.toString().trim();
+  } catch {
+    return 'dev';
+  }
+}
+
 // Relative base so the build also runs from a GitHub Pages sub-path.
 export default defineConfig({
   base: './',
+  define: { __VERSION__: JSON.stringify(version()) },
   build: { target: 'es2022', chunkSizeWarningLimit: 4000 },
   plugins: [profileChoices()],
 });
