@@ -10,7 +10,7 @@ import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
 import { trackById, trackOpen, TRACKS, TRAINING } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
-import { dice } from '../src/tracks/scenery';
+import { dice, distanceTo } from '../src/tracks/scenery';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 import { REHA } from '../src/tracks/reha';
 import { Autopilot } from './autopilot';
@@ -1547,5 +1547,25 @@ describe('modes', () => {
     expect(core.crash.started).toBe(false);
     expect(core.crash.score).toBe(0);
     core.dispose();
+  });
+});
+
+describe('road circuits', () => {
+  // (the ones laid out with road(): 7 m of tarmac; anything solid at wheel height stays off it)
+  it.each(['talstadt', 'wesertor', 'stadion', 'schleife'])('%s has nothing solid on the road', (id) => {
+    const t = trackById(id);
+    for (const b of t.statics) {
+      if (b.pos[1] - b.half[1] > 1.5 || b.pos[1] + b.half[1] < 0.05 || b.half[0] > 100) continue;
+      const q = b.quat ?? [0, 0, 0, 1];
+      const yaw = 2 * Math.atan2(q[1], q[3]);
+      const c = Math.cos(yaw), s = Math.sin(yaw);
+      for (let i = -1; i <= 1; i += 0.25) {
+        for (let j = -1; j <= 1; j += 0.25) {
+          if (Math.abs(i) !== 1 && Math.abs(j) !== 1) continue;
+          const lx = i * b.half[0], lz = j * b.half[2];
+          expect(distanceTo(t.line!, b.pos[0] + lx * c + lz * s, b.pos[2] - lx * s + lz * c), `box at ${b.pos}`).toBeGreaterThan(3.8);
+        }
+      }
+    }
   });
 });
