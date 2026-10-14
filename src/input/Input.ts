@@ -34,7 +34,8 @@ export class Input {
 
   constructor() {
     window.addEventListener('keydown', (e) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // (typing into a text field, e.g. a cheat code, is not driving)
+      if (e.ctrlKey || e.metaKey || e.altKey || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       this.gesture();
       if (HELD.includes(e.code)) {
         this.held.add(e.code);

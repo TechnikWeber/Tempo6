@@ -307,7 +307,7 @@ kbd {
 #menu .modes { display: flex; gap: 6px; flex-wrap: wrap; }
 #menu .mode { font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); background: var(--panel); border: 2px solid transparent; border-radius: 10px; padding: 5px 10px; cursor: pointer; }
 #menu .mode.on { border-color: var(--accent); color: var(--accent); }
-#menu .mode.locked { filter: grayscale(1); opacity: 0.5; }
+#menu .mode.locked { color: #8a8d93; background: rgb(30 32 36 / 0.85); filter: grayscale(1); opacity: 0.6; cursor: default; }
 #menu .mode-blurb { margin: 6px 0 10px; font-size: 13px; opacity: 0.85; line-height: 1.35; text-shadow: 0 1px 0 #000; }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 #menu .keys { margin: 10px 0 0; font-size: 12px; opacity: 0.8; text-align: center; }

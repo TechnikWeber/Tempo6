@@ -109,8 +109,8 @@ export class Menu {
         case 'KeyD': case 'ArrowRight': this.pickVehicle(step(VEHICLE_ORDER, this.vehicle, 1) as VehicleId); break;
         case 'KeyW': case 'ArrowUp': this.pickTrack(step(this.mode.tracks, this.track, -1)); break;
         case 'KeyS': case 'ArrowDown': this.pickTrack(step(this.mode.tracks, this.track, 1)); break;
-        case 'KeyQ': this.pickMode(step(MODES.map((m) => m.id), this.progress.mode, -1) as ModeId); break;
-        case 'KeyE': this.pickMode(step(MODES.map((m) => m.id), this.progress.mode, 1) as ModeId); break;
+        case 'KeyQ': this.pickMode(step(MODES.map((m) => m.id), this.mode.id, -1) as ModeId); break;
+        case 'KeyE': this.pickMode(step(MODES.map((m) => m.id), this.mode.id, 1) as ModeId); break;
         case 'Enter': case 'Space': this.go(); break;
         case 'KeyT': this.openGarage(); break;
         default: return;
@@ -166,8 +166,9 @@ export class Menu {
     this.noteTimer = window.setTimeout(() => (this.note.textContent = ''), seconds * 1000);
   }
 
+  /** The mode in play: before the tutorial is done that is always the time trial. */
   private get mode() {
-    return modeById(this.progress.mode);
+    return modeById(this.progress.tutorialDone ? this.progress.mode : 'time');
   }
 
   private openGarage(): void {
@@ -261,7 +262,7 @@ export class Menu {
 
   /** Only with a vehicle and a track that are both had. */
   private get ready(): boolean {
-    return this.vehicleOpen(this.vehicle) && !this.trackLock(this.track) && !this.modeLock(this.progress.mode);
+    return this.vehicleOpen(this.vehicle) && !this.trackLock(this.track) && !this.modeLock(this.mode.id);
   }
 
   private go(): void {
@@ -340,8 +341,8 @@ export class Menu {
 
     this.modeList.replaceChildren(
       ...MODES.map((m) => {
-        const b = h('button', `mode${m.id === mode.id ? ' on' : ''}`, m.name);
         const lock = this.modeLock(m.id);
+        const b = h('button', `mode${m.id === mode.id ? ' on' : ''}`, lock ? `🔒 ${m.name}` : m.name);
         if (lock) {
           b.classList.add('locked');
           b.title = lock.text;
