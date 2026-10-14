@@ -117,7 +117,7 @@ const yard: Yard = { statics, decor, props };
   }
 }
 const SHIRTS = [0x4a7ab5, 0xf2f2f2, 0xd23b3b, 0x3f8f5f, 0x7b2d8e, 0xe3c04a, 0x2a2a2e, 0xc8c8c8];
-snackStand(yard, -6, 26, Math.PI, SHIRTS, 4);
+snackStand(yard, -6, 24.5, Math.PI, SHIRTS, 4);
 // staff in their red shirts and vests: one gathering the carts, one waving people in
 decor.push(person(-29.5, 24, Math.PI, 0xd23b3b, 'point', true), person(-46, 19, 0.6, 0xd23b3b, 'wave', true));
 // people watching the jumps from beside the big ramp
