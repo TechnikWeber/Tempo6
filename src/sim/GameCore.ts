@@ -172,7 +172,7 @@ export class GameCore {
     const s = this.progress.stage;
     this.rivals.forEach((r, k) => {
       const spec = r.vehicle.spec;
-      r.vehicle.setMotor((stageSpeedKmh(s, spec.speedFactor) * RACE.skill[k]) / 3.6, s.accel * spec.accelFactor * RACE.skill[k]);
+      r.vehicle.setMotor((stageSpeedKmh(s, spec.speedFactor) * RACE.skill[k]) / 3.6, s.accel * spec.accelFactor);
       r.vehicle.boostFitted = this.progress.hasBoost;
     });
   }

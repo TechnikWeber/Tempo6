@@ -78,9 +78,10 @@ export class Race {
     this.lapTime = 0;
   }
 
-  /** Abort the current lap, e.g. after jumping back to the start. */
+  /** Back to before the first lap, e.g. after jumping back to the start or for a new race. */
   reset(): void {
     this.next = 0;
+    this.laps = 0;
     this.running = false;
     this.lapTime = 0;
     this.onFinish = false;

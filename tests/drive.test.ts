@@ -1470,6 +1470,30 @@ describe('modes', () => {
     core.dispose();
   });
 
+  it('starts every race from the first lap, however many were driven before', () => {
+    const core = new GameCore(PARKPLATZ, trained(4), 'race');
+    core.random = dice(2);
+    core.restart(true);
+    const ap = new Autopilot(PARKPLATZ.line!, 2.5).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
+    for (let i = 0; i < 60 * 120 && !core.finished; i++) {
+      core.step(ap.input(core));
+      core.events.length = 0;
+    }
+    expect(core.finished).toBeGreaterThan(0);
+    // the same race again, straight from the menu
+    core.restart(true);
+    expect(core.race.laps).toBe(0);
+    for (const r of core.rivals) expect(r.race.laps).toBe(0);
+    ap.from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
+    // a little way into the first lap nobody has a lap behind them, and the place is a real one
+    for (let i = 0; i < 60 * 10; i++) core.step(ap.input(core));
+    expect(core.race.running).toBe(true);
+    expect(core.race.laps).toBe(0);
+    for (const r of core.rivals) expect(r.race.laps).toBe(0);
+    expect(core.place).toBeLessThan(4);
+    core.dispose();
+  });
+
   it('draws the grid afresh for every start, so the player is not always in front', () => {
     const core = new GameCore(PARKPLATZ, trained(4), 'race');
     const rows = new Set<string>();
