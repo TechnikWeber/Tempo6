@@ -1,7 +1,8 @@
 import { L } from '../i18n';
 import type { BoxDef, DecorDef, Gate, MoverDef, PickupDef, SpinnerDef, TrackDef } from '../sim/Track';
 
-// The sky path: planks, a wobbling bridge, a seesaw and a turntable, high up in the air.
+// The sky path: planks, a wobbling bridge, a seesaw, a turntable, a turning drum, sliding
+// planks and a jump, high up in the air.
 // Start to finish against the clock; whoever falls off starts again at the start, and the
 // clock runs on. The planks get narrower as it goes.
 const Y = 60;
@@ -90,23 +91,62 @@ platform(10, 113.5, 2.5);
 checkpoint(10, 113.5, 2.2);
 line.push([-4, 113.5], [10, 113.5]);
 
-// The last stretch, a metre wide, to the finish.
-plank([10, 115.8], [10, 131], 1.0);
-platform(10, 135, 4);
-checkpoint(10, 135, 3.5);
-line.push([10, 135]);
+// A metre wide now, to the big drum.
+plank([10, 115.8], [10, 124], 1.0);
+platform(10, 127, 3);
+checkpoint(10, 127);
+line.push([10, 127]);
+
+// The big drum: a striped tube turning about its axle along the way. Its floor carries the
+// vehicle up the side, so it is driven through slanting against the turn.
+const DRUM = 3.5, DRUM_HALF = 8, DRUM_Z = 130.15 + DRUM_HALF;
+movers.push({ type: 'drum', pos: [10, Y + DRUM, DRUM_Z], yaw: 0, half: [0, 0.1, DRUM_HALF], radius: DRUM, blades: 36, spin: 0.7, angle: 0, color: 0xd23b3b });
+platform(10, 149.3, 3);
+checkpoint(10, 149.3);
+line.push([10, 149.3]);
+
+// Two planks sliding from side to side across the gap, nearly but not quite together; the
+// way off them is only straight ahead when the second one is back in the middle.
+const SLIDE = { half: [1.7, 0.1, 1.6] as [number, number, number], travel: 1.8, period: 6, angle: 0, yaw: 0 };
+movers.push(
+  { type: 'slider', pos: [10, Y, 153.95], ...SLIDE, phase: 0, color: 0x4a9a6a },
+  { type: 'slider', pos: [10, Y, 157.25], ...SLIDE, phase: -0.7, color: 0x3f8a8c },
+);
+platform(10, 161.95, 3);
+checkpoint(10, 161.95);
+line.push([10, 161.95]);
+
+// Straight on, a ramp and a jump over the gap onto the finish.
+plank([10, 165], [10, 171], 1.6);
+const KICK = Math.atan2(0.3, 1.6);
+statics.push({
+  pos: [10, Y + 0.15 - T * Math.cos(KICK), 171.8 + T * Math.sin(KICK)],
+  half: [0.8, T, 0.8 / Math.cos(KICK)],
+  quat: [-Math.sin(KICK / 2), 0, 0, Math.cos(KICK / 2)],
+  color: EDGE,
+});
+const LAND = 179;
+statics.push({ pos: [10, Y - 0.4, LAND], half: [4.5, 0.4, 5.1], color: PLATFORM });
+for (const s of [-1, 1]) {
+  decor.push(
+    { type: 'box', pos: [10 + s * 4.42, Y + 0.006, LAND], half: [0.08, 0.006, 5.1], color: EDGE },
+    { type: 'box', pos: [10, Y + 0.006, LAND + s * 5.02], half: [4.34, 0.006, 0.08], color: EDGE },
+  );
+}
+checkpoint(10, LAND + 1, 4);
+line.push([10, LAND + 1]);
 
 // screws along the way, for the brave
-for (const [x, z] of [[0, 10], [5, 32], [10, 49.5], [10, 78.7], [3, 92.6], [-4, 106.5], [3, 113.5], [10, 123]] as const) {
+for (const [x, z] of [[0, 10], [5, 32], [10, 49.5], [10, 78.7], [3, 92.6], [-4, 106.5], [3, 113.5], [10, 120], [10, 134], [10, 142], [10, 155.6], [10, 173.2]] as const) {
   pickups.push({ type: 'screw', pos: [x, Y + 0.5, z] });
 }
 
 // The finish arch, and a sign at the start.
 decor.push(
-  { type: 'box', pos: [6.5, Y + 1.6, 135], half: [0.15, 1.6, 0.15], color: 0xd23b3b },
-  { type: 'box', pos: [13.5, Y + 1.6, 135], half: [0.15, 1.6, 0.15], color: 0xd23b3b },
-  { type: 'box', pos: [10, Y + 3.35, 135], half: [3.65, 0.15, 0.2], color: 0xf2f2f2 },
-  { type: 'finish', pos: [10, Y + 0.012, 135], half: [0.6, 0, 3.4], yaw: Math.PI / 2 },
+  { type: 'box', pos: [5.5, Y + 1.6, LAND + 1], half: [0.15, 1.6, 0.15], color: 0xd23b3b },
+  { type: 'box', pos: [14.5, Y + 1.6, LAND + 1], half: [0.15, 1.6, 0.15], color: 0xd23b3b },
+  { type: 'box', pos: [10, Y + 3.35, LAND + 1], half: [4.65, 0.15, 0.2], color: 0xf2f2f2 },
+  { type: 'finish', pos: [10, Y + 0.012, LAND + 1], half: [0.6, 0, 4.3], yaw: Math.PI / 2 },
   { type: 'label', pos: [0, Y + 0.014, -7.5], half: [0.6, 0, 2.6], yaw: Math.PI, text: L('HIMMELSPFAD', 'SKY PATH') },
 );
 
@@ -114,8 +154,8 @@ export const SKY: TrackDef = {
   id: 'sky',
   name: L('Himmelspfad', 'Sky Path'),
   blurb: L(
-    'Planken, Wackelbrücke, Wippe und Drehscheibe hoch über den Wolken. Wer runterfällt, fängt vorne wieder an, die Uhr läuft weiter.',
-    'Planks, a wobble bridge, a seesaw and a turntable high above the clouds. Fall off and you start again at the start, the clock running on.',
+    'Planken, Wackelbrücke, Wippe, Drehscheibe, eine große drehende Rolle, Schiebeplanken und ein Sprung ins Ziel, hoch über den Wolken. Wer runterfällt, fängt vorne wieder an, die Uhr läuft weiter.',
+    'Planks, a wobble bridge, a seesaw, a turntable, a big turning drum, sliding planks and a jump to the finish, high above the clouds. Fall off and you start again at the start, the clock running on.',
   ),
   unlockPrice: 150,
   lapPay: 60,

@@ -18,8 +18,10 @@ const COUNTERWEIGHT = 0.6;
  */
 export class Mover {
   readonly tracked: Tracked;
-  /** Tilt in rad: a seesaw's +Z end down, a rocker's left side up. */
+  /** Tilt in rad: a seesaw's +Z end down, a rocker's left side up; how far a drum has turned. */
   angle = 0;
+  /** How far a slider is out to its right (+X of its heading) from its middle. */
+  offset = 0;
   private rate = 0;
   private time = 0;
   /** The axis it turns about, in the world. */
@@ -40,6 +42,18 @@ export class Mover {
           body,
         );
       }
+    } else if (def.type === 'drum') {
+      // slats all the way round, their inner faces at the radius, the first one at the bottom
+      const n = def.blades ?? 32, r = def.radius ?? 3, t = def.half[1];
+      for (const [a, x, y, half] of drumSlats(r, t, n)) {
+        world.createCollider(
+          RAPIER.ColliderDesc.cuboid(half, t, def.half[2])
+            .setTranslation(x, y, 0)
+            .setRotation({ x: 0, y: 0, z: Math.sin(a / 2), w: Math.cos(a / 2) })
+            .setFriction(0.9),
+          body,
+        );
+      }
     } else {
       world.createCollider(RAPIER.ColliderDesc.cuboid(...def.half).setTranslation(0, -def.half[1], 0).setFriction(0.9), body);
     }
@@ -54,17 +68,29 @@ export class Mover {
     this.angle = this.def.type === 'seesaw' ? -this.def.angle : 0;
     this.rate = 0;
     this.time = 0;
+    this.offset = this.slide(0);
     const b = this.tracked.body;
-    b.setTranslation({ x: this.def.pos[0], y: this.def.pos[1], z: this.def.pos[2] }, true);
+    const [x, y, z] = this.at(this.offset);
+    b.setTranslation({ x, y, z }, true);
     b.setRotation(this.rotation(this.angle), true);
     b.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true);
     this.tracked.teleport();
   }
 
   /** @param at where the vehicle is, and whether it stands on this plank */
   update(dt: number, at: { x: number; y: number; z: number }, onIt: boolean): void {
     const d = this.def;
-    if (d.type === 'propeller') {
+    if (d.type === 'slider') {
+      // Steer it onto where it should be next from where it actually is, so nothing drifts.
+      this.time += dt;
+      this.offset = this.slide(this.time);
+      const [x, y, z] = this.at(this.offset);
+      const p = this.tracked.body.translation();
+      this.tracked.body.setLinvel({ x: (x - p.x) / dt, y: (y - p.y) / dt, z: (z - p.z) / dt }, true);
+      return;
+    }
+    if (d.type === 'propeller' || d.type === 'drum') {
       // just round and round, whatever is in the way
       const w = d.spin ?? 3;
       this.angle += w * dt;
@@ -95,12 +121,25 @@ export class Mover {
   /** Whether a point is above the plank (in plan view) and close to its top. */
   holds(at: { x: number; y: number; z: number }, reach: number): boolean {
     const d = this.def;
-    const dx = at.x - d.pos[0], dz = at.z - d.pos[2];
+    const c = this.tracked.body.translation();
+    const dx = at.x - c.x, dz = at.z - c.z;
     const s = dx * Math.sin(d.yaw) + dz * Math.cos(d.yaw);
     const l = dx * Math.cos(d.yaw) - dz * Math.sin(d.yaw);
     if (Math.abs(s) > d.half[2] || Math.abs(l) > d.half[0] + 0.2) return false;
     const top = d.type === 'seesaw' ? d.pos[1] - s * Math.sin(this.angle) : d.pos[1] + l * Math.sin(this.angle);
     return at.y > top - 0.2 && at.y < top + reach;
+  }
+
+  /** A slider's offset at a time. */
+  private slide(time: number): number {
+    const d = this.def;
+    return d.type === 'slider' ? (d.travel ?? 2) * Math.sin((2 * Math.PI * time) / (d.period ?? 4) + (d.phase ?? 0)) : 0;
+  }
+
+  /** Where the body stands with a slider's offset. */
+  private at(offset: number): [number, number, number] {
+    const [x, y, z] = this.def.pos;
+    return [x + offset * Math.cos(this.def.yaw), y, z - offset * Math.sin(this.def.yaw)];
   }
 
   /** Tilt of the body as it stands, read back from its rotation. */
@@ -121,4 +160,18 @@ export class Mover {
     // heading about Y, then the tilt about the local X (seesaw) or Z (rocker) axis
     return this.def.type === 'seesaw' ? { x: cy * sa, y: sy * ca, z: -sy * sa, w: cy * ca } : { x: sy * sa, y: sy * ca, z: cy * sa, w: cy * ca };
   }
+}
+
+/**
+ * A drum's slats, as the angle round from the bottom and the middle of each in the drum's
+ * own frame, with each one's half width: just wide enough to close the gaps on the inside.
+ */
+export function drumSlats(radius: number, halfThickness: number, n: number): [number, number, number, number][] {
+  const out: [number, number, number, number][] = [];
+  const half = radius * Math.tan(Math.PI / n) + 0.02;
+  for (let k = 0; k < n; k++) {
+    const a = (2 * Math.PI * k) / n;
+    out.push([a, Math.sin(a) * (radius + halfThickness), -Math.cos(a) * (radius + halfThickness), half]);
+  }
+  return out;
 }

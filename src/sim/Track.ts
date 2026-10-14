@@ -101,22 +101,29 @@ export interface SpinnerDef {
 /**
  * Something that moves. A `seesaw` tips about its middle towards whichever end the vehicle
  * is on; a `rocker` rolls slowly from side to side by itself, for balancing across; a
- * `propeller` spins its blades across the way, about an axle pointing along it.
+ * `propeller` spins its blades across the way, about an axle pointing along it. A `drum` is a
+ * big tube turning about its axle along the way, to be driven through on its inside; a
+ * `slider` is a plank sliding from side to side across the way by itself.
  */
 export interface MoverDef {
-  type: 'seesaw' | 'rocker' | 'propeller';
-  /** Centre of its top surface when level; a propeller's hub. */
+  type: 'seesaw' | 'rocker' | 'propeller' | 'drum' | 'slider';
+  /** Centre of its top surface when level; a propeller's or a drum's hub. */
   pos: [number, number, number];
   /** Heading of its length, 0 = along Z; a propeller's axle. */
   yaw: number;
   /** Half width, half thickness and half length; a propeller blade's half width, half length and half thickness. */
   half: [number, number, number];
-  /** Propeller: how many blades, and how fast it turns (rad/s). */
+  /** Propeller and drum: how many blades or slats, and how fast it turns (rad/s). */
   blades?: number;
   spin?: number;
+  /** Drum: inner radius; its half length is `half[2]`, a slat's half thickness `half[1]`. */
+  radius?: number;
+  /** Slider: how far it goes out either side of its middle, and where in its swing it starts (rad). */
+  travel?: number;
+  phase?: number;
   /** Greatest tilt either way, in rad. A seesaw starts tipped back, towards -Z of its heading. */
   angle: number;
-  /** Seconds for a rocker to roll over and back. */
+  /** Seconds for a rocker to roll over and back, or a slider to go across and back. */
   period?: number;
   color: number;
 }

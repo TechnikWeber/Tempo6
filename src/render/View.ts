@@ -8,6 +8,7 @@ import {
 import { HANDLING, VEHICLES, type VehicleSpec } from '../config/vehicles';
 import { GHOST_RATE, type GhostLap } from '../sim/Progress';
 import type { GameCore } from '../sim/GameCore';
+import { drumSlats } from '../sim/Movers';
 import { SPINNER_HALF } from '../sim/Sim';
 import { heightAt, type DecorDef, type TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
@@ -414,6 +415,23 @@ export class View {
         }
         // (the hub sticks out a little either side of the blades)
         box(g, 0.4, 0.4, d.half[2] * 2 + 0.3, 0x3a3c40, 0, 0, 0);
+        level.add(g);
+        return g;
+      }
+      if (d.type === 'drum') {
+        // striped slats as the physics has them, every other one a hair shorter so their ends
+        // never share a face, and a ring round either end
+        const r = d.radius ?? 3, t = d.half[1], len = d.half[2];
+        drumSlats(r, t, d.blades ?? 32).forEach(([a, x, y, half], k) => {
+          const slat = box(g, half * 2, t * 2, (len - (k % 2) * 0.01) * 2, k % 2 ? 0xf2f2f2 : d.color, x, y, 0);
+          slat.rotation.z = a;
+          const ring = r + 2 * t + 0.12;
+          for (const s of [-1, 1]) {
+            const hoop = box(g, ((half * ring) / r) * 2, 0.28, 0.3, 0x3a3c40, Math.sin(a) * ring, -Math.cos(a) * ring, s * (len - 0.2));
+            hoop.rotation.z = a;
+            hoop.castShadow = false;
+          }
+        });
         level.add(g);
         return g;
       }

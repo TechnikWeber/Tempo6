@@ -1650,13 +1650,20 @@ describe('sky path', () => {
     const core = new GameCore(SKY, p, 'time');
     const ap = new Autopilot(SKY.line!, 2, false).from(SKY.spawn.pos[0], SKY.spawn.pos[2]);
     let done: number | null = null;
+    const slider = core.sim.movers.find((m) => m.def.pos[2] > 157 && m.def.type === 'slider')!;
+    const { period = 6, phase = 0 } = slider.def;
     for (let i = 0; i < 60 * 90 && done === null; i++) {
-      core.step(ap.input(core));
+      // before the sliding planks: wait until the second one will be back in the middle on the way off
+      const at = core.sim.vehicle.body.translation();
+      const waiting = at.z > 147 && at.z < 151.5 && (((2 * Math.PI) / period) * (i / 60 + 1.6) + phase) % Math.PI;
+      core.step(ap.input(core, waiting === false || waiting < 0.5 || waiting > Math.PI - 0.3 ? 1 : 0));
       for (const e of core.events) if (e.type === 'lap') done = e.time;
       core.events.length = 0;
     }
     expect(done).not.toBeNull();
     expect(done!).toBeLessThan(60);
+    // (and it went all the way, through the drum and over the jump)
+    expect(core.sim.vehicle.body.translation().z).toBeGreaterThan(175);
     // over the edge on the next run: back to the start, the time going on
     core.restart();
     for (let i = 0; i < 60 * 4; i++) core.step(ap.input(core));
