@@ -87,10 +87,27 @@ for (const z of [-33, 33]) {
   }
 }
 
+// The main road along the south side of the lot, busy both ways, with a row of trees.
+const ROAD_Z = -LOT_Z - 9;
+decor.push(
+  { type: 'box', pos: [0, 0.01, ROAD_Z], half: [260, 0.01, 4.5], color: 0x45484d },
+  { type: 'box', pos: [0, 0.07, ROAD_Z + 6], half: [260, 0.06, 1.4], color: 0xb7b2a6 },
+);
+for (let x = -255; x < 260; x += 6) decor.push({ type: 'box', pos: [x, 0.025, ROAD_Z], half: [1.5, 0.005, 0.08], color: 0xf2f2f2 });
+for (let x = -100; x <= 100; x += 20) decor.push({ type: 'tree', pos: [x + 10, 0, ROAD_Z - 8] }, { type: 'lamp', pos: [x, 0, ROAD_Z + 6.5], yaw: Math.PI / 2 });
+// a bus stop opposite the entrance
+decor.push(
+  { type: 'box', pos: [-20, 1.2, ROAD_Z - 6.3], half: [2, 0.05, 0.8], color: 0x5c6670 },
+  { type: 'box', pos: [-20, 0.6, ROAD_Z - 6.95], half: [1.9, 0.55, 0.03], color: 0x9fc4d8 },
+  { type: 'board', pos: [-17.4, 2, ROAD_Z - 5.6], half: [0.3, 0.3, 0.03], text: 'H' },
+);
+// (keeping right: eastwards on the near side, back westwards on the far one)
+const MAIN_ROAD: [number, number][] = [[-250, ROAD_Z + 2.2], [250, ROAD_Z + 2.2], [250, ROAD_Z - 2.2], [-250, ROAD_Z - 2.2]];
+
 export const PARKPLATZ: TrackDef = {
   id: 'parkplatz',
   name: 'Baumarkt-Parkplatz',
-  blurb: 'Enger Rundkurs um die Grüninsel. Hier gibt es die ersten Schrauben fürs Tuning.',
+  blurb: 'Enger Rundkurs um die Grüninsel, Schanzen daneben. Hier wird zu Ende getunt.',
   unlockPrice: 0,
   lapPay: 10,
   spawn: { pos: [-3, 0.5, -LINE_Z], yaw: Math.PI / 2 },
@@ -110,5 +127,11 @@ export const PARKPLATZ: TrackDef = {
     { type: 'car', color: 0x3a6ea5, speed: 5, offset: 200, path: [[-64, -40], [64, -40], [64, 40], [-64, 40]] },
     // the delivery van takes the aisles, the other way round
     { type: 'van', color: 0xe8e4d8, speed: 4.5, offset: 40, path: [[-58, 27.5], [-58, -27.5], [58, -27.5], [58, 27.5]] },
+    // and the main road outside
+    { type: 'car', color: 0x2e7d4f, speed: 13, path: MAIN_ROAD },
+    { type: 'van', color: 0xd9a23a, speed: 11, offset: 300, path: MAIN_ROAD },
+    { type: 'car', color: 0x404850, speed: 14, offset: 520, path: MAIN_ROAD },
+    { type: 'car', color: 0xc8c8c8, speed: 12, offset: 760, path: MAIN_ROAD },
+    { type: 'car', color: 0x8a2c5a, speed: 13, offset: 900, path: MAIN_ROAD },
   ],
 };

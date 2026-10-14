@@ -27,6 +27,8 @@ export type GameEvent =
   | { type: 'untrained' }
   /** Through the Reha-Parcours for the first time with this vehicle: the throttle comes off. */
   | { type: 'graduated'; stage: TuningStage }
+  /** Tuned to the end of the tutorial: every vehicle has its throttle off, the tracks open up. */
+  | { type: 'tutorialDone' }
   | { type: 'boostBought' }
   | { type: 'boost' }
   | { type: 'honk' }
@@ -157,9 +159,11 @@ export class GameCore {
     }
     if (input.tune) {
       const next = progress.nextStage;
+      const learning = !progress.tutorialDone;
       if (progress.buyNext()) {
         this.applyStage();
         this.events.push({ type: 'tuned', stage: progress.stage });
+        if (learning && progress.tutorialDone) this.events.push({ type: 'tutorialDone' });
       } else if (next && !progress.trained()) {
         this.events.push({ type: 'untrained' });
       } else if (next) {

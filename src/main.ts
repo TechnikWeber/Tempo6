@@ -8,7 +8,7 @@ import { View } from './render/View';
 import { GameCore, type GameInput } from './sim/GameCore';
 import { Progress } from './sim/Progress';
 import { initPhysics, STEP } from './sim/Sim';
-import { trackById, TRAINING } from './tracks';
+import { AFTER_TRAINING, trackById, TRAINING } from './tracks';
 import { formatTime, Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
 
@@ -29,7 +29,7 @@ function loadTrack(id: string): void {
   view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
 }
 // A vehicle that has not been through the Reha-Parcours yet starts there.
-loadTrack(progress.trained() ? progress.track : TRAINING);
+loadTrack(progress.tutorialDone ? progress.track : TRAINING);
 
 const input = new Input();
 const sound = new Sound();
@@ -96,6 +96,8 @@ setRacing(false);
 /** Lap message waiting for its payout line, and the place the lap took on the board. */
 let lastLap = '';
 let ranked = 0;
+/** Set when the tutorial is over: the next frame moves on to the car park. */
+let graduate = false;
 function handleEvents(): void {
   for (const e of core.events) {
     if (!racing) continue;
@@ -160,6 +162,9 @@ function handleEvents(): void {
         sound.tuned();
         hud.toast('Autobatterie auf dem Schoß!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
         break;
+      case 'tutorialDone':
+        graduate = true;
+        break;
       case 'untrained':
         sound.nope();
         hud.toast('Erst einmal durch den Parcours', 'Dann ist die Drossel raus.', 2);
@@ -180,6 +185,12 @@ function handleEvents(): void {
     lastLap = '';
   }
   core.events.length = 0;
+  if (graduate) {
+    graduate = false;
+    loadTrack(AFTER_TRAINING);
+    core.restart(true);
+    hud.toast('Ausbildung bestanden!', `Ab auf den ${core.track.name}. Ab jetzt hat jedes Gefährt die Drossel raus.`, 5);
+  }
 }
 
 const IDLE: GameInput = { throttle: 0, steer: 0, handbrake: false, upright: false, respawn: false, tune: false };

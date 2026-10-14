@@ -8,7 +8,7 @@ export type VehicleId =
 export type CategoryId = 'power' | 'folder' | 'push' | 'tractor' | 'scooter';
 
 /** For testing: everything selectable without paying. */
-export const UNLOCK_ALL = true;
+export const UNLOCK_ALL = false;
 
 /** A wheel in chassis space. Forward is +Z, up is +Y, +X is the driver's left. */
 export interface WheelSpec {

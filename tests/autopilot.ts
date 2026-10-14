@@ -23,12 +23,15 @@ export class Autopilot {
       if (!this.loop && this.seg + 2 >= n) break;
       this.seg++;
     }
-    const target = this.along(p.x, p.z);
+    // look further ahead the faster it goes
+    const target = this.along(p.x, p.z, Math.max(this.ahead, Math.abs(v.speed) * 0.5));
     const bearing = Math.atan2(target[0] - p.x, target[1] - p.z);
     let e = bearing - Math.atan2(fx, fz);
     e = Math.atan2(Math.sin(e), Math.cos(e));
-    const steer = Math.max(-1, Math.min(1, -e * 2.5));
-    return { throttle, steer, handbrake: false, upright: false, respawn: false, tune: false };
+    const steer = Math.max(-1, Math.min(1, -e * 4));
+    // and lift off when the line bends away
+    const t = Math.abs(e) > 0.35 && Math.abs(v.speed) > 6 ? -0.5 : throttle;
+    return { throttle: t, steer, handbrake: false, upright: false, respawn: false, tune: false };
   }
 
   private project(a: [number, number], b: [number, number], x: number, z: number): number {
@@ -36,9 +39,9 @@ export class Autopilot {
     return ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1);
   }
 
-  private along(x: number, z: number): [number, number] {
+  private along(x: number, z: number, ahead: number): [number, number] {
     const n = this.pts.length;
-    let left = this.ahead;
+    let left = ahead;
     let i = this.seg;
     let a = this.pts[i % n], b = this.pts[(i + 1) % n];
     const t = Math.max(0, Math.min(1, this.project(a, b, x, z)));

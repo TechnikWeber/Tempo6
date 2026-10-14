@@ -8,24 +8,24 @@ export interface TuningStage {
   price: number;
 }
 
-// Each vehicle starts at walking pace and gets the first step for free by getting through the
-// Reha-Parcours. From there stage 10 is meant to take five to ten minutes of driving; the last
-// two are the long goal. Vehicles, tracks and the boost cost more.
+// Each vehicle starts at walking pace in the Reha-Parcours, and getting through once takes the
+// throttle off. Two more stages there end the tutorial; from then on every vehicle starts at
+// stage 1. The ladder is short and quick: up to stage 5 in no time, all the way in about five
+// minutes. Vehicles, tracks and the boost cost more.
 export const STAGES: TuningStage[] = [
   { name: 'Werkszustand', blurb: 'Zugelassen bis 6 km/h. Leider.', topSpeedKmh: 6, accel: 2.5, price: 0 },
-  { name: 'Drossel raus', blurb: 'Der kleine Stecker unterm Sitz war eh locker.', topSpeedKmh: 12, accel: 3.7, price: 0 },
-  { name: 'Reifen aufgepumpt', blurb: 'Zum ersten Mal seit 2009.', topSpeedKmh: 15, accel: 4.2, price: 15 },
-  { name: 'WD-40 überall', blurb: 'Wirklich überall.', topSpeedKmh: 18, accel: 4.7, price: 20 },
-  { name: 'Zweitakku vom Nachbarn', blurb: 'Er merkt es frühestens Dienstag.', topSpeedKmh: 21, accel: 5.15, price: 25 },
-  { name: 'Rallyestreifen', blurb: 'Bringt nachweislich 3 km/h.', topSpeedKmh: 24, accel: 5.5, price: 32 },
-  { name: 'Akkuschrauber-Motor', blurb: '18 Volt pure Gewalt.', topSpeedKmh: 29, accel: 6.1, price: 40 },
-  { name: 'Rasenmäher-Akku', blurb: 'Der Rasen kann warten.', topSpeedKmh: 34, accel: 6.7, price: 50 },
-  { name: 'Waschmaschinenmotor', blurb: 'Schleudergang: 1400 Umdrehungen.', topSpeedKmh: 39, accel: 7.3, price: 60 },
-  { name: 'Chiptuning aus dem Internet', blurb: 'Das Forum sagt, das hält.', topSpeedKmh: 44, accel: 7.8, price: 75 },
-  { name: 'Starkstrom', blurb: 'Die rote Dose im Keller.', topSpeedKmh: 50, accel: 8.3, price: 95 },
-  { name: 'Sahnekapsel-Lachgas', blurb: 'Vierzig Kapseln, ein Traum.', topSpeedKmh: 60, accel: 9.5, price: 250 },
-  { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 400 },
+  { name: 'Drossel raus', blurb: 'Der kleine Stecker unterm Sitz war eh locker.', topSpeedKmh: 18, accel: 4.7, price: 0 },
+  { name: 'Reifen aufgepumpt', blurb: 'Zum ersten Mal seit 2009.', topSpeedKmh: 24, accel: 5.5, price: 20 },
+  { name: 'Zweitakku vom Nachbarn', blurb: 'Er merkt es frühestens Dienstag.', topSpeedKmh: 30, accel: 6.2, price: 20 },
+  { name: 'Akkuschrauber-Motor', blurb: '18 Volt pure Gewalt.', topSpeedKmh: 37, accel: 6.9, price: 20 },
+  { name: 'Waschmaschinenmotor', blurb: 'Schleudergang: 1400 Umdrehungen.', topSpeedKmh: 45, accel: 7.6, price: 25 },
+  { name: 'Starkstrom', blurb: 'Die rote Dose im Keller.', topSpeedKmh: 54, accel: 8.4, price: 40 },
+  { name: 'Sahnekapsel-Lachgas', blurb: 'Vierzig Kapseln, ein Traum.', topSpeedKmh: 64, accel: 9.6, price: 55 },
+  { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 70 },
 ];
+
+/** Reaching this stage ends the tutorial: off to the car park, and every vehicle is free of its throttle. */
+export const TUTORIAL_STAGE = 3;
 
 /**
  * Top speed of a stage in km/h for a vehicle whose own factors (vehicle times driving profile)

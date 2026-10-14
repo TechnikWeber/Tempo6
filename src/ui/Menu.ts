@@ -1,4 +1,4 @@
-import { formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
+import { formatMoney, stageSpeedKmh, STAGES, TUTORIAL_STAGE } from '../config/tuning';
 import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from '../sim/Progress';
 import { TRACKS, TRAINING } from '../tracks';
@@ -10,6 +10,12 @@ interface MenuHandlers {
   /** Highlighted track changed (it is unlocked). */
   onTrack(id: string): void;
   onStart(): void;
+}
+
+/** Why something cannot be had yet: what the card says, and what it costs if it can be bought. */
+interface Lock {
+  text: string;
+  price?: number;
 }
 
 /** Smallest scale of the vehicle list that is still readable and tappable. */
@@ -105,6 +111,8 @@ export class Menu {
   show(): void {
     this.root.hidden = false;
     this.vehicle = this.progress.vehicle;
+    // (the game may have moved on to another track by itself, at the end of the tutorial)
+    this.track = this.progress.track || TRACKS[0].id;
     this.render();
   }
 
@@ -116,28 +124,47 @@ export class Menu {
     return this.progress.isUnlocked(id, VEHICLES[id].unlockPrice);
   }
 
-  private trackOpen(id: string): boolean {
-    return this.progress.isUnlocked(id, TRACKS.find((t) => t.id === id)!.unlockPrice);
+  /**
+   * What keeps a track shut, or null if it is open. Until the tutorial is over only the
+   * Reha-Parcours is; after it, a track is bought with Schrauben unless it is free.
+   */
+  private trackLock(id: string): Lock | null {
+    if (id === TRAINING) return null;
+    if (!this.progress.tutorialDone) return { text: `🔒 Erst Reha-Parcours bis Stufe ${TUTORIAL_STAGE}` };
+    const price = TRACKS.find((t) => t.id === id)!.unlockPrice;
+    return this.progress.isUnlocked(id, price) ? null : this.priced(price);
   }
 
-  /** Whether the highlighted vehicle still has to get through the Reha-Parcours first. */
-  private get untrained(): boolean {
-    return !this.progress.trained(this.vehicle);
+  private vehicleLock(id: VehicleId): Lock | null {
+    return this.vehicleOpen(id) ? null : this.priced(VEHICLES[id].unlockPrice);
+  }
+
+  private priced(price: number): Lock {
+    return { text: `🔒 ${formatMoney(price)}`, price };
+  }
+
+  /** The same look for anything locked: greyed out, a padlock, and the price if it has one. */
+  private lockCard(b: HTMLElement, lock: Lock | null): void {
+    if (!lock) return;
+    b.classList.add('locked');
+    // enough Schrauben to buy it right now
+    if (lock.price !== undefined && this.progress.money >= lock.price) b.classList.add('can');
+    b.append(h('em', 'lock', lock.text));
   }
 
   private pickVehicle(id: VehicleId): void {
     this.vehicle = id;
     if (this.vehicleOpen(id)) {
       this.handlers.onVehicle(id);
-      // a new vehicle goes through training first
-      if (this.untrained && this.track !== TRAINING) this.pickTrack(TRAINING);
+      // a vehicle that still has its throttle in goes through training first
+      if (!this.progress.trained(id) && this.track !== TRAINING) this.pickTrack(TRAINING);
     }
     this.render();
   }
 
   private pickTrack(id: string): void {
     this.track = id;
-    if (this.trackOpen(id) && !(this.untrained && id !== TRAINING)) this.handlers.onTrack(id);
+    if (!this.trackLock(id)) this.handlers.onTrack(id);
     this.render();
   }
 
@@ -150,13 +177,9 @@ export class Menu {
       else this.nope();
       return;
     }
-    if (this.untrained && t.id !== TRAINING) {
-      this.pickTrack(TRAINING);
-      this.nope();
-      return;
-    }
-    if (!this.trackOpen(t.id)) {
-      if (this.progress.unlock(t.id, t.unlockPrice)) this.pickTrack(t.id);
+    const lock = this.trackLock(t.id);
+    if (lock) {
+      if (lock.price !== undefined && this.progress.unlock(t.id, lock.price)) this.pickTrack(t.id);
       else this.nope();
       return;
     }
@@ -188,11 +211,10 @@ export class Menu {
         const cards = h('div', 'cards');
         for (const id of cat.vehicles) {
           const v = VEHICLES[id];
-          const open = this.vehicleOpen(id);
-          const b = h('button', `card${id === this.vehicle ? ' on' : ''}${open ? '' : ' locked'}`);
+          const b = h('button', `card${id === this.vehicle ? ' on' : ''}`);
           b.style.setProperty('--tint', `#${BRAND_COLORS[v.brand].toString(16).padStart(6, '0')}`);
           b.append(h('strong', '', v.label));
-          if (!open) b.append(h('em', '', `🔒 ${formatMoney(v.unlockPrice)}`));
+          this.lockCard(b, this.vehicleLock(id));
           b.addEventListener('click', () => this.pickVehicle(id));
           cards.append(b);
         }
@@ -207,7 +229,7 @@ export class Menu {
       stats.append(h('dt', '', STAT_LABELS[key]), bar);
     }
     const profile = v.profiles[this.progress.profiles[v.id] ?? 0] ?? v.profiles[0];
-    const stageNo = this.progress.stages[v.id] ?? 0;
+    const stageNo = this.progress.stageOf(v.id);
     const stage = STAGES[stageNo];
     const top = stageSpeedKmh(stage, v.speedFactor * profile.speed);
     this.detail.replaceChildren(
@@ -220,12 +242,12 @@ export class Menu {
 
     this.trackList.replaceChildren(
       ...TRACKS.map((t) => {
-        const training = this.untrained && t.id !== TRAINING;
-        const open = this.trackOpen(t.id) && !training;
-        const b = h('button', `card${t.id === this.track ? ' on' : ''}${open ? '' : ' locked'}`);
+        const lock = this.trackLock(t.id);
+        const open = !lock;
+        const b = h('button', `card${t.id === this.track ? ' on' : ''}`);
         b.append(h('strong', '', t.name), h('span', '', t.blurb));
-        const best = this.progress.bestLaps[t.id];
-        b.append(h('em', '', open ? `Bestzeit ${formatTime(best ?? null)}` : training ? '🔒 Erst durch den Reha-Parcours' : `🔒 ${formatMoney(t.unlockPrice)}`));
+        if (open) b.append(h('em', '', `Bestzeit ${formatTime(this.progress.bestLaps[t.id] ?? null)}`));
+        this.lockCard(b, lock);
         // the chosen track shows who is fastest on it
         if (t.id === this.track && open) {
           const board = h('ol', 'board');
@@ -240,16 +262,16 @@ export class Menu {
     );
 
     const lockedV = !this.vehicleOpen(this.vehicle);
-    const lockedT = !this.trackOpen(this.track) || (this.untrained && this.track !== TRAINING);
+    const lockT = this.trackLock(this.track);
     const t = TRACKS.find((x) => x.id === this.track)!;
     this.start.textContent = lockedV
       ? `${v.label} freischalten (${formatMoney(v.unlockPrice)})`
-      : this.untrained && t.id !== TRAINING
-        ? 'Erst in den Reha-Parcours'
-        : lockedT
-          ? `${t.name} freischalten (${formatMoney(t.unlockPrice)})`
+      : lockT?.price !== undefined
+        ? `${t.name} freischalten (${formatMoney(lockT.price)})`
+        : lockT
+          ? `Erst Reha-Parcours bis Stufe ${TUTORIAL_STAGE}`
           : 'Los!';
-    this.start.classList.toggle('buy', lockedV || lockedT);
+    this.start.classList.toggle('buy', lockedV || !!lockT);
     this.fit();
   }
 }

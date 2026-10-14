@@ -1,6 +1,7 @@
 import GUI from 'lil-gui';
 import { BOOST, DAMAGE, STAGES } from '../config/tuning';
-import { HANDLING, HANDLING_DEFAULTS } from '../config/vehicles';
+import { HANDLING, HANDLING_DEFAULTS, VEHICLE_ORDER } from '../config/vehicles';
+import { TRACKS } from '../tracks';
 import type { GameCore } from '../sim/GameCore';
 
 /** The "Werkstatt": live tuning of the handling and cheats for testing. Toggle with F2. */
@@ -18,6 +19,15 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
       game().applyStage();
     });
   gui.add({ f: () => progress.earn(100) }, 'f').name('+100 Schrauben');
+  gui
+    .add({ f: () => {
+      // (to try things out: tutorial over, every vehicle and track bought)
+      progress.tutorialDone = true;
+      for (const id of [...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]) progress.unlocked.add(id);
+      progress.save();
+      game().applyStage();
+    } }, 'f')
+    .name('Alles freischalten');
   gui
     .add({ f: () => { progress.wipe(); game().applyStage(); } }, 'f')
     .name('Spielstand löschen');

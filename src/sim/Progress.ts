@@ -1,4 +1,4 @@
-import { BOOST, STAGES, type TuningStage } from '../config/tuning';
+import { BOOST, STAGES, TUTORIAL_STAGE, type TuningStage } from '../config/tuning';
 import { UNLOCK_ALL, VEHICLES, type VehicleId } from '../config/vehicles';
 
 /** The slice of the Web Storage API we need, so tests can pass a stub. */
@@ -44,6 +44,11 @@ export class Progress {
   money = 0;
   /** Tuning stage per vehicle id; every vehicle starts at walking pace. */
   readonly stages: Record<string, number> = {};
+  /**
+   * Whether the tutorial in the Reha-Parcours is over: one vehicle got through and was tuned
+   * to TUTORIAL_STAGE. From then on every vehicle has its throttle off, and the tracks open.
+   */
+  tutorialDone = false;
   vehicle: VehicleId = 'trex';
   track = '';
   /** Best lap in seconds per track id. */
@@ -72,6 +77,7 @@ export class Progress {
       for (const [k, v] of Object.entries(d.stages ?? {})) if (typeof v === 'number') this.stages[k] = Math.min(STAGES.length - 1, Math.max(0, v | 0));
       // (an older save had one stage for all; it goes to the vehicle it was driven with)
       if (!d.stages && d.stageIndex > 0) this.stages[this.vehicle] = Math.min(STAGES.length - 1, d.stageIndex | 0);
+      this.tutorialDone = d.tutorialDone === true || Object.values(this.stages).some((n) => n >= TUTORIAL_STAGE);
       if (typeof d.track === 'string') this.track = d.track;
       for (const [k, v] of Object.entries(d.bestLaps ?? {})) if (typeof v === 'number') this.bestLaps[k] = v;
       for (const [k, v] of Object.entries(d.profiles ?? {})) if (typeof v === 'number') this.profiles[k] = v;
@@ -88,7 +94,7 @@ export class Progress {
 
   /** Tuning stage of the current vehicle. */
   get stageIndex(): number {
-    return this.stages[this.vehicle] ?? 0;
+    return this.stageOf(this.vehicle);
   }
 
   set stageIndex(i: number) {
@@ -100,7 +106,12 @@ export class Progress {
    * pace and that is the only track it may take.
    */
   trained(id: VehicleId = this.vehicle): boolean {
-    return (this.stages[id] ?? 0) > 0;
+    return this.stageOf(id) > 0;
+  }
+
+  /** Tuning stage of any vehicle; after the tutorial none is below the first. */
+  stageOf(id: string): number {
+    return Math.max(this.stages[id] ?? 0, this.tutorialDone ? 1 : 0);
   }
 
   /** The Reha-Parcours is done: the first stage comes free. */
@@ -132,6 +143,7 @@ export class Progress {
     if (!n || !this.trained() || this.money < n.price) return false;
     this.money -= n.price;
     this.stageIndex++;
+    if (this.stageIndex >= TUTORIAL_STAGE) this.tutorialDone = true;
     this.save();
     return true;
   }
@@ -196,6 +208,7 @@ export class Progress {
       JSON.stringify({
         money: this.money,
         stages: this.stages,
+        tutorialDone: this.tutorialDone,
         vehicle: this.vehicle,
         track: this.track,
         bestLaps: this.bestLaps,
@@ -211,6 +224,7 @@ export class Progress {
   wipe(): void {
     this.money = 0;
     for (const k of Object.keys(this.stages)) delete this.stages[k];
+    this.tutorialDone = false;
     this.unlocked.clear();
     for (const k of Object.keys(this.bestLaps)) delete this.bestLaps[k];
     for (const k of Object.keys(this.boards)) delete this.boards[k];

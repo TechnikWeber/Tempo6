@@ -9,7 +9,11 @@ import { STADION } from './stadion';
 import { TALSTADT } from './talstadt';
 import { WESERTOR } from './wesertor';
 
-export const TRACKS: TrackDef[] = [REHA, PARKPLATZ, FLUGPLATZ, TALSTADT, WESERTOR, STADION, SCHLEIFE, SPIELWIESE, KURVEN];
+// (in the order they cost: the tutorial, the free car park after it, then dearer and dearer)
+export const TRACKS: TrackDef[] = [REHA, PARKPLATZ, KURVEN, TALSTADT, WESERTOR, FLUGPLATZ, SPIELWIESE, STADION, SCHLEIFE];
+
+/** Where the tutorial sends you once it is over; it costs nothing. */
+export const AFTER_TRAINING = PARKPLATZ.id;
 
 export function trackById(id: string): TrackDef {
   return TRACKS.find((t) => t.id === id) ?? TRACKS[0];

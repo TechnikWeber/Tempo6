@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BONUS, BOOST, DAMAGE, stageSpeedKmh, STAGES, STUNTS } from '../src/config/tuning';
+import { BONUS, BOOST, DAMAGE, stageSpeedKmh, STAGES, STUNTS, TUTORIAL_STAGE } from '../src/config/tuning';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
@@ -7,7 +7,7 @@ import { Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
 import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
-import { TRACKS, TRAINING } from '../src/tracks';
+import { AFTER_TRAINING, TRACKS, TRAINING } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 import { REHA } from '../src/tracks/reha';
@@ -62,7 +62,7 @@ describe.each(ALL)('%s', (_name, spec) => {
     expect(y).toBeLessThan(spec.half[1] + spec.clearance + 0.05);
   });
 
-  it.each([0, 3, 7, 12])('reaches its top speed at stage %i and no more', (stage) => {
+  it.each([0, 3, 5, STAGES.length - 1])('reaches its top speed at stage %i and no more', (stage) => {
     const s = STAGES[stage];
     const sim = simAt(spec, s.topSpeedKmh, s.accel);
     drive(sim, 20, 1);
@@ -135,7 +135,7 @@ describe.each(ALL)('%s', (_name, spec) => {
     expect(v.speed).toBeGreaterThan(Math.hypot(lv.x, lv.z) * 0.75);
   });
 
-  it.each([0, 6, 12])('steers while accelerating flat out from a standstill (stage %i)', (stage) => {
+  it.each([0, 4, STAGES.length - 1])('steers while accelerating flat out from a standstill (stage %i)', (stage) => {
     const s = STAGES[stage];
     const sim = simAt(spec, s.topSpeedKmh, s.accel);
     drive(sim, 1, 0);
@@ -252,7 +252,8 @@ describe('nimble profiles', () => {
       sim.world.free();
       return rate;
     };
-    for (const stage of [0, 6, 12]) expect(turnRate(index, stage)).toBeGreaterThan(turnRate(0, stage) * 0.95);
+    // (stage 2 is about where the old mid stage was)
+    for (const stage of [0, 2, STAGES.length - 1]) expect(turnRate(index, stage)).toBeGreaterThan(turnRate(0, stage) * 0.95);
   });
 });
 
@@ -574,9 +575,13 @@ describe('boost battery', () => {
   it('is fitted by the game once bought, and announces every discharge', () => {
     const progress = new Progress();
     const core = new GameCore(PARKPLATZ, progress);
-    // everything is unlocked for testing, so it is already there
+    expect(core.sim.vehicle.boostFitted).toBe(false);
+    progress.earn(BOOST.price);
+    core.step({ ...idle, buyBoost: true });
+    expect(core.events.some((e) => e.type === 'boostBought')).toBe(true);
     expect(progress.hasBoost).toBe(true);
     expect(core.sim.vehicle.boostFitted).toBe(true);
+    core.events.length = 0;
     for (let i = 0; i < 30; i++) core.step({ ...idle, throttle: 1, boost: true });
     expect(core.events.filter((e) => e.type === 'boost').length).toBe(1);
     core.step({ ...idle, respawn: true });
@@ -1269,10 +1274,14 @@ describe('traffic', () => {
 describe('unlocking', () => {
   it('buys a vehicle with Schrauben when not everything is open', () => {
     const p = new Progress();
-    // UNLOCK_ALL is on for testing, so only the bookkeeping can be checked here.
     expect(p.isUnlocked('trex', 0)).toBe(true);
-    p.earn(1000);
-    expect(p.unlock('eskalation', 1000)).toBe(true);
+    expect(p.isUnlocked('eskalation', 100)).toBe(false);
+    p.earn(99);
+    expect(p.unlock('eskalation', 100)).toBe(false);
+    p.earn(1);
+    expect(p.unlock('eskalation', 100)).toBe(true);
+    expect(p.money).toBe(0);
+    expect(p.isUnlocked('eskalation', 100)).toBe(true);
   });
 });
 
@@ -1366,15 +1375,32 @@ describe('Reha-Parcours', () => {
   it('keeps the tuning stage per vehicle, and an old save gives its stage to the vehicle it drove', () => {
     const data: Record<string, string> = {};
     const store = { getItem: (k: string) => data[k] ?? null, setItem: (k: string, v: string) => void (data[k] = v) };
-    data['tempo6.save.v3'] = JSON.stringify({ money: 5, stageIndex: 4, vehicle: 'komet' });
+    data['tempo6.save.v3'] = JSON.stringify({ money: 5, stageIndex: 2, vehicle: 'komet' });
     const p = new Progress(store);
-    expect(p.stageIndex).toBe(4);
+    expect(p.stageIndex).toBe(2);
+    expect(p.tutorialDone).toBe(false);
     expect(p.trained('komet')).toBe(true);
     expect(p.trained('trex')).toBe(false);
     p.vehicle = 'trex';
     expect(p.stageIndex).toBe(0);
     p.graduate();
     const again = new Progress(store);
-    expect(again.stages).toEqual({ komet: 4, trex: 1 });
+    expect(again.stages).toEqual({ komet: 2, trex: 1 });
+  });
+
+  it('ends the tutorial at its stage: every vehicle is free of its throttle, and the car park opens', () => {
+    const progress = new Progress();
+    progress.stageIndex = TUTORIAL_STAGE - 1;
+    const core = new GameCore(REHA, progress);
+    progress.earn(STAGES[TUTORIAL_STAGE].price);
+    core.step({ ...idle, tune: true });
+    expect(core.events.some((e) => e.type === 'tutorialDone')).toBe(true);
+    expect(progress.tutorialDone).toBe(true);
+    for (const [id] of ALL) expect(progress.stageOf(id)).toBeGreaterThanOrEqual(1);
+    expect(progress.stageOf('komet')).toBe(1);
+    expect(progress.isUnlocked(AFTER_TRAINING, PARKPLATZ.unlockPrice)).toBe(true);
+    // and the other tracks still cost something
+    expect(TRACKS.filter((t) => t.unlockPrice === 0).map((t) => t.id).sort()).toEqual([AFTER_TRAINING, TRAINING].sort());
+    core.dispose();
   });
 });
