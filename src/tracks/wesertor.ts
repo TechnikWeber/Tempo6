@@ -164,6 +164,18 @@ const chairs: PropDef[] = [];
   }
 }
 
+// The blue oval, big, high up on the long side the road runs past (no name on it, as ever),
+// and a clock by the deliveries.
+{
+  const s = side(5);
+  // (in front of the row of windows behind it)
+  const [x, z] = at(s, s.len / 2, 0.55);
+  y.decor.push({ type: 'oval', pos: [x, 5.2, z], half: [3.6, 1.7, 0], yaw: Math.atan2(s.n[0], s.n[1]), color: 0x1565c0 });
+  const one = side(1);
+  const [cx, cz] = at(one, 25, 0.55);
+  y.decor.push({ type: 'clock', pos: [cx, 6.3, cz], half: [0.9, 0, 0], yaw: Math.atan2(one.n[0], one.n[1]) });
+}
+
 // Trees beyond the yard.
 const [LX, LZ] = SITE.lot;
 y.decor.push(

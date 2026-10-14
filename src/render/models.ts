@@ -23,7 +23,7 @@ export function box(parent: Object3D, w: number, h: number, d: number, color: nu
   return m;
 }
 
-function cyl(parent: Object3D, r: number, h: number, color: number, x = 0, y = 0, z = 0, segments = 8): Mesh {
+export function cyl(parent: Object3D, r: number, h: number, color: number, x = 0, y = 0, z = 0, segments = 8): Mesh {
   const m = new Mesh(new CylinderGeometry(r, r, h, segments), mat(color));
   m.position.set(x, y, z);
   m.castShadow = true;
@@ -547,6 +547,18 @@ export function buildTraffic(def: TrafficDef): Group {
     box(g, hx * 2 - 0.3, 0.25, hz * 2 - 0.4, 0x6b7078, 0, hy + 0.125, 0); // roof gear, on top
     for (const z of [-hz * 0.55, hz * 0.55]) box(g, hx * 2 + 0.04, 1.9, 1.2, 0xc22a2a, 0, floor + 1.55, z); // doors
     for (const z of [-hz + 2, hz - 2]) box(g, hx * 2 - 0.4, 0.5, 2.6, 0x2a2a2e, 0, floor + 0.15, z); // bogies
+    return g;
+  }
+  if (def.type === 'forklift') {
+    // yellow body with a counterweight behind, a cage over the seat, the mast and forks in front
+    box(g, hx * 2, 0.7, 1.5, def.color, 0, floor + 0.55, -0.3);
+    box(g, hx * 2 - 0.1, 0.5, 0.4, 0x3a3c40, 0, floor + 0.65, -1.05); // counterweight
+    for (const s of [1, -1]) for (const z of [-0.6, 0.35]) box(g, 0.05, 1.3, 0.05, 0x2a2a2e, s * (hx - 0.08), floor + 1.55, z);
+    box(g, hx * 2, 0.05, 1.05, 0x2a2a2e, 0, floor + 2.22, -0.12);
+    box(g, 0.5, 0.35, 0.45, 0x1d1d1f, 0, floor + 1.08, -0.35); // seat
+    for (const s of [1, -1]) box(g, 0.08, 2.0, 0.08, 0x5a5f66, s * 0.3, floor + 1.0, 0.55); // mast
+    for (const s of [1, -1]) box(g, 0.1, 0.05, 0.9, 0x5a5f66, s * 0.22, floor + 0.12, 0.95); // forks
+    for (const s of [1, -1]) for (const z of [-0.8, 0.25]) box(g, 0.14, 0.4, 0.4, TYRE, s * (hx - 0.05), floor + 0.2, z);
     return g;
   }
   if (def.type === 'van') {

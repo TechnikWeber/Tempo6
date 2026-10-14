@@ -82,6 +82,8 @@ for (let x = -90; x <= 90; x += 15) {
   if (Math.abs(x) < 26) continue;
   decor.push(...house(x, LOT_Z + 12, Math.PI, 7, 5, 2.6, booth++));
 }
+// Hot-air balloons hanging over the fair.
+decor.push({ type: 'balloon', pos: [-60, 34, LOT_Z + 40], color: 0xd23b3b }, { type: 'balloon', pos: [70, 42, LOT_Z + 60], color: 0x2f6db5 });
 // Woods either side, and the road along the south with its traffic.
 const SOUTH_ROAD = street({ z: -LOT_Z - 14, x0: -300, x1: 300, near: 1, cars: 7, seed: 12 });
 decor.push(

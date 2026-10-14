@@ -123,6 +123,8 @@ decor.push(
   { type: 'box', pos: [140, 1.4, 72], half: [3.5, 1.2, 1.2], color: 0xe3c04a }, // fuel truck tank
   { type: 'box', pos: [144.2, 1.3, 72], half: [0.7, 1.1, 1.1], color: 0xd23b3b }, // its cab
 );
+// A balloon or two over the field.
+decor.push({ type: 'balloon', pos: [-120, 38, 120], color: 0xe3c04a }, { type: 'balloon', pos: [150, 30, -130], color: 0x7b2d8e });
 // Edge lights along both straights of the lap.
 for (const z of [-OUTER_Z - 1, OUTER_Z + 1]) for (let x = -OUTER_X; x <= OUTER_X; x += 16) decor.push({ type: 'box', pos: [x, 0.15, z], half: [0.15, 0.15, 0.15], color: 0x6fc3ff });
 // Woods round the field, and the road past the gate with traffic.

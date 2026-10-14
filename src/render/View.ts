@@ -11,7 +11,7 @@ import type { GameCore } from '../sim/GameCore';
 import { SPINNER_HALF } from '../sim/Sim';
 import { heightAt, type DecorDef, type TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
-import { box, buildPickup, buildProp, buildTraffic, buildVehicle, mat, type VehicleRig } from './models';
+import { box, buildPickup, buildProp, buildTraffic, buildVehicle, cyl, mat, type VehicleRig } from './models';
 import { Sparks, SpeedLines } from './Boost';
 import { SkidMarks } from './Skid';
 import { Wreckage } from './Wreckage';
@@ -152,6 +152,50 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       g.add(m);
       break;
     }
+    case 'clock': {
+      // a white face on a dark rim, twelve marks, and hands the view keeps at the real time
+      const r = hx;
+      const face = cyl(g, r, 0.06, 0xf4f4f4, 0, 0, 0.03, 32);
+      face.rotation.x = Math.PI / 2;
+      const rim = cyl(g, r + 0.08, 0.05, 0x2a2c30, 0, 0, 0.025, 32);
+      rim.rotation.x = Math.PI / 2;
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        box(g, k % 3 ? 0.04 : 0.07, r * 0.14, 0.02, 0x2a2c30, Math.sin(a) * r * 0.82, Math.cos(a) * r * 0.82, 0.07).rotation.z = -a;
+      }
+      for (const [name, len, w] of [['hour', 0.5, 0.09], ['minute', 0.78, 0.06], ['second', 0.85, 0.02]] as const) {
+        const hand = new Group();
+        hand.name = name;
+        box(hand, w, r * len, 0.02, name === 'second' ? 0xd23b3b : 0x1d1d1f, 0, (r * len) / 2 - r * 0.08, 0).castShadow = false;
+        hand.position.z = name === 'hour' ? 0.09 : name === 'minute' ? 0.11 : 0.13;
+        g.add(hand);
+      }
+      g.userData.clock = true;
+      break;
+    }
+    case 'oval': {
+      // a flat oval, a white rim and the colour inside, facing out along +Z
+      for (const [grow, c, z] of [[0.12, 0xf4f4f4, 0.02], [0, d.color ?? 0x1565c0, 0.05]] as const) {
+        const m = cyl(g, 1, 0.04, c, 0, 0, z, 40);
+        m.rotation.x = Math.PI / 2;
+        m.scale.set(hx + grow, 1, hy + grow);
+      }
+      break;
+    }
+    case 'balloon': {
+      // envelope, a band round it, ropes and a basket; the view lets it bob and turn
+      const env = new Mesh(new IcosahedronGeometry(4, 1), mat(d.color ?? 0xd23b3b));
+      env.scale.set(1, 1.2, 1);
+      env.position.y = 7;
+      env.castShadow = true;
+      g.add(env);
+      const band = cyl(g, 4.08, 0.7, 0xf2c230, 0, 7, 0, 20);
+      band.castShadow = false;
+      for (const s of [-1, 1]) for (const t of [-1, 1]) box(g, 0.04, 2.6, 0.04, 0x5a4636, s * 0.6, 1.9, t * 0.6);
+      box(g, 1.3, 0.9, 1.3, 0x8a5a32, 0, 0.45, 0);
+      g.userData.balloon = true;
+      break;
+    }
     case 'smoke': {
       // puffs that the view lets rise, swell and fade, over and over
       for (let i = 0; i < 7; i++) {
@@ -205,6 +249,11 @@ export class View {
   private lawn: Mesh | null = null;
   /** Exhaust puffs to animate. */
   private smokes: Object3D[] = [];
+  /** Wall clocks telling the real time, and balloons bobbing in the air. */
+  private clocks: Object3D[] = [];
+  private balloons: Object3D[] = [];
+  /** Clouds drifting across the sky, round every track. */
+  private readonly clouds: Group[] = [];
   /** The opponents of the race on show, and which game they belong to. */
   private rivals: { core: GameCore | null; rigs: Object3D[] } = { core: null, rigs: [] };
   private level: Group | null = null;
@@ -260,6 +309,7 @@ export class View {
     lawn.position.y = -0.05;
     this.scene.add(lawn);
     this.lawn = lawn;
+    this.makeClouds();
 
     this.skids = new SkidMarks(this.scene);
     this.scene.add(this.camera);
@@ -310,9 +360,13 @@ export class View {
       level.add(m);
     }
     this.smokes = [];
+    this.clocks = [];
+    this.balloons = [];
     for (const d of track.decor) {
       const m = buildDecor(d, ground);
       if (m.userData.smoke) this.smokes.push(m);
+      if (m.userData.clock) this.clocks.push(m);
+      if (m.userData.balloon) this.balloons.push(m);
       level.add(m);
     }
     for (const p of track.props) {
@@ -408,6 +462,49 @@ export class View {
       const label: DecorDef = { type: 'label', pos: [g.x, 0.11, g.z], half: [1.0, 0, Math.min(2.4, half - 0.8)], yaw: yaw + Math.PI, text: i === 0 ? 'START' : last ? L('ZIEL', 'FINISH') : `CP ${i}` };
       level.add(buildDecor(label, ground));
     });
+  }
+
+  /** Clouds drift, clocks tell the time, balloons bob. */
+  private animateSky(dt: number): void {
+    for (const c of this.clouds) {
+      c.position.x += (c.userData.speed as number) * dt;
+      if (c.position.x > 420) c.position.x -= 840;
+    }
+    const now = new Date();
+    const sec = now.getSeconds() + now.getMilliseconds() / 1000;
+    const min = now.getMinutes() + sec / 60;
+    const hour = (now.getHours() % 12) + min / 60;
+    for (const c of this.clocks) {
+      // (clockwise seen from the front: the face looks along +Z)
+      c.getObjectByName('hour')!.rotation.z = -(hour / 12) * Math.PI * 2;
+      c.getObjectByName('minute')!.rotation.z = -(min / 60) * Math.PI * 2;
+      c.getObjectByName('second')!.rotation.z = -(Math.floor(sec) / 60) * Math.PI * 2;
+    }
+    this.balloons.forEach((b, i) => {
+      b.position.y = (b.userData.y0 ??= b.position.y) + Math.sin(this.time * 0.4 + i * 2) * 1.5;
+      b.rotation.y += dt * 0.05;
+    });
+  }
+
+  /** A few dozen clouds of white blocks, high up, drifting slowly the same way. */
+  private makeClouds(): void {
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const white = new MeshStandardMaterial({ color: 0xffffff, roughness: 1, flatShading: true, transparent: true, opacity: 0.92 });
+    for (let k = 0; k < 34; k++) {
+      const c = new Group();
+      const n = 3 + Math.floor(rnd() * 4);
+      for (let i = 0; i < n; i++) {
+        const m = new Mesh(new BoxGeometry(8 + rnd() * 12, 3 + rnd() * 4, 6 + rnd() * 8), white);
+        m.position.set((i - n / 2) * 7 + rnd() * 4, rnd() * 3, rnd() * 6 - 3);
+        c.add(m);
+      }
+      // (some low enough to drift under the sky path)
+      c.position.set(rnd() * 840 - 420, k % 4 === 0 ? 30 + rnd() * 15 : 75 + rnd() * 40, rnd() * 700 - 350);
+      c.userData.speed = 1 + rnd() * 1.5;
+      this.clouds.push(c);
+      this.scene.add(c);
+    }
   }
 
   /** The others in a race: built once per game, then moved along with their bodies. */
@@ -533,6 +630,7 @@ export class View {
     core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));
     core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
     this.placeRivals(core, alpha);
+    this.animateSky(dt);
     for (const s of this.smokes) {
       s.children.forEach((puff, i) => {
         const f = (this.time * 0.45 + (puff.userData.phase as number)) % 1;

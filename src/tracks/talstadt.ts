@@ -1,6 +1,6 @@
 import { L } from '../i18n';
 import { BRAND_COLORS } from '../config/vehicles';
-import type { TrackDef } from '../sim/Track';
+import type { TrackDef, TrafficDef } from '../sim/Track';
 import { distanceTo, forest } from './scenery';
 import { site } from './site';
 import {
@@ -30,6 +30,7 @@ const SITE = site({
 
 const FLOOR = 6;
 const y: Yard = { statics: [], decor: [], props: [] };
+const forklift: TrafficDef[] = [];
 const S = sidesOf(SITE.outline);
 /** Side by the sketch's number. */
 const side = (k: number) => S[k - 1];
@@ -167,6 +168,20 @@ y.decor.push(...wingDoors(side(10), 7, 4, 4.8), ...wingDoors(side(10), 17.5, 4, 
   const [hx, hz] = across(1, 0.62, 3.5);
   shelter(y, hx, hz, toBuilding(1));
 }
+// A forklift going up and down beyond the lorries at the dock.
+{
+  const s = side(8);
+  const loop: [number, number][] = [at(s, 1, 21), at(s, s.len - 1, 21), at(s, s.len - 1, 25), at(s, 1, 25)];
+  forklift.push({ type: 'forklift', color: 0xf2b705, speed: 2.5, path: loop });
+}
+// A clock over the main entrance, telling the real time.
+{
+  const s = side(14);
+  // (in front of the windows behind it)
+  const [x, z] = at(s, 12.5, 0.55);
+  y.decor.push({ type: 'clock', pos: [x, FLOOR + 3, z], half: [1.1, 0, 0], yaw: Math.atan2(s.n[0], s.n[1]) });
+}
+
 // Trees beyond the yard.
 const [LX, LZ] = SITE.lot;
 y.decor.push(
@@ -188,4 +203,5 @@ export const TALSTADT: TrackDef = {
   decor: [...SITE.decor, ...y.decor],
   line: SITE.line,
   roadHalf: ROAD_WIDTH / 2,
+  traffic: forklift,
 };

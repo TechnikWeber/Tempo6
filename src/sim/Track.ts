@@ -36,9 +36,11 @@ export interface DecorDef {
    * the ground, `ring` a painted circle (`half` is radius, 0, half line width), `path` a
    * painted closed band along `points` (`half[0]` is half its width), `slab` a flat lid
    * filling the outline `points` at the height of `pos`, `smoke` puffs rising from `pos`
-   * (an engine running, say).
+   * (an engine running, say), `clock` a wall clock telling the real time (`half[0]` its
+   * radius), `oval` a flat oval sign in `color` with a white rim (`half` its half width and
+   * height), `balloon` a hot-air balloon bobbing in the air.
    */
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke';
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon';
   pos: [number, number, number];
   half?: [number, number, number];
   color?: number;
@@ -49,7 +51,7 @@ export interface DecorDef {
   points?: [number, number][];
 }
 
-export type TrafficType = 'car' | 'van' | 'train';
+export type TrafficType = 'car' | 'van' | 'train' | 'forklift';
 
 /** A vehicle that drives round a closed loop on its own. */
 export interface TrafficDef {
@@ -177,6 +179,7 @@ export const TRAFFIC_SHAPES = {
   van: { half: [0.95, 1.05, 2.5] as [number, number, number] },
   /** One carriage; a train is several following each other on one path. */
   train: { half: [1.5, 1.9, 9.5] as [number, number, number] },
+  forklift: { half: [0.6, 1.1, 1.25] as [number, number, number] },
 };
 
 /**
