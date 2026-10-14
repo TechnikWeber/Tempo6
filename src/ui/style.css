@@ -325,14 +325,21 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #menu .unlock { font: inherit; font-size: 15px; font-weight: 700; color: var(--ink); background: rgb(255 255 255 / 0.1); border: 2px solid rgb(255 255 255 / 0.25); border-radius: 10px; padding: 6px 12px; cursor: pointer; }
 #menu .unlock.can { color: #111; background: #fff; border-color: #fff; }
 #menu .col > .unlock { margin-top: 8px; }
-#menu .modes { display: flex; gap: 6px; flex-wrap: wrap; }
-#menu .mode { font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); background: var(--panel); border: 2px solid transparent; border-radius: 10px; padding: 5px 10px; cursor: pointer; }
-#menu .modes .trial { display: flex; gap: 6px; align-items: center; flex-basis: 100%; }
-#menu .modes .trial small { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; }
+/* The modes: picked from their own list, which stands in for the tracks while it is open. */
+#menu .modes { display: flex; flex-direction: column; gap: 6px; overflow: hidden auto; min-height: 0; }
+#menu .mode, #menu .mode-pick { font: inherit; color: var(--ink); background: var(--panel); border: 2px solid transparent; border-radius: 10px; padding: 8px 12px; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+#menu .mode strong, #menu .mode-pick strong { font-size: 16px; }
+#menu .mode span, #menu .mode-pick span { font-size: 12px; opacity: 0.8; line-height: 1.3; }
+#menu .mode.on { border-color: var(--accent); }
+#menu .mode.on strong { color: var(--accent); }
+#menu .mode.locked { color: #8a8d93; background: rgb(30 32 36 / 0.85); filter: grayscale(1); opacity: 0.6; cursor: default; }
+#menu .mode-pick { border-color: var(--accent); }
+#menu .mode-pick strong { color: var(--accent); }
+#menu .modes .trial { display: flex; flex-direction: column; gap: 6px; }
+#menu .modes .trial small { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; margin-top: 4px; }
 #menu .modes .trial .mode { border-style: dashed; border-color: rgb(255 255 255 / 0.25); }
 #menu .modes .trial .mode.on { border-color: var(--accent); }
-#menu .mode.on { border-color: var(--accent); color: var(--accent); }
-#menu .mode.locked { color: #8a8d93; background: rgb(30 32 36 / 0.85); filter: grayscale(1); opacity: 0.6; cursor: default; }
+#menu .mode-back { align-self: flex-start; font: inherit; font-size: 14px; color: var(--ink); background: rgb(255 255 255 / 0.1); border: 0; border-radius: 10px; padding: 6px 12px; cursor: pointer; }
 #menu .mode-blurb { margin: 6px 0 10px; font-size: 13px; opacity: 0.85; line-height: 1.35; text-shadow: 0 1px 0 #000; }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 #menu .keys { margin: 10px 0 0; font-size: 12px; opacity: 0.8; text-align: center; }

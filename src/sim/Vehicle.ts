@@ -4,6 +4,9 @@ import { BOOST, DAMAGE } from '../config/tuning';
 import { HANDLING, type DriveProfile, type VehicleSpec } from '../config/vehicles';
 import { Tracked } from './Tracked';
 
+/** Seconds of wheelspin when the boost fires. */
+const BOOST_KICK = 0.6;
+
 export interface DriveInput {
   /** -1 (reverse) … 1 (forward) */
   throttle: number;
@@ -75,6 +78,11 @@ export class Vehicle {
   readonly skid: number[];
   /** 0…1 while the drive wheels spin up under full power. */
   burnout = 0;
+  /**
+   * Seconds left of the wheelspin a boost starts with: the drive wheels spin up for a moment
+   * although it is already rolling. Only for the look and the marks; the grip is unchanged.
+   */
+  boostKick = 0;
   /** Seconds since the last wheel left the ground; 0 while driving. */
   airTime = 0;
   /** Sink rate in m/s at the moment of touchdown; consumed by the game. */
@@ -527,6 +535,12 @@ export class Vehicle {
           scrub = spin;
           burnout = Math.max(burnout, spin);
         }
+        // the boost firing: a short burnout on the drive wheels
+        if (w.drive && this.boostKick > 0) {
+          const kick = Math.min(1, this.boostKick / (BOOST_KICK * 0.5));
+          scrub = Math.max(scrub, kick);
+          burnout = Math.max(burnout, kick);
+        }
         if (brake > 0 && Math.abs(v) > 1.5) scrub = 1;
         if (braking && Math.abs(v) > 2 && !w.caster) scrub = Math.max(scrub, 0.8);
         // Near full lock the tyres howl, whatever that means in m/s² at this speed.
@@ -631,9 +645,11 @@ export class Vehicle {
   /** Charge, discharge and the soft ramp of the boost battery. */
   private updateBoost(input: DriveInput, dt: number): void {
     const want = !!input.boost && this.boostFitted && input.throttle >= 0 && !input.handbrake;
+    const was = this.boosting;
     // Once empty it has to recover a little before it fires again.
     if (this.boosting) this.boosting = want && this.boostCharge > 0;
     else this.boosting = want && this.boostCharge >= BOOST.minCharge;
+    this.boostKick = this.boosting && !was ? BOOST_KICK : Math.max(0, this.boostKick - dt);
     if (this.boosting) {
       this.boostCharge = Math.max(0, this.boostCharge - dt / BOOST.duration);
     } else if (!input.boost) {

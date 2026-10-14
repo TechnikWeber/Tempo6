@@ -53,6 +53,11 @@ export class Menu {
   private readonly vehicleCards = h('div');
   private readonly modeList = h('div', 'modes');
   private readonly modeBlurb = h('p', 'mode-blurb');
+  /** The current mode; tapped, it opens the list of modes in place of the tracks. */
+  private readonly modeButton = h('button', 'mode-pick');
+  private readonly trackHead = h('h2', '', L('Strecke', 'Track'));
+  /** Whether the mode list is open (and the tracks are put away meanwhile). */
+  private choosingMode = false;
   private readonly trackList = h('div', 'cards tracks');
   private readonly start = h('button', 'start', L('Los!', 'Go!'));
   private readonly ghost = h('input');
@@ -93,7 +98,11 @@ export class Menu {
     this.buyVehicle.addEventListener('click', () => this.unlockVehicle());
     this.buyTrack.addEventListener('click', () => this.unlockTrack());
     const right = h('section', 'col');
-    right.append(h('h2', '', L('Modus', 'Mode')), this.modeList, this.modeBlurb, h('h2', '', L('Strecke', 'Track')), this.trackList, this.buyTrack, this.start);
+    this.modeButton.addEventListener('click', () => {
+      this.choosingMode = true;
+      this.render();
+    });
+    right.append(h('h2', '', L('Modus', 'Mode')), this.modeButton, this.modeList, this.modeBlurb, this.trackHead, this.trackList, this.buyTrack, this.start);
     const hint = h('p', 'keys');
     hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
     right.append(hint);
@@ -108,8 +117,8 @@ export class Menu {
       switch (e.code) {
         case 'KeyA': case 'ArrowLeft': this.pickVehicle(step(VEHICLE_ORDER, this.vehicle, -1) as VehicleId); break;
         case 'KeyD': case 'ArrowRight': this.pickVehicle(step(VEHICLE_ORDER, this.vehicle, 1) as VehicleId); break;
-        case 'KeyW': case 'ArrowUp': this.pickTrack(step(this.mode.tracks, this.track, -1)); break;
-        case 'KeyS': case 'ArrowDown': this.pickTrack(step(this.mode.tracks, this.track, 1)); break;
+        case 'KeyW': case 'ArrowUp': this.pickTrack(step(this.tracksOfMode(), this.track, -1)); break;
+        case 'KeyS': case 'ArrowDown': this.pickTrack(step(this.tracksOfMode(), this.track, 1)); break;
         case 'KeyQ': this.pickMode(step(MODES.map((m) => m.id), this.mode.id, -1) as ModeId); break;
         case 'KeyE': this.pickMode(step(MODES.map((m) => m.id), this.mode.id, 1) as ModeId); break;
         case 'Enter': case 'Space': this.go(); break;
@@ -252,11 +261,20 @@ export class Menu {
   }
 
   private pickMode(id: ModeId): void {
-    if (this.modeLock(id)) return this.nope(this.start);
+    if (this.modeLock(id)) return this.nope(this.choosingMode ? this.modeList : this.start);
     this.progress.mode = id;
     this.progress.save();
+    // chosen: the list goes, the tracks come back
+    this.choosingMode = false;
     // the track goes along if the mode has it, else the mode's first
-    this.pickTrack(this.mode.tracks.includes(this.track) ? this.track : this.mode.tracks[0]);
+    const tracks = this.tracksOfMode();
+    this.pickTrack(tracks.includes(this.track) ? this.track : tracks[0]);
+  }
+
+  /** The mode's tracks, cheapest first: the free ones at the top, the dearest at the bottom. */
+  private tracksOfMode(): string[] {
+    const price = (id: string) => TRACKS.find((t) => t.id === id)?.unlockPrice ?? 0;
+    return [...this.mode.tracks].sort((a, b) => price(a) - price(b));
   }
 
   private pickTrack(id: string): void {
@@ -358,7 +376,8 @@ export class Menu {
 
     const modeButtons = (list: typeof MODES) => list.map((m) => {
         const lock = this.modeLock(m.id);
-        const b = h('button', `mode${m.id === mode.id ? ' on' : ''}`, lock ? `🔒 ${m.name}` : m.name);
+        const b = h('button', `mode${m.id === mode.id ? ' on' : ''}`);
+        b.append(h('strong', '', lock ? `🔒 ${m.name}` : m.name), h('span', '', m.blurb));
         if (lock) {
           b.classList.add('locked');
           b.title = lock.text;
@@ -369,11 +388,22 @@ export class Menu {
     // (what is still being tried out sits apart, under its own label)
     const trial = h('div', 'trial');
     trial.append(h('small', '', L('Experimentell', 'Experimental')), ...modeButtons(MODES.filter((m) => m.experimental)));
-    this.modeList.replaceChildren(...modeButtons(MODES.filter((m) => !m.experimental)), trial);
+    const back = h('button', 'mode-back', L('← Zurück', '← Back'));
+    back.addEventListener('click', () => {
+      this.choosingMode = false;
+      this.render();
+    });
+    this.modeList.replaceChildren(...modeButtons(MODES.filter((m) => !m.experimental)), trial, back);
+    this.modeButton.replaceChildren(h('strong', '', mode.name), h('span', '', L('Modus wechseln ▾', 'Change mode ▾')));
     this.modeBlurb.textContent = mode.blurb;
+    // never both lists at once: either the modes, or the tracks with everything that goes with them
+    const choosing = this.choosingMode;
+    this.modeList.hidden = !choosing;
+    this.modeButton.hidden = choosing;
+    for (const e of [this.modeBlurb, this.trackHead, this.trackList, this.start]) e.hidden = choosing;
 
     this.trackList.replaceChildren(
-      ...mode.tracks.map((id) => {
+      ...this.tracksOfMode().map((id) => {
         const t = TRACKS.find((x) => x.id === id)!;
         const lock = this.trackLock(t.id);
         const b = h('button', `card${t.id === this.track ? ' on' : ''}`);
@@ -394,6 +424,7 @@ export class Menu {
     );
     const t = TRACKS.find((x) => x.id === this.track);
     this.unlockButton(this.buyTrack, t?.name ?? '', this.trackLock(this.track));
+    if (this.choosingMode) this.buyTrack.hidden = true;
     this.start.disabled = !this.ready;
     this.fit();
     // (the chosen track scrolls into view, as the chosen vehicle does)

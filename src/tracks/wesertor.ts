@@ -4,7 +4,7 @@ import { distanceTo, forest } from './scenery';
 import { site } from './site';
 import { at, car, door, gate, hall, lorry, pallets, panel, roadSpan, sidesOf, windows, type Side, type Yard } from './works';
 
-// The old works at Porta Westfalica: several halls grown together at an angle, the lap all
+// The old works at "Porta Westafrika" (a play on the real town's name): several halls grown together at an angle, the lap all
 // round. The footprint was read off an aerial picture; what is where was told side by side,
 // numbered as on the sketch (1 to 12, clockwise from the west corner). Along side 1 runs the
 // railway, the deliveries come in on that side too.
@@ -173,7 +173,7 @@ y.decor.push(
 
 export const WESERTOR: TrackDef = {
   id: 'wesertor',
-  name: L('Altwerk Porta Westfalica', 'Old Works Porta Westfalica'),
+  name: L('Altwerk Porta Westafrika', 'Old Works Porta West Africa'),
   blurb: L(`Einmal ums alte Werk: ${Math.round(SITE.length / 10) * 10} m um verwinkelte Hallen, an der Bahnlinie entlang und mitten durchs Häuschen der Konkurrenz.`, `Once round the old works: ${Math.round(SITE.length / 10) * 10} m round rambling halls, along the railway and straight through the competition’s little house.`),
   unlockPrice: 150,
   lapPay: 40,

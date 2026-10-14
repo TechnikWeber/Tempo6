@@ -259,7 +259,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   arrivo: define({
     id: 'arrivo',
-    label: 'Arrivo Karton',
+    label: L('Arrivo Karton', 'Arrivo Cardboard'),
     profiles: [
       BASE,
       prof(L('Federgewicht', 'Featherweight'), L('Springt los, dreht sofort, fällt gern um.', 'Leaps off, turns at once, likes falling over.'), { accel: 1.4, turn: 1.3, sharp: 1.15, tip: 1.0, assist: 0.8, brake: 1.2 }),
@@ -292,7 +292,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   orkan: define({
     id: 'orkan',
-    label: 'Strom4',
+    label: L('Strom4', 'Volt4'),
     profiles: [
       BASE,
       prof(L('Panzer', 'Tank'), L('Noch träger, unkippbar, bremst wie ein Anker.', 'Even slower to get going, untippable, brakes like an anchor.'), { speed: 0.9, accel: 0.7, turn: 0.7, tip: 0.4, grip: 1.3, brake: 1.3 }),
@@ -325,7 +325,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   eskalation: define({
     id: 'eskalation',
-    label: 'e-skalation',
+    label: L('e-skalation', 'e-scalation'),
     profiles: [
       BASE,
       prof(L('Wheelie-Maschine', 'Wheelie Machine'), L('Jeder Schubs ein Tritt. Das Vorderrad ist Deko.', 'Every push a kick. The front wheels are decoration.'), { accel: 1.5, surge: 1.7, wheelie: 1.15, tip: 1.2, turn: 1.2 }),
@@ -394,7 +394,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   schubs: define({
     id: 'schubs',
-    label: 'Arschtritt 3000',
+    label: L('Arschtritt 3000', 'Kick-Ass 3000'),
     profiles: [
       BASE,
       prof(L('Bärenkräfte', 'Bear Arms'), L('Arme wie ein Türsteher: lenkt und bremst richtig.', 'Arms like a bouncer: steers and brakes properly.'), { handSteer: 9, brake: 1.7, turn: 1.3 }),
@@ -430,7 +430,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   ekaptn: define({
     id: 'ekaptn',
-    label: 'e-kapitän',
+    label: L('e-kapitän', 'e-captain'),
     profiles: [
       BASE,
       prof(L('Chopper', 'Chopper'), L('Lang, stabil, cruist. Enge Kurven sind nicht sein Ding.', 'Long, steady, cruising. Tight corners are not its thing.'), { speed: 1.15, turn: 0.7, sharp: 0.8, tip: 0.6, accel: 0.9 }),
@@ -464,7 +464,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   piepmatz: define({
     id: 'piepmatz',
-    label: 'Kohlibri',
+    label: L('Kohlibri', 'Hummingbird'),
     profiles: [
       BASE,
       prof(L('Spatz auf Koffein', 'Sparrow on Caffeine'), L('Zappelt los und schlägt Haken.', 'Darts off and zigzags.'), { accel: 1.5, turn: 1.2, sharp: 1.25, tip: 1.05, assist: 0.8 }),
@@ -597,11 +597,11 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
 /** Menu groups. The titles stay close to what the trade calls these things. */
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
-  { id: 'power', title: 'Bordstein-Brecher', vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
-  { id: 'folder', title: 'Falt(en)wunder', vehicles: ['arrivo'] },
+  { id: 'power', title: L('Bordstein-Brecher', 'Kerb Crushers'), vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
+  { id: 'folder', title: L('Falt(en)wunder', 'Fold Wonders'), vehicles: ['arrivo'] },
   { id: 'push', title: 'Power Addons', vehicles: ['eskalation', 'enix', 'schubs'] },
-  { id: 'tractor', title: 'Vorderlader', vehicles: ['ekaptn'] },
-  { id: 'scooter', title: 'Seniorenraketen', vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
+  { id: 'tractor', title: L('Vorderlader', 'Front Loaders'), vehicles: ['ekaptn'] },
+  { id: 'scooter', title: L('Seniorenraketen', 'Silver Rockets'), vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
 ];
 
 export const VEHICLE_ORDER: VehicleId[] = CATEGORIES.flatMap((c) => c.vehicles);

@@ -18,7 +18,7 @@ Ein Rennspiel mit Elektrorollstühlen und Seniorenmobilen. Jedes Gefährt starte
 ## Was drin ist
 
 - **Modi:** Zeitrennen gegen die Uhr und den eigenen Schatten, Rennen über drei Runden gegen drei Gegner, Freestyle für Stunt-Ketten, dazu experimentell ein Crashtest.
-- **Strecken:** Reha-Parcours, Baumarkt-Parkplatz, Kurven-Teststrecke, Werk Talstadt, Altwerk Porta Westfalica, Alter Flugplatz, Spielwiese, Stadionkurs, Große Schleife und das Crashtest-Gelände.
+- **Strecken:** Reha-Parcours, Baumarkt-Parkplatz, Kurven-Teststrecke, Werk Talstadt, Altwerk Porta Westafrika, Alter Flugplatz, Spielwiese, Stadionkurs, Große Schleife und das Crashtest-Gelände.
 - **Tuning:** acht Stufen bis 75 km/h, Boost-Batterie, drei Fahrprofile je Gefährt, alles auch in der Garage.
 - **Spielstand:** bleibt im Browser; über „Speichern“ und „Laden“ auch als Datei, die das Löschen der Browserdaten übersteht.
 

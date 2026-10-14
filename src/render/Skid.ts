@@ -8,6 +8,8 @@ const SEGMENTS = 900;
 const LIFETIME = 14;
 const FADE = 5;
 const PUFFS = 40;
+/** Seconds a boost burnout's marks take to cool off. */
+const GLOW = 1.6;
 
 const a = new Vector3();
 const b = new Vector3();
@@ -23,6 +25,8 @@ export class SkidMarks {
   private readonly col = new Float32Array(SEGMENTS * 4 * 4);
   private readonly born = new Float32Array(SEGMENTS).fill(-1e9);
   private readonly strength = new Float32Array(SEGMENTS);
+  /** 0…1 per segment: laid down by a boost burnout, it glows and cools off. */
+  private readonly glow = new Float32Array(SEGMENTS);
   private readonly geo = new BufferGeometry();
   private readonly mesh: Mesh;
   private next = 0;
@@ -90,7 +94,7 @@ export class SkidMarks {
       }
       if (prev.distanceToSquared(b) < 0.0036) return;
       a.copy(prev);
-      this.addSegment(a, b, w.radius >= 0.25 ? 0.02 : w.caster ? 0.022 : 0.045, s);
+      this.addSegment(a, b, w.radius >= 0.25 ? 0.02 : w.caster ? 0.022 : 0.045, s, w.drive && v.boostKick > 0 ? 1 : 0);
       prev.copy(b);
       if (s > smoke) {
         smoke = s;
@@ -102,7 +106,19 @@ export class SkidMarks {
     for (let i = 0; i < SEGMENTS; i++) {
       const age = this.time - this.born[i];
       if (age > LIFETIME + 0.5) continue;
-      const alpha = Math.max(0, Math.min(1, (LIFETIME - age) / FADE)) * this.strength[i];
+      let alpha = Math.max(0, Math.min(1, (LIFETIME - age) / FADE)) * this.strength[i];
+      // a glowing mark cools from orange-yellow down to the black of rubber
+      const heat = this.glow[i] > 0 ? this.glow[i] * Math.max(0, 1 - age / GLOW) : 0;
+      if (this.glow[i] > 0) {
+        alpha = Math.min(1, alpha + heat);
+        for (let k = 0; k < 4; k++) {
+          const c = (i * 4 + k) * 4;
+          this.col[c] = 0.03 + 0.97 * heat;
+          this.col[c + 1] = 0.03 + 0.55 * heat * heat;
+          this.col[c + 2] = 0.03 + 0.1 * heat * heat * heat;
+        }
+        if (heat === 0) this.glow[i] = 0;
+      }
       for (let k = 0; k < 4; k++) this.col[(i * 4 + k) * 4 + 3] = alpha;
     }
     this.geo.attributes.color.needsUpdate = true;
@@ -129,7 +145,7 @@ export class SkidMarks {
     }
   }
 
-  private addSegment(from: Vector3, to: Vector3, halfWidth: number, strength: number): void {
+  private addSegment(from: Vector3, to: Vector3, halfWidth: number, strength: number, glow = 0): void {
     const i = this.next;
     this.next = (this.next + 1) % SEGMENTS;
     side.subVectors(to, from).cross(UP).normalize().multiplyScalar(halfWidth);
@@ -146,6 +162,7 @@ export class SkidMarks {
     }
     this.born[i] = this.time;
     this.strength[i] = 0.5 + 0.45 * strength;
+    this.glow[i] = glow;
   }
 
   private spawnPuff(at: Vector3, strength: number): void {
