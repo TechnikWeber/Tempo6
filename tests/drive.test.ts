@@ -1121,7 +1121,7 @@ describe('game on the Parkplatz', () => {
     for (let i = 0; i < 60 * 40; i++) core.step({ ...idle, throttle: 1 });
     // drove east along the start straight until the cones: three screws
     expect(core.progress.money).toBe(3);
-    core.progress.earn(STAGES[1].price - 3);
+    core.progress.earn(Math.max(0, STAGES[1].price - 3));
     core.step({ ...idle, tune: true });
     expect(core.progress.stageIndex).toBe(1);
     expect(core.topSpeedKmh).toBeCloseTo(8);

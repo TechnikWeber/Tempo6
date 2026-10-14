@@ -8,22 +8,22 @@ export interface TuningStage {
   price: number;
 }
 
-// The first step is affordable after one lap of the car park, the whole ladder after
-// about fifteen: speed is the fun, so it comes quickly. Vehicles, tracks and the boost cost more.
+// The first steps cost next to nothing, so stage 10 comes after a few laps of the car park:
+// speed is the fun. The last two are the long goal. Vehicles, tracks and the boost cost more.
 export const STAGES: TuningStage[] = [
   { name: 'Werkszustand', blurb: 'Zugelassen bis 6 km/h. Leider.', topSpeedKmh: 6, accel: 2.5, price: 0 },
-  { name: 'Drossel raus', blurb: 'Der kleine Stecker unterm Sitz war eh locker.', topSpeedKmh: 8, accel: 2.9, price: 20 },
-  { name: 'Reifen aufgepumpt', blurb: 'Zum ersten Mal seit 2009.', topSpeedKmh: 10, accel: 3.3, price: 22 },
-  { name: 'WD-40 überall', blurb: 'Wirklich überall.', topSpeedKmh: 12, accel: 3.7, price: 24 },
-  { name: 'Zweitakku vom Nachbarn', blurb: 'Er merkt es frühestens Dienstag.', topSpeedKmh: 15, accel: 4.2, price: 26 },
-  { name: 'Rallyestreifen', blurb: 'Bringt nachweislich 3 km/h.', topSpeedKmh: 18, accel: 4.7, price: 28 },
-  { name: 'Akkuschrauber-Motor', blurb: '18 Volt pure Gewalt.', topSpeedKmh: 22, accel: 5.3, price: 30 },
-  { name: 'Rasenmäher-Akku', blurb: 'Der Rasen kann warten.', topSpeedKmh: 27, accel: 5.9, price: 33 },
-  { name: 'Waschmaschinenmotor', blurb: 'Schleudergang: 1400 Umdrehungen.', topSpeedKmh: 33, accel: 6.6, price: 36 },
-  { name: 'Chiptuning aus dem Internet', blurb: 'Das Forum sagt, das hält.', topSpeedKmh: 40, accel: 7.4, price: 39 },
-  { name: 'Starkstrom', blurb: 'Die rote Dose im Keller.', topSpeedKmh: 50, accel: 8.3, price: 42 },
-  { name: 'Sahnekapsel-Lachgas', blurb: 'Vierzig Kapseln, ein Traum.', topSpeedKmh: 60, accel: 9.5, price: 45 },
-  { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 50 },
+  { name: 'Drossel raus', blurb: 'Der kleine Stecker unterm Sitz war eh locker.', topSpeedKmh: 8, accel: 2.9, price: 2 },
+  { name: 'Reifen aufgepumpt', blurb: 'Zum ersten Mal seit 2009.', topSpeedKmh: 10, accel: 3.3, price: 3 },
+  { name: 'WD-40 überall', blurb: 'Wirklich überall.', topSpeedKmh: 12, accel: 3.7, price: 4 },
+  { name: 'Zweitakku vom Nachbarn', blurb: 'Er merkt es frühestens Dienstag.', topSpeedKmh: 15, accel: 4.2, price: 5 },
+  { name: 'Rallyestreifen', blurb: 'Bringt nachweislich 3 km/h.', topSpeedKmh: 18, accel: 4.7, price: 6 },
+  { name: 'Akkuschrauber-Motor', blurb: '18 Volt pure Gewalt.', topSpeedKmh: 22, accel: 5.3, price: 7 },
+  { name: 'Rasenmäher-Akku', blurb: 'Der Rasen kann warten.', topSpeedKmh: 27, accel: 5.9, price: 8 },
+  { name: 'Waschmaschinenmotor', blurb: 'Schleudergang: 1400 Umdrehungen.', topSpeedKmh: 33, accel: 6.6, price: 10 },
+  { name: 'Chiptuning aus dem Internet', blurb: 'Das Forum sagt, das hält.', topSpeedKmh: 40, accel: 7.4, price: 12 },
+  { name: 'Starkstrom', blurb: 'Die rote Dose im Keller.', topSpeedKmh: 50, accel: 8.3, price: 14 },
+  { name: 'Sahnekapsel-Lachgas', blurb: 'Vierzig Kapseln, ein Traum.', topSpeedKmh: 60, accel: 9.5, price: 80 },
+  { name: 'Laubbläser-Triebwerk', blurb: 'Die Krankenkasse darf das nie erfahren.', topSpeedKmh: 75, accel: 11.0, price: 120 },
 ];
 
 /** The boost battery: a short shove with a bit of a kick, though it still fades in rather than snapping on. */
