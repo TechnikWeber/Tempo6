@@ -34,8 +34,8 @@ export const MODES: ModeDef[] = [
   {
     id: 'crash',
     name: 'Crashtest',
-    blurb: 'Ein Versuch, ein Abflug. Nach dem ersten Einschlag ist Schluss mit Lenken, und jeder Aufprall zählt, bis alles stillsteht.',
-    tracks: ['crashtest', 'spielwiese', 'flugplatz'],
+    blurb: 'Volle Leistung, voller Boost, ein Versuch. Durch den Propeller auf die Schanze, oder eben nicht. Nach dem ersten Einschlag ist Schluss mit Lenken, und jeder Aufprall zählt, bis alles stillsteht.',
+    tracks: ['crashtest'],
   },
 ];
 
@@ -46,8 +46,13 @@ export function modeById(id: string): ModeDef {
 /** Race against the others. */
 export const RACE = {
   laps: 3,
-  /** How fast each opponent goes, as a share of what the player's vehicle could do at the same stage. */
-  skill: [0.8, 0.87, 0.94],
+  /**
+   * How fast each opponent goes, as a share of what its vehicle does at the player's stage.
+   * They drive a perfect line, so the quickest is a match for a good lap.
+   */
+  skill: [0.9, 0.95, 1],
+  /** Grid slots behind the start line: how far back and how far to the left (m). Who gets which is drawn. */
+  grid: [[0.5, 1.2], [0.5, -1.2], [3.1, 1.2], [3.1, -1.2]] as [number, number][],
   /** Prize for the places, in lap money of the track. */
   placePay: [4, 2.5, 1.5, 0.5],
 };
@@ -60,10 +65,8 @@ export const CRASH = {
   minKnock: 1.5,
   /** The first one has to be a proper knock, not a hop on the way down the in-run. */
   firstKnock: 5,
-  /** The run-up is never slower than this (km/h), so even an untuned chair gets to fly. */
-  runUpKmh: 35,
-  /** …and pulls away this hard (m/s²). */
-  runUpAccel: 7,
+  /** A knock from the propeller counts this many times over: being swatted is the crash of the day. */
+  propeller: 3,
   /** One knock is one knock: what follows within this many seconds belongs to it. */
   grace: 0.25,
   /** On top for a write-off. */

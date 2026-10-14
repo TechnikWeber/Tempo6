@@ -1,5 +1,5 @@
 import { CRASH, RACE, type ModeId } from '../config/modes';
-import { BONUS, BOOST, PICKUP_VALUE, stageSpeedKmh, type TuningStage } from '../config/tuning';
+import { BONUS, BOOST, PICKUP_VALUE, stageSpeedKmh, STAGES, type TuningStage } from '../config/tuning';
 import { VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import { Autopilot } from './Autopilot';
 import { GHOST_RATE, type GhostLap, type Progress } from './Progress';
@@ -59,7 +59,7 @@ export type GameEvent =
   /** Freestyle: a knock ended the run, and what it had earned is gone. */
   | { type: 'chainLost'; lost: number }
   /** Crashtest: a knock (or the write-off) scored. */
-  | { type: 'crashScore'; points: number; total: number }
+  | { type: 'crashScore'; points: number; total: number; propeller: boolean }
   /** Crashtest: it all lies still; the score, what it paid, and whether it is the best here. */
   | { type: 'crashOver'; score: number; pay: number; record: boolean };
 
@@ -94,6 +94,8 @@ export class GameCore {
   private lastLight = 0;
   /** Race: the others on the grid. */
   readonly rivals: Rival[] = [];
+  /** Dice for the grid; a test may load them. */
+  random: () => number = Math.random;
   /** Race: the place the player finished in, 0 while still racing. */
   finished = 0;
   /** The run is over (the tutorial done): the vehicle stops and nothing more is paid. */
@@ -115,22 +117,37 @@ export class GameCore {
     return this.mode === 'time' || this.mode === 'race';
   }
 
-  /** Three others on the grid behind the player, in vehicles other than the player's. */
+  /** Where a grid slot is on this track. */
+  private slot(k: number): { x: number; z: number; yaw: number } {
+    const { pos, yaw } = this.track.spawn;
+    const [back, side] = RACE.grid[k];
+    return { x: pos[0] - Math.sin(yaw) * back + Math.cos(yaw) * side, z: pos[2] - Math.cos(yaw) * back - Math.sin(yaw) * side, yaw };
+  }
+
+  /** Three others on the grid with the player, in vehicles other than the player's. */
   private lineUp(line: [number, number][]): void {
     const { pos, yaw } = this.track.spawn;
-    const fx = Math.sin(yaw), fz = Math.cos(yaw);
-    const lx = Math.cos(yaw), lz = -Math.sin(yaw);
-    const slots: [number, number][] = [[2.6, 1.2], [2.6, -1.2], [5.2, 0]];
     const others = VEHICLE_ORDER.filter((id) => id !== this.progress.vehicle);
     // (a different field on each track)
     const first = [...this.track.id].reduce((n, c) => n + c.charCodeAt(0), 0);
     RACE.skill.forEach((_, k) => {
       const spec = VEHICLES[others[(first + k * 4) % others.length]];
-      const [back, side] = slots[k];
-      const grid = { x: pos[0] - fx * back + lx * side, z: pos[2] - fz * back + lz * side, yaw };
+      const grid = this.slot(k + 1);
       const vehicle = this.sim.addOther(spec, grid.x, pos[1], grid.z, yaw);
       this.rivals.push({ vehicle, pilot: new Autopilot(line, 2.5).from(grid.x, grid.z), race: new Race(this.track.gates), grid });
     });
+  }
+
+  /** A race starts from a grid drawn afresh each time: anyone may start on the front row. */
+  private drawGrid(): void {
+    const order = RACE.grid.map((_, k) => k);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(this.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    const mine = this.slot(order[0]);
+    this.sim.vehicle.place(mine.x, this.track.spawn.pos[1], mine.z, mine.yaw);
+    this.rivals.forEach((r, k) => (r.grid = this.slot(order[k + 1])));
   }
 
   /** The others go as fast as the player could at the same stage, give or take their skill. */
@@ -168,8 +185,12 @@ export class GameCore {
     v.profile = spec.profiles[this.profileIndex] ?? spec.profiles[0];
     v.boostFitted = this.progress.hasBoost;
     v.setMotor(stageSpeedKmh(s, spec.speedFactor * v.profile.speed) / 3.6, s.accel * spec.accelFactor * v.profile.accel);
-    // the crashtest gives everyone a run-up worth the name
-    if (this.mode === 'crash') v.setMotor(Math.max(v.topSpeed, CRASH.runUpKmh / 3.6), Math.max(v.accel, CRASH.runUpAccel));
+    // the crashtest is driven flat out, the boost battery on the lap, whatever has been bought
+    if (this.mode === 'crash') {
+      const max = STAGES[STAGES.length - 1];
+      v.setMotor(stageSpeedKmh(max, spec.speedFactor * v.profile.speed) / 3.6, max.accel * spec.accelFactor * v.profile.accel);
+      v.boostFitted = true;
+    }
     this.tuneRivals();
   }
 
@@ -212,6 +233,7 @@ export class GameCore {
     this.lastLight = 0;
     this.recording = [];
     this.sim.respawn();
+    if (this.rivals.length) this.drawGrid();
     this.sim.resetProps();
     this.sim.resetMovers();
     this.sim.traffic.reset();
@@ -430,10 +452,20 @@ export class GameCore {
     this.events.push({ type: 'chain', total, record });
   }
 
-  private scoreCrash(points: number): void {
+  private scoreCrash(points: number, propeller = false): void {
     this.crash.started = true;
     this.crash.score += points;
-    this.events.push({ type: 'crashScore', points, total: this.crash.score });
+    this.events.push({ type: 'crashScore', points, total: this.crash.score, propeller });
+  }
+
+  /** Whether the vehicle is within reach of a propeller's blades, so a knock now came from it. */
+  private nearPropeller(): boolean {
+    const p = this.sim.vehicle.body.translation();
+    return this.sim.movers.some((m) => {
+      if (m.def.type !== 'propeller') return false;
+      const [x, y, z] = m.def.pos;
+      return Math.hypot(p.x - x, p.y - y, p.z - z) < m.def.half[1] * 2 + 1.2;
+    });
   }
 
   /**
@@ -449,7 +481,8 @@ export class GameCore {
     c.grace = Math.max(0, c.grace - STEP);
     if (knock >= (c.started ? CRASH.minKnock : CRASH.firstKnock) && c.grace === 0 && this.countdown === 0) {
       c.grace = CRASH.grace;
-      this.scoreCrash(Math.round(CRASH.perImpact * knock * knock));
+      const swatted = this.nearPropeller();
+      this.scoreCrash(Math.round(CRASH.perImpact * knock * knock * (swatted ? CRASH.propeller : 1)), swatted);
     }
     if (!c.started) return;
     const a = v.body.angvel();

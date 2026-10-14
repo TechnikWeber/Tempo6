@@ -96,17 +96,21 @@ export interface SpinnerDef {
 }
 
 /**
- * A plank that moves. A `seesaw` tips about its middle towards whichever end the vehicle is
- * on; a `rocker` rolls slowly from side to side by itself, for balancing across.
+ * Something that moves. A `seesaw` tips about its middle towards whichever end the vehicle
+ * is on; a `rocker` rolls slowly from side to side by itself, for balancing across; a
+ * `propeller` spins its blades across the way, about an axle pointing along it.
  */
 export interface MoverDef {
-  type: 'seesaw' | 'rocker';
-  /** Centre of its top surface when level. */
+  type: 'seesaw' | 'rocker' | 'propeller';
+  /** Centre of its top surface when level; a propeller's hub. */
   pos: [number, number, number];
-  /** Heading of its length, 0 = along Z. */
+  /** Heading of its length, 0 = along Z; a propeller's axle. */
   yaw: number;
-  /** Half width, half thickness and half length. */
+  /** Half width, half thickness and half length; a propeller blade's half width, half length and half thickness. */
   half: [number, number, number];
+  /** Propeller: how many blades, and how fast it turns (rad/s). */
+  blades?: number;
+  spin?: number;
   /** Greatest tilt either way, in rad. A seesaw starts tipped back, towards -Z of its heading. */
   angle: number;
   /** Seconds for a rocker to roll over and back. */

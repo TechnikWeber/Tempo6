@@ -322,6 +322,22 @@ export class View {
     });
     this.moverMeshes = (track.movers ?? []).map((d) => {
       const g = new Group();
+      if (d.type === 'propeller') {
+        // blades round the hub, as the physics has them, and a striped tip on each
+        const n = d.blades ?? 2;
+        for (let k = 0; k < n; k++) {
+          const a = (2 * Math.PI * k) / n;
+          const arm = new Group();
+          arm.rotation.z = a;
+          box(arm, d.half[0] * 2, d.half[1] * 2, d.half[2] * 2, d.color, 0, -d.half[1], 0);
+          box(arm, d.half[0] * 2 + 0.02, 0.3, d.half[2] * 2 + 0.02, 0xf2f2f2, 0, -d.half[1] * 2 + 0.2, 0);
+          g.add(arm);
+        }
+        // (the hub sticks out a little either side of the blades)
+        box(g, 0.4, 0.4, d.half[2] * 2 + 0.3, 0x3a3c40, 0, 0, 0);
+        level.add(g);
+        return g;
+      }
       // (the body sits at the middle of the top surface)
       box(g, d.half[0] * 2, d.half[1] * 2, d.half[2] * 2, d.color, 0, -d.half[1], 0).receiveShadow = true;
       // yellow edges, so one can see where the plank ends

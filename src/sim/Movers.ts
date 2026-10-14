@@ -27,10 +27,25 @@ export class Mover {
 
   constructor(world: RAPIER.World, readonly def: MoverDef) {
     const body = world.createRigidBody(RAPIER.RigidBodyDesc.kinematicVelocityBased());
-    world.createCollider(RAPIER.ColliderDesc.cuboid(...def.half).setTranslation(0, -def.half[1], 0).setFriction(0.9), body);
+    if (def.type === 'propeller') {
+      // blades round the hub, each reaching out from it
+      const n = def.blades ?? 2;
+      for (let k = 0; k < n; k++) {
+        const a = (2 * Math.PI * k) / n;
+        world.createCollider(
+          RAPIER.ColliderDesc.cuboid(...def.half)
+            .setTranslation(Math.sin(a) * def.half[1], -Math.cos(a) * def.half[1], 0)
+            .setRotation({ x: 0, y: 0, z: Math.sin(a / 2), w: Math.cos(a / 2) })
+            .setFriction(0.5),
+          body,
+        );
+      }
+    } else {
+      world.createCollider(RAPIER.ColliderDesc.cuboid(...def.half).setTranslation(0, -def.half[1], 0).setFriction(0.9), body);
+    }
     this.tracked = new Tracked(body);
     const s = Math.sin(def.yaw), c = Math.cos(def.yaw);
-    // a seesaw pitches about its own X axis, a rocker rolls about its own Z axis
+    // a seesaw pitches about its own X axis, a rocker and a propeller turn about their own Z axis
     this.axis = def.type === 'seesaw' ? { x: c, y: 0, z: -s } : { x: s, y: 0, z: c };
     this.reset();
   }
@@ -49,6 +64,13 @@ export class Mover {
   /** @param at where the vehicle is, and whether it stands on this plank */
   update(dt: number, at: { x: number; y: number; z: number }, onIt: boolean): void {
     const d = this.def;
+    if (d.type === 'propeller') {
+      // just round and round, whatever is in the way
+      const w = d.spin ?? 3;
+      this.angle += w * dt;
+      this.tracked.body.setAngvel({ x: this.axis.x * w, y: 0, z: this.axis.z * w }, true);
+      return;
+    }
     let next: number;
     if (d.type === 'seesaw') {
       // Weight past the middle tips it; the further out, the harder.

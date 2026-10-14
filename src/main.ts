@@ -239,6 +239,10 @@ function handleEvents(): void {
         hud.toast('Kette gerissen!', `${formatMoney(e.lost)} futsch.`, 2);
         break;
       case 'crashScore':
+        if (e.propeller) {
+          hud.banner('Weggefetzt!', `Propeller-Treffer: +${e.points}`, 2);
+          sound.thud(9);
+        }
         hud.stunt(`+${e.points}`);
         break;
       case 'crashOver':

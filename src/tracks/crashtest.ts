@@ -1,4 +1,4 @@
-import { easedRamp, profile, type BoxDef, type DecorDef, type PickupDef, type PropDef, type TrackDef } from '../sim/Track';
+import { easedRamp, profile, type BoxDef, type DecorDef, type MoverDef, type PickupDef, type PropDef, type TrackDef } from '../sim/Track';
 
 const GROUND = 0x8a8f86;
 const CONCRETE = 0x9a9a94;
@@ -15,6 +15,9 @@ const TOP = 9;
 const TABLE = 4;
 const IN_FROM = -64;
 const IN_TO = -44;
+/** Half extents of the ground; a wall runs round it, so nothing slides off into nothing. */
+const GROUND_X = 90;
+const GROUND_Z = 145;
 
 // In-run: a smooth drop from the tower to the table, then a kicker. Many short planks, so
 // even flat out nothing is a kerb on the way down.
@@ -33,12 +36,28 @@ for (const a of [0.08, 0.16, 0.24]) {
 }
 const LIP = kz;
 
+// The propeller over the table, just before the kicker: four broad blades sweeping down across
+// the way, so fast there is hardly ever a gap. Whoever it catches goes flying.
+const PROP_Z = -42.5;
+const BLADE = 2.0;
+const HUB_Y = TABLE + BLADE + 0.15;
+const movers: MoverDef[] = [{ type: 'propeller', pos: [0, HUB_Y, PROP_Z], yaw: 0, half: [0.45, BLADE / 2, 0.15], angle: 0, blades: 4, spin: 3.5, color: 0xd23b3b }];
+
 const statics: BoxDef[] = [
-  { pos: [0, -0.5, 10], half: [70, 0.5, 90], color: GROUND },
+  { pos: [0, -0.5, 60], half: [GROUND_X, 0.5, GROUND_Z], color: GROUND },
   // the tower top to start from
   { pos: [0, TOP - 0.5, -68], half: [3, 0.5, 4], color: CONCRETE },
   ...profile(0, inrun, 4, WOOD),
 ];
+// the boundary wall
+for (const s of [-1, 1]) {
+  statics.push({ pos: [s * GROUND_X, 1, 60], half: [0.4, 1, GROUND_Z], color: CONCRETE });
+  statics.push({ pos: [0, 1, 60 + s * GROUND_Z], half: [GROUND_X, 1, 0.4], color: CONCRETE });
+}
+// the gantry the propeller hangs from: posts beside the table, a beam just upstream of the blades
+const BEAM_Z = PROP_Z - 0.7;
+for (const s of [-1, 1]) statics.push({ pos: [s * 2.6, (HUB_Y + 0.15) / 2, BEAM_Z], half: [0.15, (HUB_Y + 0.15) / 2, 0.15], color: STEEL });
+statics.push({ pos: [0, HUB_Y, BEAM_Z], half: [2.45, 0.15, 0.15], color: STEEL });
 // legs under the tower, the in-run and the table, stopping short of the planks
 statics.push({ pos: [0, (TOP - 1) / 2, -68], half: [2.6, (TOP - 1) / 2, 3.6], color: STEEL });
 for (const [z, y] of inrun) {
@@ -117,4 +136,5 @@ export const CRASHTEST: TrackDef = {
   gates: [{ x: 500, z: 500, hx: 0.1, hz: 0.1 }],
   pickups,
   decor,
+  movers,
 };

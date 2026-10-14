@@ -1472,6 +1472,35 @@ describe('modes', () => {
     core.dispose();
   });
 
+  it('draws the grid afresh for every start, so the player is not always in front', () => {
+    const core = new GameCore(PARKPLATZ, trained(4), 'race');
+    const rows = new Set<string>();
+    for (let i = 0; i < 12; i++) {
+      core.restart(true);
+      const p = core.sim.vehicle.body.translation();
+      rows.add(`${p.x.toFixed(1)},${p.z.toFixed(1)}`);
+      // nobody shares a slot
+      for (const r of core.rivals) expect(Math.hypot(r.grid.x - p.x, r.grid.z - p.z)).toBeGreaterThan(1);
+    }
+    expect(rows.size).toBeGreaterThan(1);
+    // and the others are tuned to the player's stage, at 90 to 100 % of their vehicle there
+    for (const [k, r] of core.rivals.entries()) {
+      expect(r.vehicle.topSpeed * 3.6).toBeCloseTo(stageSpeedKmh(STAGES[4], r.vehicle.spec.speedFactor) * RACE.skill[k]);
+    }
+    core.dispose();
+  });
+
+  it('sends everyone into the crashtest flat out with the boost battery, whatever they have bought', () => {
+    const core = new GameCore(trackById('crashtest'), trained(1), 'crash');
+    expect(core.topSpeedKmh).toBeCloseTo(stageSpeedKmh(STAGES[STAGES.length - 1], 1));
+    expect(core.sim.vehicle.boostFitted).toBe(true);
+    // and the propeller over the table keeps turning
+    const prop = core.sim.movers.find((m) => m.def.type === 'propeller')!;
+    for (let i = 0; i < 60; i++) core.step(idle);
+    expect(prop.angle).toBeCloseTo(prop.def.spin!, 1);
+    core.dispose();
+  });
+
   it('pays a freestyle run of stunts when it ends, and never times a lap', () => {
     // (about the speed the stunt tests jump at)
     const progress = trained();
