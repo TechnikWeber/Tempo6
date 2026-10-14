@@ -28,8 +28,6 @@ interface Lock {
   price?: number;
 }
 
-/** Smallest scale of the vehicle list that is still readable and tappable. */
-const MIN_ZOOM = 0.7;
 const STAT_LABELS = { tempo: L('Tempo', 'Speed'), antritt: L('Antritt', 'Acceleration'), wendig: L('Wendigkeit', 'Agility'), standfest: L('Standfest', 'Stability') } as const;
 const TUTORIAL_LOCK = L('🔒 Erst durch den Reha-Parcours', '🔒 Finish the Rehab Course first');
 
@@ -48,9 +46,10 @@ export class Menu {
   private readonly root = document.getElementById('menu')!;
   private readonly money = h('b');
   private readonly detail = h('div', 'detail');
-  private readonly vehicleList = h('div', 'garage');
-  /** Zoomed wrapper inside the list, so the whole garage fits without scrolling. */
-  private readonly vehicleCards = h('div');
+  /** The vehicle picker: arrows either side of category and name, the categories, the rides in it. */
+  private readonly pickerName = h('div', 'picked');
+  private readonly categories = h('div', 'chips cats');
+  private readonly rides = h('div', 'chips rides');
   private readonly modeList = h('div', 'modes');
   private readonly modeBlurb = h('p', 'mode-blurb');
   /** The current mode; tapped, it opens the list of modes in place of the tracks. */
@@ -90,9 +89,20 @@ export class Menu {
     shadow.title = L('Die Bestzeit fährt als Schatten mit (Taste G)', 'Your best lap drives along as a ghost (key G)');
     head.append(shadow, this.tools(), purse);
 
+    // One ride at a time: arrows to step through them (beside the vehicle itself as well), the
+    // categories to jump between, and the rides of the current one.
     const left = h('section', 'col');
-    this.vehicleList.append(this.vehicleCards);
-    left.append(this.vehicleList);
+    const prev = h('button', 'arrow', '‹'), next = h('button', 'arrow', '›');
+    prev.title = next.title = L('Gefährt wechseln (A/D)', 'Change ride (A/D)');
+    prev.addEventListener('click', () => this.stepVehicle(-1));
+    next.addEventListener('click', () => this.stepVehicle(1));
+    const picker = h('div', 'picker');
+    picker.append(prev, this.pickerName, next);
+    left.append(h('h2', '', L('Gefährt', 'Ride')), picker, this.categories, this.rides, this.detail);
+    const bigPrev = h('button', 'stage-arrow left', '‹'), bigNext = h('button', 'stage-arrow right', '›');
+    bigPrev.title = bigNext.title = prev.title;
+    bigPrev.addEventListener('click', () => this.stepVehicle(-1));
+    bigNext.addEventListener('click', () => this.stepVehicle(1));
     this.garage.title = L('Gefährt in der Werkstatt ansehen und tunen (T)', 'Look at your ride in the workshop and tune it (T)');
     this.garage.addEventListener('click', () => this.openGarage());
     this.buyVehicle.addEventListener('click', () => this.unlockVehicle());
@@ -106,17 +116,16 @@ export class Menu {
     const hint = h('p', 'keys');
     hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
     right.append(hint);
-    this.root.append(head, left, this.detail, right);
+    this.root.append(head, left, right, bigPrev, bigNext);
 
     this.start.addEventListener('click', () => this.go());
-    new ResizeObserver(() => this.fit()).observe(this.root);
     window.addEventListener('keydown', (e) => {
       // (typing a cheat code is not steering the menu)
       if (this.root.hidden || e.ctrlKey || e.metaKey || e.altKey || e.target instanceof HTMLInputElement) return;
       const step = (list: readonly string[], cur: string, d: number) => list[(list.indexOf(cur) + d + list.length) % list.length];
       switch (e.code) {
-        case 'KeyA': case 'ArrowLeft': this.pickVehicle(step(VEHICLE_ORDER, this.vehicle, -1) as VehicleId); break;
-        case 'KeyD': case 'ArrowRight': this.pickVehicle(step(VEHICLE_ORDER, this.vehicle, 1) as VehicleId); break;
+        case 'KeyA': case 'ArrowLeft': this.stepVehicle(-1); break;
+        case 'KeyD': case 'ArrowRight': this.stepVehicle(1); break;
         case 'KeyW': case 'ArrowUp': this.pickTrack(step(this.tracksOfMode(), this.track, -1)); break;
         case 'KeyS': case 'ArrowDown': this.pickTrack(step(this.tracksOfMode(), this.track, 1)); break;
         case 'KeyQ': this.pickMode(step(MODES.map((m) => m.id), this.mode.id, -1) as ModeId); break;
@@ -260,6 +269,12 @@ export class Menu {
     this.render();
   }
 
+  /** The next or previous ride, through all categories in turn. */
+  private stepVehicle(d: number): void {
+    const i = VEHICLE_ORDER.indexOf(this.vehicle);
+    this.pickVehicle(VEHICLE_ORDER[(i + d + VEHICLE_ORDER.length) % VEHICLE_ORDER.length]);
+  }
+
   private pickMode(id: ModeId): void {
     if (this.modeLock(id)) return this.nope(this.choosingMode ? this.modeList : this.start);
     this.progress.mode = id;
@@ -311,16 +326,6 @@ export class Menu {
     button.classList.add('nope');
   }
 
-  /** Shrink the vehicle list until it fits its column; below MIN_ZOOM it scrolls instead. */
-  private fit(): void {
-    const s = this.vehicleCards.style;
-    s.zoom = '1';
-    const natural = this.vehicleCards.offsetHeight;
-    const room = this.vehicleList.clientHeight;
-    if (natural > room && room > 0) s.zoom = String(Math.max(MIN_ZOOM, (room - 1) / natural));
-    this.vehicleList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
-  }
-
   /** The button that buys a locked thing, or nothing if there is nothing to buy. */
   private unlockButton(b: HTMLButtonElement, name: string, lock: Lock | null): void {
     b.hidden = lock?.price === undefined;
@@ -334,22 +339,28 @@ export class Menu {
     this.ghost.checked = this.progress.showGhost;
     const mode = this.mode;
 
-    this.vehicleCards.replaceChildren(
-      ...CATEGORIES.flatMap((cat) => {
-        const cards = h('div', 'cards');
-        for (const id of cat.vehicles) {
-          const v = VEHICLES[id];
-          const b = h('button', `card${id === this.vehicle ? ' on' : ''}`);
-          b.style.setProperty('--tint', `#${BRAND_COLORS[v.brand].toString(16).padStart(6, '0')}`);
-          b.append(h('strong', '', v.label));
-          this.lockCard(b, this.vehicleLock(id));
-          b.addEventListener('click', () => this.pickVehicle(id));
-          cards.append(b);
-        }
-        return [h('h2', '', cat.title), cards];
+    const v = VEHICLES[this.vehicle];
+    const cat = CATEGORIES.find((c) => c.vehicles.includes(v.id))!;
+    const lockV = this.vehicleLock(this.vehicle);
+    this.pickerName.style.setProperty('--tint', `#${BRAND_COLORS[v.brand].toString(16).padStart(6, '0')}`);
+    this.pickerName.replaceChildren(h('small', '', cat.title), h('strong', '', lockV ? `🔒 ${v.label}` : v.label));
+    this.categories.replaceChildren(
+      ...CATEGORIES.map((c) => {
+        const b = h('button', `chip${c === cat ? ' on' : ''}`, c.title);
+        // (into a category at its first ride)
+        b.addEventListener('click', () => c !== cat && this.pickVehicle(c.vehicles[0]));
+        return b;
       }),
     );
-    const v = VEHICLES[this.vehicle];
+    this.rides.replaceChildren(
+      ...cat.vehicles.map((id) => {
+        const lock = this.vehicleLock(id);
+        const b = h('button', `chip${id === v.id ? ' on' : ''}${lock ? ' locked' : ''}`, lock ? `🔒 ${VEHICLES[id].label}` : VEHICLES[id].label);
+        if (lock?.price !== undefined && this.progress.money >= lock.price) b.classList.add('can');
+        b.addEventListener('click', () => this.pickVehicle(id));
+        return b;
+      }),
+    );
     const stats = h('dl');
     for (const key of Object.keys(STAT_LABELS) as (keyof typeof STAT_LABELS)[]) {
       const bar = h('dd');
@@ -360,13 +371,11 @@ export class Menu {
     const stageNo = this.progress.stageOf(v.id);
     const stage = STAGES[stageNo];
     const top = stageSpeedKmh(stage, v.speedFactor * profile.speed);
-    const lockV = this.vehicleLock(this.vehicle);
     this.unlockButton(this.buyVehicle, v.label, lockV);
     this.garage.disabled = !!lockV;
     const actions = h('div', 'actions');
     actions.append(this.garage, this.buyVehicle);
     this.detail.replaceChildren(
-      h('h3', '', v.label),
       h('p', 'kind', `${v.kind} · ${L('Fahrprofile', 'Driving profiles')}: ${v.profiles.map((p) => p.name).join(', ')}`),
       h('p', '', v.blurb),
       stats,
@@ -426,7 +435,6 @@ export class Menu {
     this.unlockButton(this.buyTrack, t?.name ?? '', this.trackLock(this.track));
     if (this.choosingMode) this.buyTrack.hidden = true;
     this.start.disabled = !this.ready;
-    this.fit();
     // (the chosen track scrolls into view, as the chosen vehicle does)
     this.trackList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
   }
