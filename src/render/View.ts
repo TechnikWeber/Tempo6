@@ -17,7 +17,7 @@ import { Wreckage } from './Wreckage';
 
 const SKY = 0x9fd3f0;
 /** What the shadow of the best lap is made of. */
-const GHOST = new MeshStandardMaterial({ color: 0xdfe9f5, transparent: true, opacity: 0.32, depthWrite: false, roughness: 1 });
+const GHOST = new MeshStandardMaterial({ color: 0xdfe9f5, transparent: true, opacity: 0.18, depthWrite: false, roughness: 1 });
 const SHADOW_HALF = 22;
 const SHADOW_MAP = 2048;
 // The sun's direction and the two axes of its shadow map.

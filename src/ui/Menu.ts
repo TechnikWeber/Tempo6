@@ -48,13 +48,12 @@ export class Menu {
   private readonly detail = h('div', 'detail');
   /** The vehicle picker: arrows either side of category and name, the categories, the rides in it. */
   private readonly pickerName = h('div', 'picked');
-  private readonly categories = h('div', 'chips cats');
   private readonly rides = h('div', 'chips rides');
   private readonly modeList = h('div', 'modes');
   private readonly modeBlurb = h('p', 'mode-blurb');
   /** The current mode; tapped, it opens the list of modes in place of the tracks. */
   private readonly modeButton = h('button', 'mode-pick');
-  private readonly trackHead = h('h2', '', L('Strecke', 'Track'));
+  private readonly trackHead = h('h2', 'track-head', L('Strecke', 'Track'));
   /** Whether the mode list is open (and the tracks are put away meanwhile). */
   private choosingMode = false;
   private readonly trackList = h('div', 'cards tracks');
@@ -78,16 +77,7 @@ export class Menu {
     head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', L('Verdien dir Schrauben. Tune dein Gefährt. Werde zu schnell.', 'Earn screws. Tune your ride. Get too fast.')));
     const purse = h('p', 'purse', '🔩 ');
     purse.append(this.money);
-    // whether the best lap drives along
-    const shadow = h('label', 'who');
-    this.ghost.type = 'checkbox';
-    this.ghost.addEventListener('change', () => {
-      progress.showGhost = this.ghost.checked;
-      progress.save();
-    });
-    shadow.append(this.ghost, L(' Schatten', ' Ghost'));
-    shadow.title = L('Die Bestzeit fährt als Schatten mit (Taste G)', 'Your best lap drives along as a ghost (key G)');
-    head.append(shadow, this.tools(), purse);
+    head.append(purse);
 
     // One ride at a time: arrows to step through them (beside the vehicle itself as well), the
     // categories to jump between, and the rides of the current one.
@@ -98,7 +88,7 @@ export class Menu {
     next.addEventListener('click', () => this.stepVehicle(1));
     const picker = h('div', 'picker');
     picker.append(prev, this.pickerName, next);
-    left.append(h('h2', '', L('Gefährt', 'Ride')), picker, this.categories, this.rides, this.detail);
+    left.append(h('h2', '', L('Gefährt', 'Ride')), picker, this.rides, this.detail);
     const bigPrev = h('button', 'stage-arrow left', '‹'), bigNext = h('button', 'stage-arrow right', '›');
     bigPrev.title = bigNext.title = prev.title;
     bigPrev.addEventListener('click', () => this.stepVehicle(-1));
@@ -112,11 +102,17 @@ export class Menu {
       this.choosingMode = true;
       this.render();
     });
+    // the track header carries arrows to step through the tracks, for touch
+    const up = h('button', 'step', '▲'), down = h('button', 'step', '▼');
+    up.title = down.title = L('Strecke wechseln (W/S)', 'Change track (W/S)');
+    up.addEventListener('click', () => this.pickTrack(this.stepIn(this.tracksOfMode(), this.track, -1)));
+    down.addEventListener('click', () => this.pickTrack(this.stepIn(this.tracksOfMode(), this.track, 1)));
+    this.trackHead.append(up, down);
     right.append(h('h2', '', L('Modus', 'Mode')), this.modeButton, this.modeList, this.modeBlurb, this.trackHead, this.trackList, this.buyTrack, this.start);
     const hint = h('p', 'keys');
     hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
     right.append(hint);
-    this.root.append(head, left, right, bigPrev, bigNext);
+    this.root.append(head, left, right, this.bar(), bigPrev, bigNext);
 
     this.start.addEventListener('click', () => this.go());
     window.addEventListener('keydown', (e) => {
@@ -140,9 +136,24 @@ export class Menu {
     }, true);
   }
 
-  /** Save to a file, load from one, and the box for cheat codes. */
-  private tools(): HTMLElement {
-    const box = h('div', 'tools');
+  private stepIn(list: readonly string[], cur: string, d: number): string {
+    return list[(list.indexOf(cur) + d + list.length) % list.length];
+  }
+
+  /**
+   * Along the bottom: the settings behind a cog (folded away until wanted) and full screen.
+   * The settings: save to a file, load from one, the language, the ghost, cheat codes.
+   */
+  private bar(): HTMLElement {
+    const bar = h('div', 'menubar');
+    const panel = h('div', 'settings');
+    panel.hidden = true;
+    const cog = h('button', 'tool', L('⚙ Einstellungen', '⚙ Settings'));
+    cog.addEventListener('click', () => {
+      panel.hidden = !panel.hidden;
+      cog.classList.toggle('on', !panel.hidden);
+    });
+    const box = panel;
     const save = h('button', 'tool', L('💾 Speichern', '💾 Save'));
     save.title = L('Spielstand als Datei herunterladen. Bleibt, auch wenn der Browser seine Daten löscht.', 'Download your progress as a file. It stays even if the browser clears its data.');
     save.addEventListener('click', () => this.handlers.onExport());
@@ -174,7 +185,21 @@ export class Menu {
       this.say(said ?? L('Nichts passiert.', 'Nothing happens.'));
       this.render();
     });
-    box.append(save, load, file, cheat);
+    // whether the best lap drives along
+    const shadow = h('label', 'tool toggle');
+    this.ghost.type = 'checkbox';
+    this.ghost.addEventListener('change', () => {
+      this.progress.showGhost = this.ghost.checked;
+      this.progress.save();
+    });
+    shadow.append(this.ghost, L(' Schatten der Bestzeit', ' Best-lap ghost'));
+    shadow.title = L('Im Zeitrennen fährt die Bestzeit als Schatten mit (beim Fahren auch Taste G)', 'In the time trial your best lap drives along as a ghost (key G while driving)');
+    // the other language, one tap away
+    const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
+    other.title = L('Switch to English', 'Auf Deutsch umstellen');
+    other.addEventListener('click', () => switchLanguage(lang === 'de' ? 'en' : 'de'));
+    box.append(save, load, file, other, shadow, cheat);
+    bar.append(panel, cog);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {
       const full = h('button', 'tool', L('⛶ Vollbild', '⛶ Full screen'));
@@ -184,14 +209,10 @@ export class Menu {
         await document.documentElement.requestFullscreen().catch(() => {});
         await (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.('landscape').catch(() => {});
       });
-      box.append(full);
+      bar.append(full);
     }
-    // the other language, one tap away
-    const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
-    other.title = L('Switch to English', 'Auf Deutsch umstellen');
-    other.addEventListener('click', () => switchLanguage(lang === 'de' ? 'en' : 'de'));
-    box.append(other, this.note);
-    return box;
+    bar.append(this.note);
+    return bar;
   }
 
   /** A short message in the header, e.g. what the last cheat or the tutorial did. */
@@ -344,14 +365,6 @@ export class Menu {
     const lockV = this.vehicleLock(this.vehicle);
     this.pickerName.style.setProperty('--tint', `#${BRAND_COLORS[v.brand].toString(16).padStart(6, '0')}`);
     this.pickerName.replaceChildren(h('small', '', cat.title), h('strong', '', lockV ? `🔒 ${v.label}` : v.label));
-    this.categories.replaceChildren(
-      ...CATEGORIES.map((c) => {
-        const b = h('button', `chip${c === cat ? ' on' : ''}`, c.title);
-        // (into a category at its first ride)
-        b.addEventListener('click', () => c !== cat && this.pickVehicle(c.vehicles[0]));
-        return b;
-      }),
-    );
     this.rides.replaceChildren(
       ...cat.vehicles.map((id) => {
         const lock = this.vehicleLock(id);

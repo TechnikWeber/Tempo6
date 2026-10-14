@@ -339,7 +339,8 @@ function frame(now: number): void {
 
   let cmd = input.poll(dt);
   if (input.take('mute')) sound.toggleMute();
-  if (input.take('ghost')) {
+  // (the ghost key only counts while driving; in the menu the switch is in the settings)
+  if (input.take('ghost') && racing) {
     progress.showGhost = !progress.showGhost;
     progress.save();
     if (racing) hud.toast(progress.showGhost ? L('Schatten an', 'Ghost on') : L('Schatten aus', 'Ghost off'), L('Die Bestzeit fährt mit.', 'Your best lap drives along.'), 1.5);

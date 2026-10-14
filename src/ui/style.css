@@ -225,8 +225,8 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template: auto 1fr / clamp(300px, 30vw, 380px) minmax(0, 1fr) clamp(220px, 24vw, 340px);
-  grid-template-areas: 'head head head' 'left . right';
+  grid-template: auto 1fr auto / clamp(300px, 30vw, 380px) minmax(0, 1fr) clamp(220px, 24vw, 340px);
+  grid-template-areas: 'head head head' 'left . right' 'left menubar right';
   gap: 12px 16px;
   padding: 20px;
   overflow: auto;
@@ -236,7 +236,6 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #menu header { grid-area: head; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
 #menu h1 { margin: 0; font-size: 56px; font-weight: 900; letter-spacing: -2px; color: var(--accent); text-shadow: 0 3px 0 #000; }
 #menu .tagline { margin: 0; font-size: 17px; opacity: 0.9; text-shadow: 0 1px 0 #000; }
-#menu header label:first-of-type { margin-left: auto; }
 #menu .purse { margin: 0; font-size: 20px; background: var(--panel); padding: 6px 14px; border-radius: 10px; }
 #menu .purse b { color: var(--accent); }
 #menu .who { font-size: 14px; background: var(--panel); padding: 6px 10px; border-radius: 10px; display: flex; align-items: center; gap: 6px; }
@@ -364,8 +363,10 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
   #menu .col:first-of-type { overflow: visible; }
   #menu .stage-arrow { display: none; }
   #menu {
-    grid-template: auto auto auto / 1fr;
-    grid-template-areas: 'head' 'left' 'right';
+    grid-template: auto auto auto auto / 1fr;
+    grid-template-areas: 'head' 'left' 'right' 'menubar';
+  }
+  #menu {
     background: rgb(10 12 16 / 0.55);
     padding: 14px;
   }
@@ -398,3 +399,19 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #garage .said { margin: 0; min-height: 1.3em; font-size: 14px; color: var(--accent); }
 #garage .back { align-self: flex-start; }
 @media (max-width: 700px) { #garage { align-items: flex-end; padding: 10px; } #garage .panel { max-height: 60vh; } }
+
+/* The purse top right; along the bottom the settings (folded away) and full screen. */
+#menu header .purse { margin-left: auto; }
+#menu .menubar { grid-area: menubar; position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+#menu .menubar .tool.on { outline: 2px solid var(--accent); }
+#menu .settings { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(92vw, 560px); display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px; background: rgb(18 20 24 / 0.92); border-radius: 12px; }
+#menu .settings .toggle { display: flex; align-items: center; gap: 4px; }
+#menu .col:last-of-type { display: flex; flex-direction: column; }
+#menu .col:last-of-type .cards.tracks { flex: 1 1 auto; }
+#menu .track-head { display: flex; align-items: center; gap: 6px; }
+#menu .track-head .step { margin-left: auto; font: inherit; font-size: 12px; color: var(--ink); background: var(--panel); border: 0; border-radius: 8px; padding: 3px 9px; cursor: pointer; }
+#menu .track-head .step + .step { margin-left: 0; }
+@media (max-width: 900px), (max-height: 500px) {
+  /* one column: the bar comes last, in the flow */
+  #menu .menubar { position: relative; left: auto; bottom: auto; transform: none; justify-self: center; margin-bottom: 8px; }
+}

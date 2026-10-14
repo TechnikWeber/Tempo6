@@ -2,7 +2,8 @@ import type { Input } from './Input';
 
 /** On-screen controls for phones: a steering strip on the left, pedals on the right. */
 export function installTouchControls(input: Input): void {
-  if (!('ontouchstart' in window) && navigator.maxTouchPoints === 0) return;
+  // Only where touch is the main way in: phones and tablets, not a laptop with a touch screen.
+  if (!matchMedia('(pointer: coarse)').matches) return;
   const root = document.getElementById('touch')!;
   root.hidden = false;
 
