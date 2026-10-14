@@ -113,6 +113,9 @@ export class Hud {
     if (!next) {
       this.set(this.tune, 'Ausgetunt. Mehr geht nicht. Noch nicht.');
       this.tune.disabled = true;
+    } else if (!progress.trained()) {
+      this.set(this.tune, `Einmal durch den Parcours → ${next.name}, ${next.topSpeedKmh} km/h`);
+      this.tune.disabled = true;
     } else {
       const missing = next.price - progress.money;
       this.set(

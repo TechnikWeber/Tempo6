@@ -5,6 +5,7 @@ import { Race } from './Race';
 import { Sim, STEP } from './Sim';
 import { Stunts, type StuntKind } from './Stunts';
 import type { PickupDef, TrackDef } from './Track';
+import { TRAINING } from '../tracks';
 import type { DriveInput } from './Vehicle';
 
 export interface GameInput extends DriveInput {
@@ -22,6 +23,10 @@ export type GameEvent =
   | { type: 'lap'; time: number; best: boolean }
   | { type: 'tuned'; stage: TuningStage }
   | { type: 'broke'; missing: number }
+  /** Tuning asked for before the vehicle has been through the Reha-Parcours. */
+  | { type: 'untrained' }
+  /** Through the Reha-Parcours for the first time with this vehicle: the throttle comes off. */
+  | { type: 'graduated'; stage: TuningStage }
   | { type: 'boostBought' }
   | { type: 'boost' }
   | { type: 'honk' }
@@ -124,6 +129,7 @@ export class GameCore {
     this.recording = [];
     this.sim.respawn();
     this.sim.resetProps();
+    this.sim.resetMovers();
     this.sim.traffic.reset();
     this.race.reset();
     this.pickupTimers.fill(0);
@@ -145,6 +151,8 @@ export class GameCore {
       if (progress.buyNext()) {
         this.applyStage();
         this.events.push({ type: 'tuned', stage: progress.stage });
+      } else if (next && !progress.trained()) {
+        this.events.push({ type: 'untrained' });
       } else if (next) {
         this.events.push({ type: 'broke', missing: next.price - progress.money });
       }
@@ -214,6 +222,11 @@ export class GameCore {
         progress.save();
       }
       this.events.push({ type: 'lap', time: race.lastLap!, best });
+      if (this.track.id === TRAINING && !progress.trained()) {
+        progress.graduate();
+        this.applyStage();
+        this.events.push({ type: 'graduated', stage: progress.stage });
+      }
       const place = progress.addTime(this.track.id, { time: race.lastLap!, name: progress.name, vehicle: v.spec.id, stage: progress.stageIndex, date: Date.now() });
       if (place > 0) this.events.push({ type: 'ranked', place });
       if (best) {

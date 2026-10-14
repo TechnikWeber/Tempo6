@@ -90,7 +90,7 @@ for (const z of [-33, 33]) {
 export const PARKPLATZ: TrackDef = {
   id: 'parkplatz',
   name: 'Baumarkt-Parkplatz',
-  blurb: 'Enger Rundkurs um die Grüninsel. Hier fängt jeder an, mit 6 km/h.',
+  blurb: 'Enger Rundkurs um die Grüninsel. Hier gibt es die ersten Schrauben fürs Tuning.',
   unlockPrice: 0,
   lapPay: 10,
   spawn: { pos: [-3, 0.5, -LINE_Z], yaw: Math.PI / 2 },

@@ -8,7 +8,7 @@ import { View } from './render/View';
 import { GameCore, type GameInput } from './sim/GameCore';
 import { Progress } from './sim/Progress';
 import { initPhysics, STEP } from './sim/Sim';
-import { trackById } from './tracks';
+import { trackById, TRAINING } from './tracks';
 import { formatTime, Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
 
@@ -28,7 +28,8 @@ function loadTrack(id: string): void {
   view.setTrack(track);
   view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
 }
-loadTrack(progress.track);
+// A vehicle that has not been through the Reha-Parcours yet starts there.
+loadTrack(progress.trained() ? progress.track : TRAINING);
 
 const input = new Input();
 const sound = new Sound();
@@ -158,6 +159,14 @@ function handleEvents(): void {
       case 'boostBought':
         sound.tuned();
         hud.toast('Autobatterie auf dem Schoß!', 'Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 4);
+        break;
+      case 'untrained':
+        sound.nope();
+        hud.toast('Erst einmal durch den Parcours', 'Dann ist die Drossel raus.', 2);
+        break;
+      case 'graduated':
+        sound.tuned();
+        hud.toast(`Geschafft! ${e.stage.name}`, `Jetzt ${core.topSpeedKmh.toFixed(1).replace('.', ',')} km/h, und alle Strecken offen. ${e.stage.blurb}`, 5);
         break;
       case 'broke':
         sound.nope();

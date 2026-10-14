@@ -95,6 +95,25 @@ export interface SpinnerDef {
   color: number;
 }
 
+/**
+ * A plank that moves. A `seesaw` tips about its middle towards whichever end the vehicle is
+ * on; a `rocker` rolls slowly from side to side by itself, for balancing across.
+ */
+export interface MoverDef {
+  type: 'seesaw' | 'rocker';
+  /** Centre of its top surface when level. */
+  pos: [number, number, number];
+  /** Heading of its length, 0 = along Z. */
+  yaw: number;
+  /** Half width, half thickness and half length. */
+  half: [number, number, number];
+  /** Greatest tilt either way, in rad. A seesaw starts tipped back, towards -Z of its heading. */
+  angle: number;
+  /** Seconds for a rocker to roll over and back. */
+  period?: number;
+  color: number;
+}
+
 export interface TrackDef {
   id: string;
   name: string;
@@ -115,6 +134,7 @@ export interface TrackDef {
   line?: [number, number][];
   traffic?: TrafficDef[];
   spinners?: SpinnerDef[];
+  movers?: MoverDef[];
   /** With terrain the track brings no floor of its own in `statics`. */
   terrain?: TerrainDef;
 }

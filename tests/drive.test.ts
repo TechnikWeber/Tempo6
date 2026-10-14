@@ -7,9 +7,11 @@ import { Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
 import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
-import { TRACKS } from '../src/tracks';
+import { TRACKS, TRAINING } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
+import { REHA } from '../src/tracks/reha';
+import { Autopilot } from './autopilot';
 
 const FLAT: TrackDef = {
   id: 'flat',
@@ -918,7 +920,8 @@ describe('curve test ground', () => {
   });
 });
 
-describe.each(TRACKS.filter((t) => t.line).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
+// (the Reha-Parcours is a walking-pace course with rails; it has tests of its own)
+describe.each(TRACKS.filter((t) => t.line && t.id !== TRAINING).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
   it('can be lapped at 30 km/h by following its centre line', () => {
     const core = new GameCore(track, new Progress());
     core.sim.vehicle.setMotor(30 / 3.6, 5);
@@ -1117,14 +1120,16 @@ describe('start lights, leaderboard and ghost', () => {
 
 describe('game on the Parkplatz', () => {
   it('collects screws on the start straight and tunes once the money is there', () => {
-    const core = new GameCore(PARKPLATZ, new Progress());
-    for (let i = 0; i < 60 * 40; i++) core.step({ ...idle, throttle: 1 });
+    const progress = new Progress();
+    progress.stageIndex = 1;
+    const core = new GameCore(PARKPLATZ, progress);
+    for (let i = 0; i < 60 * 20; i++) core.step({ ...idle, throttle: 1 });
     // drove east along the start straight until the cones: three screws
     expect(core.progress.money).toBe(3);
-    core.progress.earn(Math.max(0, STAGES[1].price - 3));
+    core.progress.earn(STAGES[2].price - 3);
     core.step({ ...idle, tune: true });
-    expect(core.progress.stageIndex).toBe(1);
-    expect(core.topSpeedKmh).toBeCloseTo(8);
+    expect(core.progress.stageIndex).toBe(2);
+    expect(core.topSpeedKmh).toBeCloseTo(STAGES[2].topSpeedKmh);
   });
 
   it('applies the vehicle factors to the tuning stage', () => {
@@ -1152,10 +1157,20 @@ describe('game on the Parkplatz', () => {
   });
 
   it('cannot tune without money', () => {
+    const progress = new Progress();
+    progress.stageIndex = 1;
+    const core = new GameCore(PARKPLATZ, progress);
+    core.step({ ...idle, tune: true });
+    expect(core.progress.stageIndex).toBe(1);
+    expect(core.events.some((e) => e.type === 'broke')).toBe(true);
+  });
+
+  it('cannot tune before the Reha-Parcours, money or not', () => {
     const core = new GameCore(PARKPLATZ, new Progress());
+    core.progress.earn(1000);
     core.step({ ...idle, tune: true });
     expect(core.progress.stageIndex).toBe(0);
-    expect(core.events.some((e) => e.type === 'broke')).toBe(true);
+    expect(core.events.some((e) => e.type === 'untrained')).toBe(true);
   });
 
   it('flies off the big ramp at 60 km/h and can be put back on its wheels', () => {
@@ -1258,5 +1273,84 @@ describe('unlocking', () => {
     expect(p.isUnlocked('trex', 0)).toBe(true);
     p.earn(1000);
     expect(p.unlock('eskalation', 1000)).toBe(true);
+  });
+});
+
+describe('Reha-Parcours', () => {
+  const drive = (core: GameCore, ap: Autopilot, seconds: number, until?: () => boolean) => {
+    for (let i = 0; i < 60 * seconds && !until?.(); i++) {
+      core.step(ap.input(core));
+      if (core.events.length > 200) core.events.length = 0;
+    }
+  };
+
+  it.each(ALL)('%s gets through at walking pace, upright, and comes out with the throttle off', (id, spec) => {
+    const progress = new Progress();
+    progress.vehicle = spec.id;
+    const core = new GameCore(REHA, progress);
+    const ap = new Autopilot(REHA.line!);
+    let minUp = 1, done = false, t = 0;
+    for (; t < 60 * 180 && !done; t++) {
+      core.step(ap.input(core));
+      minUp = Math.min(minUp, core.sim.vehicle.upY);
+      done = core.events.some((e) => e.type === 'graduated');
+      core.events.length = 0;
+    }
+    expect(done).toBe(true);
+    // never on its side, never wrecked
+    expect(minUp).toBeGreaterThan(0.15);
+    expect(core.sim.vehicle.damage).toBe(0);
+    // a perfect line takes about a minute; by hand it is more
+    expect(t / 60).toBeGreaterThan(40);
+    expect(t / 60).toBeLessThan(120);
+    expect(progress.stageIndex).toBe(1);
+    expect(progress.stages[id]).toBe(1);
+    expect(core.topSpeedKmh).toBeCloseTo(STAGES[1].topSpeedKmh * spec.speedFactor * core.sim.vehicle.profile.speed);
+    core.dispose();
+  });
+
+  it('tips the seesaw over under the vehicle and back again once it has left', () => {
+    const core = new GameCore(REHA, new Progress());
+    const saw = core.sim.movers[0];
+    expect(saw.angle).toBeCloseTo(-saw.def.angle);
+    const ap = new Autopilot(REHA.line!);
+    // drive until the vehicle is past the seesaw
+    drive(core, ap, 60, () => core.sim.vehicle.body.translation().z > saw.def.pos[2] + saw.def.half[2] - 0.5 && core.sim.vehicle.body.translation().x > 10);
+    expect(saw.angle).toBeCloseTo(saw.def.angle);
+    drive(core, ap, 6);
+    expect(saw.angle).toBeCloseTo(-saw.def.angle);
+    core.dispose();
+  });
+
+  it('keeps the rocking bridge rolling by itself', () => {
+    const core = new GameCore(REHA, new Progress());
+    const rocker = core.sim.movers.find((m) => m.def.type === 'rocker')!;
+    let lo = 0, hi = 0;
+    for (let i = 0; i < 60 * 4; i++) {
+      core.step(idle);
+      lo = Math.min(lo, rocker.angle);
+      hi = Math.max(hi, rocker.angle);
+      // the body follows what it is told
+      const r = rocker.tracked.body.rotation();
+      expect(Math.abs(2 * Math.atan2(r.z, r.w) - rocker.angle)).toBeLessThan(0.01);
+    }
+    expect(hi).toBeCloseTo(rocker.def.angle, 2);
+    expect(lo).toBeCloseTo(-rocker.def.angle, 2);
+    core.dispose();
+  });
+
+  it('keeps the tuning stage per vehicle, and an old save gives its stage to the vehicle it drove', () => {
+    const data: Record<string, string> = {};
+    const store = { getItem: (k: string) => data[k] ?? null, setItem: (k: string, v: string) => void (data[k] = v) };
+    data['tempo6.save.v3'] = JSON.stringify({ money: 5, stageIndex: 4, vehicle: 'komet' });
+    const p = new Progress(store);
+    expect(p.stageIndex).toBe(4);
+    expect(p.trained('komet')).toBe(true);
+    expect(p.trained('trex')).toBe(false);
+    p.vehicle = 'trex';
+    expect(p.stageIndex).toBe(0);
+    p.graduate();
+    const again = new Progress(store);
+    expect(again.stages).toEqual({ komet: 4, trex: 1 });
   });
 });

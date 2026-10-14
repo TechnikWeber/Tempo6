@@ -1,7 +1,7 @@
-import { formatMoney } from '../config/tuning';
+import { formatMoney, STAGES } from '../config/tuning';
 import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from '../sim/Progress';
-import { TRACKS } from '../tracks';
+import { TRACKS, TRAINING } from '../tracks';
 import { formatTime } from './Hud';
 
 interface MenuHandlers {
@@ -120,15 +120,24 @@ export class Menu {
     return this.progress.isUnlocked(id, TRACKS.find((t) => t.id === id)!.unlockPrice);
   }
 
+  /** Whether the highlighted vehicle still has to get through the Reha-Parcours first. */
+  private get untrained(): boolean {
+    return !this.progress.trained(this.vehicle);
+  }
+
   private pickVehicle(id: VehicleId): void {
     this.vehicle = id;
-    if (this.vehicleOpen(id)) this.handlers.onVehicle(id);
+    if (this.vehicleOpen(id)) {
+      this.handlers.onVehicle(id);
+      // a new vehicle goes through training first
+      if (this.untrained && this.track !== TRAINING) this.pickTrack(TRAINING);
+    }
     this.render();
   }
 
   private pickTrack(id: string): void {
     this.track = id;
-    if (this.trackOpen(id)) this.handlers.onTrack(id);
+    if (this.trackOpen(id) && !(this.untrained && id !== TRAINING)) this.handlers.onTrack(id);
     this.render();
   }
 
@@ -139,6 +148,11 @@ export class Menu {
     if (!this.vehicleOpen(v.id)) {
       if (this.progress.unlock(v.id, v.unlockPrice)) this.pickVehicle(v.id);
       else this.nope();
+      return;
+    }
+    if (this.untrained && t.id !== TRAINING) {
+      this.pickTrack(TRAINING);
+      this.nope();
       return;
     }
     if (!this.trackOpen(t.id)) {
@@ -193,22 +207,25 @@ export class Menu {
       stats.append(h('dt', '', STAT_LABELS[key]), bar);
     }
     const profile = v.profiles[this.progress.profiles[v.id] ?? 0] ?? v.profiles[0];
-    const top = this.progress.stage.topSpeedKmh * v.speedFactor * profile.speed;
+    const stageNo = this.progress.stages[v.id] ?? 0;
+    const stage = STAGES[stageNo];
+    const top = stage.topSpeedKmh * v.speedFactor * profile.speed;
     this.detail.replaceChildren(
       h('h3', '', v.label),
       h('p', 'kind', `${v.kind} · Fahrprofile: ${v.profiles.map((p) => p.name).join(', ')}`),
       h('p', '', v.blurb),
       stats,
-      h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${this.progress.stageIndex}: ${this.progress.stage.name} · Fahrprofil: ${profile.name}`),
+      h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`),
     );
 
     this.trackList.replaceChildren(
       ...TRACKS.map((t) => {
-        const open = this.trackOpen(t.id);
+        const training = this.untrained && t.id !== TRAINING;
+        const open = this.trackOpen(t.id) && !training;
         const b = h('button', `card${t.id === this.track ? ' on' : ''}${open ? '' : ' locked'}`);
         b.append(h('strong', '', t.name), h('span', '', t.blurb));
         const best = this.progress.bestLaps[t.id];
-        b.append(h('em', '', open ? `Bestzeit ${formatTime(best ?? null)}` : `🔒 ${formatMoney(t.unlockPrice)}`));
+        b.append(h('em', '', open ? `Bestzeit ${formatTime(best ?? null)}` : training ? '🔒 Erst durch den Reha-Parcours' : `🔒 ${formatMoney(t.unlockPrice)}`));
         // the chosen track shows who is fastest on it
         if (t.id === this.track && open) {
           const board = h('ol', 'board');
@@ -223,13 +240,15 @@ export class Menu {
     );
 
     const lockedV = !this.vehicleOpen(this.vehicle);
-    const lockedT = !this.trackOpen(this.track);
+    const lockedT = !this.trackOpen(this.track) || (this.untrained && this.track !== TRAINING);
     const t = TRACKS.find((x) => x.id === this.track)!;
     this.start.textContent = lockedV
       ? `${v.label} freischalten (${formatMoney(v.unlockPrice)})`
-      : lockedT
-        ? `${t.name} freischalten (${formatMoney(t.unlockPrice)})`
-        : 'Los!';
+      : this.untrained && t.id !== TRAINING
+        ? 'Erst in den Reha-Parcours'
+        : lockedT
+          ? `${t.name} freischalten (${formatMoney(t.unlockPrice)})`
+          : 'Los!';
     this.start.classList.toggle('buy', lockedV || lockedT);
     this.fit();
   }

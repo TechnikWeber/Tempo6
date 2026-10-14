@@ -1,6 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { VehicleSpec } from '../config/vehicles';
 import { PROP_SHAPES, type PropDef, type TrackDef } from './Track';
+import { Mover } from './Movers';
 import { Tracked } from './Tracked';
 import { Traffic } from './Traffic';
 import { Vehicle, type DriveInput } from './Vehicle';
@@ -25,6 +26,8 @@ export class Sim {
   readonly props: Prop[] = [];
   /** Turning discs, in the order of the track definition. */
   readonly spinners: Tracked[] = [];
+  /** Seesaws and rocking planks, in the order of the track definition. */
+  readonly movers: Mover[] = [];
   readonly traffic: Traffic;
   vehicle: Vehicle;
 
@@ -53,6 +56,8 @@ export class Sim {
       body.setAngvel({ x: 0, y: s.speed, z: 0 }, true);
       this.spinners.push(new Tracked(body));
     }
+
+    for (const m of track.movers ?? []) this.movers.push(new Mover(this.world, m));
 
     this.traffic = new Traffic(this.world, track.traffic ?? []);
     this.vehicle = this.spawnVehicle(spec);
@@ -100,6 +105,11 @@ export class Sim {
     this.vehicle.setDamage(0);
   }
 
+  /** Seesaws back to where they started. */
+  resetMovers(): void {
+    for (const m of this.movers) m.reset();
+  }
+
   /** Put every loose prop back where the track definition has it. */
   resetProps(): void {
     for (const { def, tracked } of this.props) {
@@ -117,6 +127,7 @@ export class Sim {
     this.vehicle.update(input, STEP);
     const at = this.vehicle.body.translation();
     this.traffic.update(STEP, at.x, at.z);
+    for (const m of this.movers) m.update(STEP, at, this.vehicle.wheelsOnGround > 0 && m.holds(at, 1));
     // What the step does to the speed beyond gravity is something it ran into (or landed on):
     // tyres, springs and motors have all had their say in `update` already.
     const before = this.vehicle.body.linvel();
@@ -128,5 +139,6 @@ export class Sim {
     for (const c of this.traffic.cars) c.tracked.snap();
     for (const p of this.props) p.tracked.snap();
     for (const s of this.spinners) s.snap();
+    for (const m of this.movers) m.tracked.snap();
   }
 }

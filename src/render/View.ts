@@ -188,6 +188,7 @@ export class View {
   private pickupMeshes: Object3D[] = [];
   private trafficMeshes: Object3D[] = [];
   private spinnerMeshes: Object3D[] = [];
+  private moverMeshes: Object3D[] = [];
   private level: Group | null = null;
   private track: TrackDef | null = null;
   private model: VehicleRig | null = null;
@@ -316,6 +317,15 @@ export class View {
       level.add(g);
       return g;
     });
+    this.moverMeshes = (track.movers ?? []).map((d) => {
+      const g = new Group();
+      // (the body sits at the middle of the top surface)
+      box(g, d.half[0] * 2, d.half[1] * 2, d.half[2] * 2, d.color, 0, -d.half[1], 0).receiveShadow = true;
+      // yellow edges, so one can see where the plank ends
+      for (const s of [1, -1]) box(g, 0.08, 0.012, d.half[2] * 2, 0xf2c230, s * (d.half[0] - 0.06), 0.006, 0).castShadow = false;
+      level.add(g);
+      return g;
+    });
     this.scene.add(level);
     this.skids.clear();
     this.camReady = false;
@@ -432,6 +442,7 @@ export class View {
     core.sim.props.forEach((p, i) => place(this.propMeshes[i], p.tracked, alpha));
     core.sim.traffic.cars.forEach((c, i) => place(this.trafficMeshes[i], c.tracked, alpha));
     core.sim.spinners.forEach((s, i) => place(this.spinnerMeshes[i], s, alpha));
+    core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
     this.pickupMeshes.forEach((m, i) => {
       m.visible = !showroom && core.pickupTimers[i] === 0;
       m.rotation.y = this.time * 2 + i;

@@ -7,7 +7,7 @@ export interface Store {
   setItem(key: string, value: string): void;
 }
 
-// (v3: the money is Schrauben now, not cents of Pfand)
+// (v3: the money is Schrauben now, not cents of Pfand; the tuning stage is kept per vehicle since)
 const KEY = 'tempo6.save.v3';
 /** Unlock id of the boost battery; it shares the list with vehicles and tracks. */
 const BOOST_ID = 'boost';
@@ -38,11 +38,12 @@ export const GHOST_RATE = 10;
 const BOARD_SIZE = 10;
 const GHOST_KEY = 'tempo6.ghost.';
 
-/** Player progress: Schrauben, tuning stage, unlocks, best laps. */
+/** Player progress: Schrauben, tuning stages, unlocks, best laps. */
 export class Progress {
   /** Schrauben. */
   money = 0;
-  stageIndex = 0;
+  /** Tuning stage per vehicle id; every vehicle starts at walking pace. */
+  readonly stages: Record<string, number> = {};
   vehicle: VehicleId = 'trex';
   track = '';
   /** Best lap in seconds per track id. */
@@ -67,8 +68,10 @@ export class Progress {
     try {
       const d = JSON.parse(raw);
       this.money = Math.max(0, d.money | 0);
-      this.stageIndex = Math.min(STAGES.length - 1, Math.max(0, d.stageIndex | 0));
       if (d.vehicle in VEHICLES) this.vehicle = d.vehicle;
+      for (const [k, v] of Object.entries(d.stages ?? {})) if (typeof v === 'number') this.stages[k] = Math.min(STAGES.length - 1, Math.max(0, v | 0));
+      // (an older save had one stage for all; it goes to the vehicle it was driven with)
+      if (!d.stages && d.stageIndex > 0) this.stages[this.vehicle] = Math.min(STAGES.length - 1, d.stageIndex | 0);
       if (typeof d.track === 'string') this.track = d.track;
       for (const [k, v] of Object.entries(d.bestLaps ?? {})) if (typeof v === 'number') this.bestLaps[k] = v;
       for (const [k, v] of Object.entries(d.profiles ?? {})) if (typeof v === 'number') this.profiles[k] = v;
@@ -83,6 +86,29 @@ export class Progress {
     }
   }
 
+  /** Tuning stage of the current vehicle. */
+  get stageIndex(): number {
+    return this.stages[this.vehicle] ?? 0;
+  }
+
+  set stageIndex(i: number) {
+    this.stages[this.vehicle] = i;
+  }
+
+  /**
+   * Whether a vehicle has been through the Reha-Parcours. Until then it is held at walking
+   * pace and that is the only track it may take.
+   */
+  trained(id: VehicleId = this.vehicle): boolean {
+    return (this.stages[id] ?? 0) > 0;
+  }
+
+  /** The Reha-Parcours is done: the first stage comes free. */
+  graduate(): void {
+    if (this.stageIndex === 0) this.stageIndex = 1;
+    this.save();
+  }
+
   get stage(): TuningStage {
     return STAGES[this.stageIndex];
   }
@@ -93,7 +119,7 @@ export class Progress {
 
   get canTune(): boolean {
     const n = this.nextStage;
-    return n !== null && this.money >= n.price;
+    return n !== null && this.trained() && this.money >= n.price;
   }
 
   earn(screws: number): void {
@@ -103,7 +129,7 @@ export class Progress {
 
   buyNext(): boolean {
     const n = this.nextStage;
-    if (!n || this.money < n.price) return false;
+    if (!n || !this.trained() || this.money < n.price) return false;
     this.money -= n.price;
     this.stageIndex++;
     this.save();
@@ -169,7 +195,7 @@ export class Progress {
       KEY,
       JSON.stringify({
         money: this.money,
-        stageIndex: this.stageIndex,
+        stages: this.stages,
         vehicle: this.vehicle,
         track: this.track,
         bestLaps: this.bestLaps,
@@ -184,7 +210,7 @@ export class Progress {
 
   wipe(): void {
     this.money = 0;
-    this.stageIndex = 0;
+    for (const k of Object.keys(this.stages)) delete this.stages[k];
     this.unlocked.clear();
     for (const k of Object.keys(this.bestLaps)) delete this.bestLaps[k];
     for (const k of Object.keys(this.boards)) delete this.boards[k];
