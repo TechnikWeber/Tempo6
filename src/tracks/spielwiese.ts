@@ -1,4 +1,5 @@
-import { looping, ramp, type BoxDef, type DecorDef, type PropDef, type TrackDef } from '../sim/Track';
+import { looping, ramp, type BoxDef, type DecorDef, type MoverDef, type PropDef, type TrackDef } from '../sim/Track';
+import { forest, house, street } from './scenery';
 
 const TARMAC = 0x45484d;
 const CONCRETE = 0x9a9a94;
@@ -70,6 +71,25 @@ const spinners = [
 // Slalom between the lanes.
 for (let i = 0; i < 10; i++) props.push({ type: 'cone', pos: [-100 + i * 9, 0.26, 22 + (i % 2 ? 2 : -2)] });
 
+// Outside the north wall a fair: a big wheel that keeps turning, and a row of booths.
+const WHEEL_Z = LOT_Z + 26;
+const WHEEL_R = 18;
+const movers: MoverDef[] = [{ type: 'propeller', pos: [0, WHEEL_R + 3, WHEEL_Z], yaw: 0, half: [0.3, WHEEL_R / 2, 0.3], angle: 0, blades: 12, spin: 0.25, color: 0xe8e2d0 }];
+for (const z of [-1.2, 1.2]) decor.push({ type: 'box', pos: [0, (WHEEL_R + 3) / 2, WHEEL_Z + z], half: [0.4, (WHEEL_R + 3) / 2, 0.3], color: 0x5a5f66 });
+let booth = 0;
+for (let x = -90; x <= 90; x += 15) {
+  if (Math.abs(x) < 26) continue;
+  decor.push(...house(x, LOT_Z + 12, Math.PI, 7, 5, 2.6, booth++));
+}
+// Woods either side, and the road along the south with its traffic.
+const SOUTH_ROAD = street({ z: -LOT_Z - 14, x0: -300, x1: 300, near: 1, cars: 7, seed: 12 });
+decor.push(
+  ...SOUTH_ROAD.decor,
+  ...forest({ x: [LOT_X + 8, LOT_X + 55], z: [-LOT_Z - 5, LOT_Z + 40], count: 40, seed: 13 }),
+  ...forest({ x: [-LOT_X - 55, -LOT_X - 8], z: [-LOT_Z - 5, LOT_Z + 40], count: 40, seed: 14 }),
+  ...forest({ x: [-LOT_X, LOT_X], z: [-LOT_Z - 60, -LOT_Z - 26], count: 50, seed: 15 }),
+);
+
 export const SPIELWIESE: TrackDef = {
   id: 'spielwiese',
   name: 'Spielwiese',
@@ -87,4 +107,6 @@ export const SPIELWIESE: TrackDef = {
   pickups: [],
   decor,
   spinners,
+  movers,
+  traffic: SOUTH_ROAD.traffic,
 };

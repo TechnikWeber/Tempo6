@@ -1,5 +1,6 @@
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
 import { road, terrainFor } from './road';
+import { distanceTo, forest, house, stand } from './scenery';
 
 const GRASS = 0x55903f;
 const CONCRETE = 0x9a9a94;
@@ -33,10 +34,34 @@ const statics: BoxDef[] = [
 ];
 
 const decor: DecorDef[] = [...ROAD.decor];
-// a few trees inside the bends, so there is something to steer by
-for (const [x, z] of [[140, -60], [140, 0], [150, 55], [70, 60], [10, 62], [-70, 78], [-140, 20], [-140, -45], [-20, -40], [60, -30], [0, 0], [-60, -10]]) {
-  decor.push({ type: 'tree', pos: [x, 0, z] });
+// A village along the start straight, between the road and the wall.
+let look = 0;
+for (let x = -50; x <= 110; x += 15) {
+  if (distanceTo(ROAD.line, x, -114) < 12) continue;
+  decor.push(...house(x, -114, 0, 8 + (look % 3), 6.5, 3 + (look % 2) * 1.2, look));
+  look++;
 }
+// People watching at a few bends, on the outside, facing the road. (Where they stand, the
+// woods keep clear; so does the village.)
+const clearings: [number, number][][] = [[[-60, -118], [118, -118], [118, -110], [-60, -110]]];
+const n = ROAD.line.length;
+const cx = ROAD.line.reduce((t, p) => t + p[0], 0) / n, cz = ROAD.line.reduce((t, p) => t + p[1], 0) / n;
+for (const share of [0.17, 0.36, 0.55, 0.78]) {
+  const i = Math.floor(share * n);
+  const [x, z] = ROAD.line[i], [nx, nz] = ROAD.line[(i + 1) % n];
+  // across the road, on the side away from the middle of the lap
+  let ox = nz - z, oz = -(nx - x);
+  const len = Math.hypot(ox, oz) || 1;
+  ox /= len;
+  oz /= len;
+  if ((x - cx) * ox + (z - cz) * oz < 0) [ox, oz] = [-ox, -oz];
+  const sx = x + ox * 13, sz = z + oz * 13;
+  if (distanceTo(ROAD.line, sx, sz) < 9) continue;
+  decor.push(...stand(sx, sz, Math.atan2(x - sx, z - sz), 14, 3, 30 + i));
+  clearings.push([[sx - 1, sz - 1], [sx + 1, sz - 1], [sx + 1, sz + 1], [sx - 1, sz + 1]]);
+}
+// Woods over the hills, clear of the road and of the village.
+decor.push(...forest({ x: [-182, 182], z: [-120, 118], count: 170, seed: 9, avoid: [ROAD.line, ...clearings], clear: 10 }));
 
 export const SCHLEIFE: TrackDef = {
   id: 'schleife',

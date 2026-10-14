@@ -10,6 +10,7 @@ import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
 import { trackById, trackOpen, TRACKS, TRAINING } from '../src/tracks';
 import { KURVEN } from '../src/tracks/kurven';
+import { dice } from '../src/tracks/scenery';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 import { REHA } from '../src/tracks/reha';
 import { Autopilot } from './autopilot';
@@ -1254,9 +1255,11 @@ describe('traffic', () => {
 
   it.each(TRACKS.map((t) => [t.id, t] as const))('on %s keeps clear of everything fixed', (_id, track) => {
     const boxes = track.statics.filter((b) => b.pos[1] + b.half[1] > 0.05);
-    for (const t of track.traffic ?? []) {
-      t.path.forEach(([x, z], i) => {
-        const [nx, nz] = t.path[(i + 1) % t.path.length];
+    // (cars sharing a road share its path: each path once)
+    const paths = [...new Map((track.traffic ?? []).map((t) => [JSON.stringify(t.path), t.path])).values()];
+    for (const path of paths) {
+      path.forEach(([x, z], i) => {
+        const [nx, nz] = path[(i + 1) % path.length];
         const steps = Math.ceil(Math.hypot(nx - x, nz - z));
         for (let k = 0; k <= steps; k++) {
           const px = x + ((nx - x) * k) / steps, pz = z + ((nz - z) * k) / steps;
@@ -1456,6 +1459,8 @@ describe('modes', () => {
   it('races three others round the car park; they drive off and whoever is first over the line after three laps wins', () => {
     const core = new GameCore(PARKPLATZ, trained(4), 'race');
     expect(core.rivals.length).toBe(3);
+    // (loaded dice: the same grid every time the test runs)
+    core.random = dice(2);
     core.restart(true);
     const ap = new Autopilot(PARKPLATZ.line!, 2.5).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
     let over: GameEvent | undefined;
