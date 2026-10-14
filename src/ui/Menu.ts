@@ -389,11 +389,11 @@ export class Menu {
     const actions = h('div', 'actions');
     actions.append(this.garage, this.buyVehicle);
     this.detail.replaceChildren(
-      h('p', 'kind', `${v.kind} · ${L('Fahrprofile', 'Driving profiles')}: ${v.profiles.map((p) => p.name).join(', ')}`),
-      h('p', '', v.blurb),
+      h('p', 'kind words', `${v.kind} · ${L('Fahrprofile', 'Driving profiles')}: ${v.profiles.map((p) => p.name).join(', ')}`),
+      h('p', 'words', v.blurb),
       stats,
       actions,
-      h('p', 'kind', L(`Aktuell ${num(top)} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`, `Now ${num(top)} km/h · tuning stage ${stageNo}: ${stage.name} · driving profile: ${profile.name}`)),
+      h('p', 'kind words', L(`Aktuell ${num(top)} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`, `Now ${num(top)} km/h · tuning stage ${stageNo}: ${stage.name} · driving profile: ${profile.name}`)),
     );
 
     const modeButtons = (list: typeof MODES) => list.map((m) => {
@@ -448,8 +448,15 @@ export class Menu {
     this.unlockButton(this.buyTrack, t?.name ?? '', this.trackLock(this.track));
     if (this.choosingMode) this.buyTrack.hidden = true;
     this.start.disabled = !this.ready;
-    // (the chosen track scrolls into view, as the chosen vehicle does)
-    this.trackList.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+    // The chosen track scrolls into view inside its list. (Not scrollIntoView: on a phone, where
+    // the whole menu scrolls, that pulled the page down to the tracks at every pick of a ride.)
+    const on = this.trackList.querySelector<HTMLElement>('.on');
+    if (on) {
+      const list = this.trackList;
+      const top = on.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+      if (top < list.scrollTop) list.scrollTop = top;
+      else if (top + on.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = top + on.offsetHeight - list.clientHeight;
+    }
   }
 
   /** The best a track has seen in a mode, for its card. */
@@ -458,7 +465,7 @@ export class Menu {
     switch (mode) {
       case 'time': return `${L('Bestzeit', 'Best lap')} ${formatTime(this.progress.bestLaps[track] ?? null)}`;
       case 'race': return r ? L(`Bester Platz ${r}`, `Best place ${r}`) : L('Noch kein Rennen', 'No race yet');
-      case 'freestyle': return r ? L(`Beste Kette ${formatMoney(r)}`, `Best chain ${formatMoney(r)}`) : L('Noch keine Kette', 'No chain yet');
+      case 'freestyle': return r ? L(`Bestes Freestyle ${formatMoney(r)}`, `Best session ${formatMoney(r)}`) : L('Noch kein Freestyle', 'No session yet');
       case 'crash': return r ? L(`Teuerster Crash ${r} Punkte`, `Costliest crash ${r} points`) : L('Noch kein Crash', 'No crash yet');
     }
   }

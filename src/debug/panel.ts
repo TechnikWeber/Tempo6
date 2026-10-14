@@ -21,8 +21,13 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   gui.add({ f: () => progress.earn(100) }, 'f').name('+100 Schrauben');
   gui
     .add({ f: () => {
-      // (to try things out: tutorial over, every vehicle and track bought, the boost fitted)
+      // (to try things out: tutorial over, every vehicle and track bought, the boost fitted,
+      // every vehicle tuned all the way)
       progress.unlockEverything([...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]);
+      for (const id of VEHICLE_ORDER) progress.stages[id] = STAGES.length - 1;
+      progress.save();
+      state.stufe = progress.stageIndex;
+      stufe.updateDisplay();
       game().applyStage();
     } }, 'f')
     .name('Alles freischalten');

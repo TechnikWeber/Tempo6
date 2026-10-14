@@ -371,7 +371,7 @@ export class View {
   private placeRivals(core: GameCore, alpha: number): void {
     if (this.rivals.core !== core) {
       for (const r of this.rivals.rigs) this.scene.remove(r);
-      this.rivals = { core, rigs: core.rivals.map((r) => buildVehicle(r.vehicle.spec).root) };
+      this.rivals = { core, rigs: core.rivals.map((r) => buildVehicle(r.vehicle.spec, r.vehicle.boostFitted).root) };
       for (const r of this.rivals.rigs) this.scene.add(r);
     }
     core.rivals.forEach((r, i) => place(this.rivals.rigs[i], r.vehicle.tracked, alpha));

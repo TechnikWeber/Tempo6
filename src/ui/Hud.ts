@@ -119,10 +119,11 @@ export class Hud {
         this.set(this.lapBest, race.running && !core.finished ? formatTime(race.lapTime) : '');
         break;
       case 'freestyle':
-        this.set(this.lapLabel, L('Kette', 'Chain'));
-        this.set(this.lapTime, core.stunts.chain ? `${Math.round(core.stunts.pending)} · ×${num(core.stunts.multiplier)}` : '–');
-        this.set(this.lapSub, L('Beste Kette', 'Best chain'));
-        this.set(this.lapBest, record ? String(record) : '–');
+        // the time left up top; the run in progress and the session so far below
+        this.set(this.lapLabel, L('Noch', 'Left'));
+        this.set(this.lapTime, formatTime(core.timeLeft).replace(/\.\d+$/, ''));
+        this.set(this.lapSub, core.stunts.chain ? `${L('Kette', 'Chain')} +${Math.round(core.stunts.pending)} ×${num(core.stunts.multiplier)} ·` : `${L('Bisher', 'So far')}`);
+        this.set(this.lapBest, core.stunts.chain ? `${core.sessionTotal}` : `${core.sessionTotal}${record ? ` / ${record}` : ''}`);
         break;
       case 'crash':
         this.set(this.lapLabel, 'Crash');

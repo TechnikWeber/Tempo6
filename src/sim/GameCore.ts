@@ -1,4 +1,4 @@
-import { CRASH, RACE, type ModeId } from '../config/modes';
+import { CRASH, FREESTYLE, RACE, type ModeId } from '../config/modes';
 import { BONUS, BOOST, PICKUP_VALUE, stageSpeedKmh, STAGES, type TuningStage } from '../config/tuning';
 import { VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import { Autopilot } from './Autopilot';
@@ -55,17 +55,20 @@ export type GameEvent =
   /** Race: over the line after the last lap, in this place out of `of`, and the prize. */
   | { type: 'raceOver'; place: number; of: number; pay: number }
   /** Freestyle: a run of stunts ended and was paid; `record` if it is the best on this track. */
-  | { type: 'chain'; total: number; record: boolean }
+  | { type: 'chain'; total: number }
   /** Freestyle: a knock ended the run, and what it had earned is gone. */
   | { type: 'chainLost'; lost: number }
+  /** Freestyle: time is up; what the session earned, and whether it is the best here. */
+  | { type: 'freestyleOver'; total: number; record: boolean }
   /** Crashtest: a knock (or the write-off) scored. */
   | { type: 'crashScore'; points: number; total: number; propeller: boolean }
   /** Crashtest: it all lies still; the score, what it paid, and whether it is the best here. */
   | { type: 'crashOver'; score: number; pay: number; record: boolean };
 
 const PICKUP_RADIUS = 1.0;
-/** Seconds the start lights take. */
-const START_LIGHTS = 3;
+/** Seconds each of the three start lights stays on. */
+const LIGHT = 0.75;
+const START_LIGHTS = 3 * LIGHT;
 const PICKUP_RESPAWN = 15;
 
 /** Everything that makes up a running game except rendering, input devices and audio. */
@@ -100,6 +103,9 @@ export class GameCore {
   finished = 0;
   /** The run is over (the tutorial done): the vehicle stops and nothing more is paid. */
   halted = false;
+  /** Freestyle: seconds left of the session, and what it has earned so far. */
+  timeLeft: number = FREESTYLE.seconds;
+  sessionTotal = 0;
   /** Crashtest: the run so far. */
   readonly crash = { started: false, score: 0, since: 0, still: 0, over: false, grace: 0 };
 
@@ -156,7 +162,19 @@ export class GameCore {
     this.rivals.forEach((r, k) => {
       const spec = r.vehicle.spec;
       r.vehicle.setMotor((stageSpeedKmh(s, spec.speedFactor) * RACE.skill[k]) / 3.6, s.accel * spec.accelFactor);
+      r.vehicle.boostFitted = this.progress.hasBoost;
     });
+  }
+
+  /** How an opponent drives this step: the line, and the boost on the straights. */
+  private rivalInput(r: Rival): DriveInput {
+    const input = r.pilot.drive(r.vehicle);
+    const v = r.vehicle;
+    // on a straight, at speed and with charge to spare; when the player boosts, the others answer
+    const straight = Math.abs(input.steer) < 0.25 && input.throttle > 0 && v.speed > v.topSpeed * 0.6;
+    const answer = this.sim.vehicle.boosting || v.boosting;
+    input.boost = v.boostFitted && straight && (answer || v.boostCharge > 0.95);
+    return input;
   }
 
   /** How far along the race someone is: laps, then gates, then how close to the next one. */
@@ -247,6 +265,8 @@ export class GameCore {
     }
     this.finished = 0;
     this.halted = false;
+    this.timeLeft = FREESTYLE.seconds;
+    this.sessionTotal = 0;
     Object.assign(this.crash, { started: false, score: 0, since: 0, still: 0, over: false, grace: 0 });
     this.sim.vehicle.knock = 0;
     this.flippedFor = 0;
@@ -301,8 +321,8 @@ export class GameCore {
 
     const wasBoosting = sim.vehicle.boosting;
     if (this.countdown > 0) {
-      // three lights, one a second, then go
-      const light = Math.max(1, Math.ceil(this.countdown - 1e-9));
+      // three lights, then go
+      const light = Math.max(1, Math.ceil(this.countdown / LIGHT - 1e-9));
       if (light !== this.lastLight) this.events.push({ type: 'count', n: light });
       this.lastLight = light;
       this.countdown = Math.max(0, this.countdown - STEP);
@@ -316,7 +336,7 @@ export class GameCore {
     // Crashtest: after the first knock nobody is driving any more.
     if (this.crash.started) input = { ...input, throttle: 0, steer: 0, handbrake: false, boost: false, limp: true };
     for (const [k, r] of this.rivals.entries()) {
-      sim.others[k].input = this.countdown > 0 ? { throttle: 0, steer: 0, handbrake: true } : r.pilot.drive(r.vehicle);
+      sim.others[k].input = this.countdown > 0 ? { throttle: 0, steer: 0, handbrake: true } : this.rivalInput(r);
     }
     sim.step(input);
     for (const r of this.rivals) {
@@ -347,7 +367,10 @@ export class GameCore {
     // (a crashtest is about the knocks, not the tricks)
     const tricks = paying && this.mode !== 'crash';
     for (const s of this.stunts.update(v, sim.traffic.cars.map((c) => c.tracked), STEP)) if (tricks) this.events.push({ type: 'stunt', ...s });
-    if (this.mode === 'freestyle' && this.stunts.chain === 0 && this.stunts.pending > 0) this.bankChain();
+    if (this.mode === 'freestyle' && !this.halted) {
+      if (this.stunts.chain === 0 && this.stunts.pending > 0) this.bankChain();
+      if (this.countdown === 0 && (this.timeLeft = Math.max(0, this.timeLeft - STEP)) === 0) this.finishFreestyle();
+    }
     if (this.mode === 'crash') this.watchCrash();
     if (sim.traffic.honk) {
       sim.traffic.honk = false;
@@ -423,6 +446,7 @@ export class GameCore {
       this.pickupTimers[i] = PICKUP_RESPAWN;
       const value = PICKUP_VALUE[pk.type];
       progress.earn(value);
+      this.sessionTotal += value;
       this.events.push({ type: 'pickup', kind: pk.type, value });
     });
   }
@@ -445,11 +469,19 @@ export class GameCore {
     const total = this.stunts.bank();
     if (total <= 0) return;
     this.progress.earn(total);
+    this.sessionTotal += total;
+    this.events.push({ type: 'chain', total });
+  }
+
+  /** Freestyle: time is up. The run in progress is paid, and the session is settled. */
+  private finishFreestyle(): void {
+    this.bankChain();
+    this.halted = true;
     const key = `freestyle:${this.track.id}`;
-    const record = total > (this.progress.records[key] ?? 0);
-    if (record) this.progress.records[key] = total;
+    const record = this.sessionTotal > (this.progress.records[key] ?? 0);
+    if (record) this.progress.records[key] = this.sessionTotal;
     this.progress.save();
-    this.events.push({ type: 'chain', total, record });
+    this.events.push({ type: 'freestyleOver', total: this.sessionTotal, record });
   }
 
   private scoreCrash(points: number, propeller = false): void {

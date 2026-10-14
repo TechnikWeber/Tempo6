@@ -249,8 +249,13 @@ function handleEvents(): void {
       }
       case 'chain':
         sound.crate();
+        hud.toast(`${L('Kette', 'Chain')}: +${formatMoney(e.total)}`, '', 2);
+        break;
+      case 'freestyleOver':
+        sound.lap();
         if (e.record) sound.cheer();
-        hud.toast(`${L('Kette', 'Chain')}: +${formatMoney(e.total)}`, e.record ? L('Neuer Rekord auf dieser Strecke!', 'New record on this track!') : '', 2.5);
+        hud.banner(L('Zeit um!', 'Time’s up!'), `${L('Insgesamt', 'In total')} +${formatMoney(e.total)}${e.record ? L(' · Rekord!', ' · Record!') : ''}`, 5);
+        leaveSoon(5, L(`Freestyle auf ${core.track.name}: +${formatMoney(e.total)}`, `Freestyle at ${core.track.name}: +${formatMoney(e.total)}`) + (e.record ? L(', Rekord!', ', a record!') : '.'));
         break;
       case 'chainLost':
         sound.nope();

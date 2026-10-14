@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BONUS, BOOST, DAMAGE, stageSpeedKmh, STAGES, STUNTS } from '../src/config/tuning';
-import { CRASH, MODES, RACE } from '../src/config/modes';
+import { CRASH, FREESTYLE, MODES, RACE } from '../src/config/modes';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameEvent, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
@@ -1052,7 +1052,7 @@ describe('start lights, leaderboard and ghost', () => {
     const core = new GameCore(PARKPLATZ, new Progress());
     core.restart(true);
     const counts: number[] = [];
-    for (let i = 0; i < 60 * 2.9; i++) {
+    for (let i = 0; i < 60 * 2.2; i++) {
       core.step({ ...idle, throttle: 1 });
       for (const e of core.events) if (e.type === 'count') counts.push(e.n);
       core.events.length = 0;
@@ -1504,6 +1504,39 @@ describe('modes', () => {
     core.dispose();
   });
 
+  it('settles a freestyle session when its three minutes are up', () => {
+    const core = new GameCore(KURVEN, trained(3), 'freestyle');
+    core.restart(true);
+    core.progress.earn(0);
+    const events: GameEvent[] = [];
+    for (let i = 0; i < 60 * (FREESTYLE.seconds + 4); i++) {
+      core.step(idle);
+      events.push(...core.events);
+      core.events.length = 0;
+    }
+    const over = events.find((e) => e.type === 'freestyleOver');
+    expect(over).toBeTruthy();
+    expect(core.timeLeft).toBe(0);
+    expect(core.halted).toBe(true);
+    core.dispose();
+  });
+
+  it('lets the others boost too once the player has the battery', () => {
+    const progress = trained(5);
+    progress.unlockEverything([]);
+    const core = new GameCore(PARKPLATZ, progress, 'race');
+    expect(core.rivals.every((r) => r.vehicle.boostFitted)).toBe(true);
+    core.random = dice(3);
+    core.restart(true);
+    let boosted = false;
+    for (let i = 0; i < 60 * 30 && !boosted; i++) {
+      core.step(idle);
+      boosted = core.rivals.some((r) => r.vehicle.boosting);
+    }
+    expect(boosted).toBe(true);
+    core.dispose();
+  });
+
   it('sends everyone into the crashtest flat out with the boost battery, whatever they have bought', () => {
     const core = new GameCore(trackById('crashtest'), trained(1), 'crash');
     expect(core.topSpeedKmh).toBeCloseTo(stageSpeedKmh(STAGES[STAGES.length - 1], 1));
@@ -1528,7 +1561,8 @@ describe('modes', () => {
     expect(core.events.some((e) => e.type === 'lap' || e.type === 'lapStart')).toBe(false);
     expect(core.events.some((e) => e.type === 'stunt' && e.kind === 'air')).toBe(true);
     const chain = core.events.find((e) => e.type === 'chain');
-    expect(chain).toMatchObject({ type: 'chain', record: true });
+    expect(chain).toMatchObject({ type: 'chain' });
+    expect(core.sessionTotal).toBeGreaterThan(0);
     expect(core.progress.money).toBeGreaterThan(0);
     core.dispose();
   });

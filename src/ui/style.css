@@ -415,3 +415,9 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
   /* one column: the bar comes last, in the flow */
   #menu .menubar { position: relative; left: auto; bottom: auto; transform: none; justify-self: center; margin-bottom: 8px; }
 }
+
+/* On a phone the ride's words go: the bars and the buttons are enough, and the page stays short. */
+@media (pointer: coarse) {
+  #menu .detail .words { display: none; }
+  #menu .detail dl { margin-top: 0; }
+}

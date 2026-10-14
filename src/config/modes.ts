@@ -20,7 +20,8 @@ export const MODES: ModeDef[] = [
     id: 'time',
     name: L('Zeitrennen', 'Time Trial'),
     blurb: L('Allein gegen die Uhr und den eigenen Schatten. Jede Runde zahlt, Bestzeiten extra.', 'Alone against the clock and your own ghost. Every lap pays, best times extra.'),
-    tracks: ['reha', 'parkplatz', 'kurven', 'talstadt', 'wesertor', 'flugplatz', 'spielwiese', 'stadion', 'schleife'],
+    // (the playground has no lap to time: it is for the freestyle)
+    tracks: ['reha', 'parkplatz', 'kurven', 'talstadt', 'wesertor', 'flugplatz', 'stadion', 'schleife'],
   },
   {
     id: 'race',
@@ -31,7 +32,7 @@ export const MODES: ModeDef[] = [
   {
     id: 'freestyle',
     name: 'Freestyle',
-    blurb: L('Keine Runden, keine Uhr: Stunts aneinanderreihen. Jede Kette zahlt, sobald sie endet.', 'No laps, no clock: string stunts together. Every chain pays as soon as it ends.'),
+    blurb: L('Drei Minuten, keine Runden: Stunts aneinanderreihen. Jede Kette zahlt, sobald sie endet, am Ende wird abgerechnet.', 'Three minutes, no laps: string stunts together. Every chain pays as soon as it ends, and it all adds up at the end.'),
     tracks: ['spielwiese', 'flugplatz', 'parkplatz', 'crashtest', 'reha'],
   },
   {
@@ -52,9 +53,10 @@ export const RACE = {
   laps: 3,
   /**
    * How fast each opponent goes, as a share of what its vehicle does at the player's stage.
-   * They drive a perfect line, so the quickest is a match for a good lap.
+   * They drive a perfect line, and the quickest is a touch faster than the player; with the
+   * boost battery bought, they get one too.
    */
-  skill: [0.9, 0.95, 1],
+  skill: [0.92, 0.98, 1.05],
   /** Grid slots behind the start line: how far back and how far to the left (m). Who gets which is drawn. */
   grid: [[0.5, 1.2], [0.5, -1.2], [3.1, 1.2], [3.1, -1.2]] as [number, number][],
   /** Prize for the places, in lap money of the track. */
@@ -81,4 +83,9 @@ export const CRASH = {
   maxFor: 15,
   /** Points per Schraube paid. */
   perScrew: 10,
+};
+
+/** Freestyle: a session against the clock, settled at the end. */
+export const FREESTYLE = {
+  seconds: 180,
 };
