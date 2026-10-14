@@ -53,10 +53,9 @@ npm install
 npm run dev      # http://localhost:5173
 npm test         # Physik- und Spiellogik-Tests ohne Browser
 npm run build    # statischer Build in dist/
-npm run deploy   # Build nach technikweber.github.io/Tempo6/ veröffentlichen
 ```
 
-Der Quellcode bleibt in diesem Repo; `npm run deploy` legt nur das gebaute Spiel in den Ordner `Tempo6/` des Blog-Repos, das GitHub Pages ausliefert.
+Jeder Push auf `main` testet, baut und veröffentlicht das Spiel über GitHub Pages (`.github/workflows/pages.yml`). Der Spielstand liegt im Browser unter der Adresse technikweber.github.io.
 
 ## Steuerung
 

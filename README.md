@@ -53,10 +53,9 @@ npm install
 npm run dev      # http://localhost:5173
 npm test         # headless physics and game logic tests
 npm run build    # static build in dist/
-npm run deploy   # publish the build to technikweber.github.io/Tempo6/
 ```
 
-The source stays in this repo; `npm run deploy` puts only the built game into the `Tempo6/` folder of the blog repo, which GitHub Pages serves.
+Every push to `main` tests, builds and publishes the game with GitHub Pages (`.github/workflows/pages.yml`). Saves live in the browser, under technikweber.github.io.
 
 ## Controls
 
