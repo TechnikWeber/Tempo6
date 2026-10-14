@@ -18,7 +18,7 @@ A racing game with power wheelchairs and mobility scooters. Every vehicle starts
 ## What's in it
 
 - **Modes:** time trial against the clock and your own ghost, a three-lap race against three others, freestyle for stunt chains, and an experimental crashtest.
-- **Tracks:** Reha-Parcours, DIY-store car park, curve test ground, Talstadt works, the old works at Porta West Africa, an old airfield, a playground of ramps, a stadium circuit, a long hill circuit and the crashtest ground.
+- **Tracks:** Reha-Parcours, DIY-store car park, Talstadt works, the Sky Path, the old works at Porta West Africa, an old airfield, a playground of ramps, a stadium circuit, a long hill circuit and the crashtest ground.
 - **Tuning:** eight stages up to 75 km/h, a boost battery, three driving profiles per vehicle, all in the garage too.
 - **Save:** kept in the browser, and with "Speichern"/"Laden" as a file that survives clearing the browser's data.
 

@@ -9,7 +9,6 @@ import { initPhysics, Sim } from '../src/sim/Sim';
 import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
 import { trackById, trackOpen, TRACKS, TRAINING } from '../src/tracks';
-import { KURVEN } from '../src/tracks/kurven';
 import { dice, distanceTo } from '../src/tracks/scenery';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 import { REHA } from '../src/tracks/reha';
@@ -893,38 +892,26 @@ describe('turning disc', () => {
   });
 });
 
-describe('curve test ground', () => {
-  it('lets a slow chair round all four corners of the circuit', () => {
+describe('a lap of the car park', () => {
+  it('pays the lap, a first best time and a clean lap at the finish line', () => {
     const progress = new Progress();
-    const core = new GameCore(KURVEN, progress);
-    core.sim.vehicle.setMotor(10 / 3.6, 3.3);
-    const [south, east, north, west] = KURVEN.gates;
-    // gate, then a point a little inside the corner that follows it
-    const line: [number, number][] = [
-      [south.x, south.z], [east.x - 4, south.z + 4],
-      [east.x, east.z], [east.x - 2.5, north.z - 2.5],
-      [north.x, north.z], [west.x + 1.5, north.z - 1.5],
-      [west.x, west.z], [west.x + 1, south.z + 1],
-    ];
-    let next = 0;
+    progress.tutorialDone = true;
+    const core = new GameCore(PARKPLATZ, progress);
+    core.sim.vehicle.setMotor(12 / 3.6, 4);
+    const ap = new Autopilot(PARKPLATZ.line!, 2).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
     let minUp = 1;
-    for (let i = 0; i < 60 * 150 && core.race.laps === 0; i++) {
-      const v = core.sim.vehicle;
-      const p = v.body.translation();
-      const [tx, tz] = line[next];
-      if (Math.hypot(tx - p.x, tz - p.z) < 3) next = (next + 1) % line.length;
-      let off = Math.atan2(tx - p.x, tz - p.z) - v.yaw;
-      off = Math.atan2(Math.sin(off), Math.cos(off));
-      // (positive yaw is to the left, positive steer to the right)
-      core.step({ ...idle, throttle: 1, steer: Math.max(-1, Math.min(1, -off * 2)) });
-      minUp = Math.min(minUp, v.upY);
+    let paid: GameEvent | undefined;
+    for (let i = 0; i < 60 * 150 && !paid; i++) {
+      core.step(ap.input(core));
+      minUp = Math.min(minUp, core.sim.vehicle.upY);
+      paid = core.events.find((e) => e.type === 'payout' && e.lap > 0);
+      core.events.length = 0;
     }
     expect(core.race.laps).toBe(1);
     expect(minUp).toBeGreaterThan(0.9);
-    // the finish line pays: the lap, a first best time, and nothing got scratched
-    const paid = core.events.find((e) => e.type === 'payout');
-    expect(paid).toMatchObject({ lap: KURVEN.lapPay, best: Math.round(KURVEN.lapPay * BONUS.best), clean: Math.round(KURVEN.lapPay * BONUS.clean) });
-    expect(progress.money).toBe(paid && paid.type === 'payout' ? paid.total : -1);
+    expect(paid).toMatchObject({ lap: PARKPLATZ.lapPay, best: Math.round(PARKPLATZ.lapPay * BONUS.best), clean: Math.round(PARKPLATZ.lapPay * BONUS.clean) });
+    // (and the screws picked up on the way)
+    expect(progress.money).toBeGreaterThanOrEqual(paid && paid.type === 'payout' ? paid.total : Infinity);
     core.dispose();
   });
 });
@@ -1093,19 +1080,11 @@ describe('start lights, leaderboard and ghost', () => {
     const saved = new Map<string, string>();
     const store = { getItem: (k: string) => saved.get(k) ?? null, setItem: (k: string, v: string) => void saved.set(k, v) };
     const progress = new Progress(store);
-    const core = new GameCore(KURVEN, progress);
+    const core = new GameCore(PARKPLATZ, progress);
     expect(core.ghost).toBeNull();
     core.sim.vehicle.setMotor(12 / 3.6, 4);
-    const line = KURVEN.line!;
-    let at = 0;
-    for (let i = 0; i < 60 * 200 && core.race.laps === 0; i++) {
-      const v = core.sim.vehicle;
-      const p = v.body.translation();
-      while (Math.hypot(line[at][0] - p.x, line[at][1] - p.z) < 4) at = (at + 1) % line.length;
-      let turn = Math.atan2(line[at][0] - p.x, line[at][1] - p.z) - v.yaw;
-      turn = Math.atan2(Math.sin(turn), Math.cos(turn));
-      core.step({ ...idle, throttle: 1, steer: Math.max(-1, Math.min(1, -turn * 2)) });
-    }
+    const ap = new Autopilot(PARKPLATZ.line!, 2).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
+    for (let i = 0; i < 60 * 200 && core.race.laps === 0; i++) core.step(ap.input(core));
     expect(core.race.laps).toBe(1);
     const ghost = core.ghost!;
     expect(ghost.vehicle).toBe('trex');
@@ -1114,12 +1093,12 @@ describe('start lights, leaderboard and ghost', () => {
     expect(ghost.samples.length % 7).toBe(0);
     expect(Math.abs(ghost.samples.length / 7 - ghost.time * 10)).toBeLessThan(3);
     // it starts at the finish line and is back near it at the end
-    const [gate] = KURVEN.gates;
+    const [gate] = PARKPLATZ.gates;
     expect(Math.hypot(ghost.samples[0] - gate.x, ghost.samples[2] - gate.z)).toBeLessThan(4);
-    expect(progress.boards.kurven[0].time).toBeCloseTo(ghost.time, 5);
+    expect(progress.boards.parkplatz[0].time).toBeCloseTo(ghost.time, 5);
     expect(core.events.some((e) => e.type === 'ranked' && e.place === 1)).toBe(true);
     core.dispose();
-    const next = new GameCore(KURVEN, new Progress(store));
+    const next = new GameCore(PARKPLATZ, new Progress(store));
     expect(next.ghost?.samples.length).toBe(ghost.samples.length);
     next.dispose();
   });
@@ -1506,7 +1485,7 @@ describe('modes', () => {
   });
 
   it('settles a freestyle session when its three minutes are up', () => {
-    const core = new GameCore(KURVEN, trained(3), 'freestyle');
+    const core = new GameCore(PARKPLATZ, trained(3), 'freestyle');
     core.restart(true);
     core.progress.earn(0);
     const events: GameEvent[] = [];

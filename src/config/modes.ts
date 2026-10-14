@@ -21,7 +21,7 @@ export const MODES: ModeDef[] = [
     name: L('Zeitrennen', 'Time Trial'),
     blurb: L('Allein gegen die Uhr und den eigenen Schatten. Jede Runde zahlt, Bestzeiten extra.', 'Alone against the clock and your own ghost. Every lap pays, best times extra.'),
     // (the playground has no lap to time: it is for the freestyle)
-    tracks: ['reha', 'parkplatz', 'kurven', 'talstadt', 'wesertor', 'sky', 'flugplatz', 'stadion', 'schleife'],
+    tracks: ['reha', 'parkplatz', 'talstadt', 'wesertor', 'sky', 'flugplatz', 'stadion', 'schleife'],
   },
   {
     id: 'race',

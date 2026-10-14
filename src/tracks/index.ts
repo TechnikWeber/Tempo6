@@ -2,7 +2,6 @@ import type { Progress } from '../sim/Progress';
 import type { TrackDef } from '../sim/Track';
 import { CRASHTEST } from './crashtest';
 import { FLUGPLATZ } from './flugplatz';
-import { KURVEN } from './kurven';
 import { PARKPLATZ } from './parkplatz';
 import { REHA } from './reha';
 import { SCHLEIFE } from './schleife';
@@ -13,7 +12,7 @@ import { TALSTADT } from './talstadt';
 import { WESERTOR } from './wesertor';
 
 // (in the order they cost: the tutorial, the free car park after it, then dearer and dearer)
-export const TRACKS: TrackDef[] = [REHA, PARKPLATZ, CRASHTEST, KURVEN, TALSTADT, WESERTOR, SKY, FLUGPLATZ, SPIELWIESE, STADION, SCHLEIFE];
+export const TRACKS: TrackDef[] = [REHA, PARKPLATZ, CRASHTEST, TALSTADT, WESERTOR, SKY, FLUGPLATZ, SPIELWIESE, STADION, SCHLEIFE];
 
 /**
  * Whether a track can be driven: the Reha-Parcours always, the rest once the tutorial is
