@@ -710,11 +710,19 @@ export class View {
 
   private showroomCamera(pos: Vector3, yaw: number): void {
     // Slow orbit, starting from the front three-quarter view.
+    // On a phone held upright the frame is narrow, so stand further back, and the menu covers
+    // the lower half, so lift the vehicle into the gap above it.
+    const tall = this.camera.aspect < 0.8;
+    const r = tall ? Math.min(1.8, 0.8 / this.camera.aspect) : 1;
     const a = yaw + 0.7 + this.time * 0.35;
-    this.camera.position.set(pos.x + Math.sin(a) * 3.4, pos.y + 1.1, pos.z + Math.cos(a) * 3.4);
+    this.camera.position.set(pos.x + Math.sin(a) * 3.4 * r, pos.y + 1.1 * r, pos.z + Math.cos(a) * 3.4 * r);
     this.camera.lookAt(pos.x, pos.y + 0.25, pos.z);
-    if (this.camera.fov !== 42) {
+    if (this.camera.fov !== 42 || (this.camera.view?.enabled ?? false) !== tall) {
       this.camera.fov = 42;
+      // (the sizes only count as shares, but they set the aspect, so they keep it)
+      const w = this.camera.aspect * 1000;
+      if (tall) this.camera.setViewOffset(w, 1000, 0, 130, w, 1000);
+      else this.camera.clearViewOffset();
       this.camera.updateProjectionMatrix();
     }
     this.aimSun(pos);
@@ -743,6 +751,7 @@ export class View {
 
   private updateCamera(pos: Vector3, heading: number, v: GameCore['sim']['vehicle'], dt: number): void {
     const speed = Math.abs(v.speed);
+    if (this.camera.view?.enabled) this.camera.clearViewOffset();
     // Follow where it is going rather than where it points: in a drift the vehicle
     // then shows its flank.
     const yaw = heading - v.slip * Math.min(1, speed / 4);
