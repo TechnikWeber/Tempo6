@@ -9,6 +9,11 @@ export class Sound {
   private boostGain: GainNode | null = null;
   private boostTone: OscillatorNode | null = null;
   private boostToneGain: GainNode | null = null;
+  /** A passing train: a low rumble through the same noise. */
+  private rumbleGain: GainNode | null = null;
+  /** A propeller's blades going by. */
+  private whooshGain: GainNode | null = null;
+  private noiseBuffer: AudioBuffer | null = null;
   muted = false;
 
   /** Browsers only allow audio after a user gesture. */
@@ -63,7 +68,73 @@ export class Sound {
     this.boostToneGain.gain.value = 0;
     this.boostTone.connect(this.boostToneGain).connect(this.master);
     this.boostTone.start();
+    const rumble = ctx.createBiquadFilter();
+    rumble.type = 'lowpass';
+    rumble.frequency.value = 180;
+    this.rumbleGain = ctx.createGain();
+    this.rumbleGain.gain.value = 0;
+    noise.connect(rumble).connect(this.rumbleGain).connect(this.master);
+    const whoosh = ctx.createBiquadFilter();
+    whoosh.type = 'bandpass';
+    whoosh.frequency.value = 520;
+    whoosh.Q.value = 1.2;
+    this.whooshGain = ctx.createGain();
+    this.whooshGain.gain.value = 0;
+    noise.connect(whoosh).connect(this.whooshGain).connect(this.master);
+    this.noiseBuffer = buf;
     noise.start();
+  }
+
+  /** @param level 0…1 how close the train is */
+  setTrain(level: number): void {
+    if (!this.ctx || !this.rumbleGain) return;
+    this.rumbleGain.gain.setTargetAtTime(level * level * 0.9, this.ctx.currentTime, 0.15);
+  }
+
+  /** @param level 0…1 how loud the propeller is right now, blade by blade */
+  setWhoosh(level: number): void {
+    if (!this.ctx || !this.whooshGain) return;
+    this.whooshGain.gain.setTargetAtTime(level * 0.35, this.ctx.currentTime, 0.015);
+  }
+
+  /** The train's two-tone horn. */
+  trainHorn(): void {
+    if (!this.ctx || !this.master) return;
+    const t = this.ctx.currentTime;
+    for (const [f, start, len] of [[311, 0, 0.7], [370, 0, 0.7], [311, 0.85, 1.1], [370, 0.85, 1.1]]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0, t + start);
+      g.gain.linearRampToValueAtTime(0.07, t + start + 0.05);
+      g.gain.setValueAtTime(0.07, t + start + len - 0.1);
+      g.gain.linearRampToValueAtTime(0, t + start + len);
+      o.connect(g).connect(this.master);
+      o.start(t + start);
+      o.stop(t + start + len + 0.05);
+    }
+  }
+
+  /** A crowd cheering: noise in a voice band, swelling and dying away, with a few whistles. */
+  cheer(): void {
+    if (!this.ctx || !this.master || !this.noiseBuffer) return;
+    const t = this.ctx.currentTime;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    src.loop = true;
+    const band = this.ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 900;
+    band.Q.value = 0.8;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.32, t + 0.25);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 2.4);
+    src.connect(band).connect(g).connect(this.master);
+    src.start(t);
+    src.stop(t + 2.5);
+    this.blip([1900, 2300, 1900, 2500], 0.11, 'sine', 0.06);
   }
 
   toggleMute(): void {

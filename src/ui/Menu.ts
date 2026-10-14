@@ -339,8 +339,7 @@ export class Menu {
       h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`),
     );
 
-    this.modeList.replaceChildren(
-      ...MODES.map((m) => {
+    const modeButtons = (list: typeof MODES) => list.map((m) => {
         const lock = this.modeLock(m.id);
         const b = h('button', `mode${m.id === mode.id ? ' on' : ''}`, lock ? `🔒 ${m.name}` : m.name);
         if (lock) {
@@ -349,8 +348,11 @@ export class Menu {
         }
         b.addEventListener('click', () => this.pickMode(m.id));
         return b;
-      }),
-    );
+      });
+    // (what is still being tried out sits apart, under its own label)
+    const trial = h('div', 'trial');
+    trial.append(h('small', '', 'Experimentell'), ...modeButtons(MODES.filter((m) => m.experimental)));
+    this.modeList.replaceChildren(...modeButtons(MODES.filter((m) => !m.experimental)), trial);
     this.modeBlurb.textContent = mode.blurb;
 
     this.trackList.replaceChildren(

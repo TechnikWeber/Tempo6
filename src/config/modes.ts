@@ -6,6 +6,8 @@ export interface ModeDef {
   blurb: string;
   /** Tracks this mode is played on, in the order the menu lists them. */
   tracks: string[];
+  /** Still being tried out: listed apart in the menu, may go again. */
+  experimental?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export const MODES: ModeDef[] = [
     name: 'Crashtest',
     blurb: 'Volle Leistung, voller Boost, ein Versuch. Durch den Propeller auf die Schanze, oder eben nicht. Nach dem ersten Einschlag ist Schluss mit Lenken, und jeder Aufprall zählt, bis alles stillsteht.',
     tracks: ['crashtest'],
+    experimental: true,
   },
 ];
 

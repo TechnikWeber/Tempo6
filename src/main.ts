@@ -225,6 +225,7 @@ function handleEvents(): void {
         break;
       case 'raceOver': {
         sound.lap();
+        if (e.place === 1) sound.cheer();
         const medal = ['🥇', '🥈', '🥉'][e.place - 1] ?? '🏁';
         hud.banner(`${medal} Platz ${e.place} von ${e.of}`, e.pay ? `Preisgeld +${formatMoney(e.pay)}` : 'Kein Preisgeld. Nächstes Mal.', 5);
         leaveSoon(5, `Rennen auf ${core.track.name}: Platz ${e.place} von ${e.of}${e.pay ? `, +${formatMoney(e.pay)}` : ''}.`);
@@ -232,6 +233,7 @@ function handleEvents(): void {
       }
       case 'chain':
         sound.crate();
+        if (e.record) sound.cheer();
         hud.toast(`Kette: +${formatMoney(e.total)}`, e.record ? 'Neuer Rekord auf dieser Strecke!' : '', 2.5);
         break;
       case 'chainLost':
@@ -247,6 +249,7 @@ function handleEvents(): void {
         break;
       case 'crashOver':
         sound.crate();
+        if (e.record) sound.cheer();
         hud.toast(`${e.score} Punkte${e.record ? ' · Rekord!' : ''}`, `+${formatMoney(e.pay)} · Rücktaste: nochmal`, 6);
         break;
       case 'untrained':
@@ -255,6 +258,7 @@ function handleEvents(): void {
         break;
       case 'graduated':
         sound.tuned();
+        sound.cheer();
         hud.banner('Tutorial abgeschlossen!', `${e.stage.name}: jedes Gefährt fährt jetzt ${e.stage.topSpeedKmh} km/h.`, 3);
         leaveSoon(3, 'Ausbildung bestanden! Alle Modi und der Parkplatz sind offen, jedes Gefährt hat die Drossel raus.');
         break;
@@ -278,6 +282,32 @@ function handleEvents(): void {
       menu.say(note, 8);
     }
   }
+}
+
+/** Whether the train was near at the last look, so it sounds its horn once as it comes. */
+let trainNear = false;
+/** The sounds of what goes on around the vehicle: a train going by, a propeller turning. */
+function listen(at: { x: number; z: number }): void {
+  let train = Infinity;
+  for (const c of core.sim.traffic.cars) {
+    if (c.def.type !== 'train') continue;
+    const p = c.tracked.body.translation();
+    train = Math.min(train, Math.hypot(p.x - at.x, p.z - at.z));
+  }
+  sound.setTrain(racing ? Math.max(0, 1 - train / 160) : 0);
+  const near = train < 110;
+  if (racing && near && !trainNear) sound.trainHorn();
+  trainNear = near;
+  let whoosh = 0;
+  for (const m of core.sim.movers) {
+    // (the big wheel at the fair turns too, but quietly)
+    if (m.def.type !== 'propeller' || (m.def.spin ?? 0) < 1) continue;
+    const d = Math.hypot(m.def.pos[0] - at.x, m.def.pos[2] - at.z);
+    // one swell per blade going past the bottom
+    const beat = Math.abs(Math.sin((m.angle * (m.def.blades ?? 2)) / 2)) ** 6;
+    whoosh = Math.max(whoosh, Math.max(0, 1 - d / 45) * (0.25 + 0.75 * beat));
+  }
+  sound.setWhoosh(racing ? whoosh : 0);
 }
 
 const IDLE: GameInput = { throttle: 0, steer: 0, handbrake: false, upright: false, respawn: false, tune: false };
@@ -325,6 +355,7 @@ function frame(now: number): void {
   sound.setMotor(racing ? v.speed : 0, racing && v.wheelsOnGround > 0 ? Math.abs(cmd.throttle) : 0);
   sound.setSqueal(racing ? Math.max(...v.skid) : 0);
   sound.setBoost(racing ? v.boost : 0);
+  listen(v.body.translation());
   if (racing) hud.update(core);
   view.render(core, acc / STEP, dt, !racing);
   requestAnimationFrame(frame);
