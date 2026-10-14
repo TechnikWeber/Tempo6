@@ -270,7 +270,7 @@ describe('profiles', () => {
     const core = new GameCore(PARKPLATZ, progress);
     core.setProfile(2);
     expect(core.sim.vehicle.profile.name).toBe('Sänfte');
-    expect(core.topSpeedKmh).toBeCloseTo(6 * 1.1);
+    expect(core.topSpeedKmh).toBeCloseTo(STAGES[0].topSpeedKmh * 1.1);
     core.setVehicle('orkan');
     expect(core.profileIndex).toBe(0);
     core.setVehicle('trex');
@@ -925,7 +925,7 @@ describe('curve test ground', () => {
   });
 });
 
-// (the Reha-Parcours is a walking-pace course with rails; it has tests of its own)
+// (the Reha-Parcours is a slow course with rails; it has tests of its own)
 describe.each(TRACKS.filter((t) => t.line && t.id !== TRAINING).map((t) => [t.id, t] as const))('road %s', (_id, track) => {
   it('can be lapped at 30 km/h by following its centre line', () => {
     const core = new GameCore(track, new Progress());
@@ -1073,7 +1073,6 @@ describe('start lights, leaderboard and ghost', () => {
     const saved = new Map<string, string>();
     const store = { getItem: (k: string) => saved.get(k) ?? null, setItem: (k: string, v: string) => void saved.set(k, v) };
     const p = new Progress(store);
-    p.name = 'Erika';
     const lap = (time: number) => p.addTime('parkplatz', { time, name: p.name, vehicle: 'trex', stage: 2, date: 0 });
     expect(lap(50)).toBe(1);
     expect(lap(40)).toBe(1);
@@ -1083,8 +1082,7 @@ describe('start lights, leaderboard and ghost', () => {
     expect(p.boards.parkplatz.length).toBe(10);
     const again = new Progress(store);
     expect(again.boards.parkplatz.map((e) => e.time).slice(0, 3)).toEqual([40, 45, 50]);
-    expect(again.boards.parkplatz[0].name).toBe('Erika');
-    expect(again.name).toBe('Erika');
+    expect(again.boards.parkplatz[0].name).toBe('Du');
   });
 
   it('records the best lap as a ghost and finds it again next time', () => {
@@ -1140,7 +1138,7 @@ describe('game on the Parkplatz', () => {
   it('applies the vehicle factors to the tuning stage', () => {
     const core = new GameCore(PARKPLATZ, new Progress());
     core.setVehicle('ekaptn');
-    expect(core.topSpeedKmh).toBeCloseTo(6 * 1.3);
+    expect(core.topSpeedKmh).toBeCloseTo(STAGES[0].topSpeedKmh * 1.3);
     expect(core.sim.vehicle.spec.id).toBe('ekaptn');
   });
 
@@ -1293,7 +1291,7 @@ describe('Reha-Parcours', () => {
     }
   };
 
-  it.each(ALL)('%s gets through at walking pace, upright, and comes out with the throttle off', (id, spec) => {
+  it.each(ALL)('%s gets through at stage 0, upright, and comes out with the throttle off', (id, spec) => {
     const progress = new Progress();
     progress.vehicle = spec.id;
     const core = new GameCore(REHA, progress);
@@ -1309,9 +1307,9 @@ describe('Reha-Parcours', () => {
     // never on its side, never wrecked
     expect(minUp).toBeGreaterThan(0.15);
     expect(core.sim.vehicle.damage).toBe(0);
-    // a perfect line takes about a minute; by hand it is more
-    expect(t / 60).toBeGreaterThan(40);
-    expect(t / 60).toBeLessThan(120);
+    // a perfect line takes about half a minute; by hand it is more
+    expect(t / 60).toBeGreaterThan(15);
+    expect(t / 60).toBeLessThan(60);
     expect(progress.stageIndex).toBe(1);
     expect(progress.stages[id]).toBe(1);
     expect(core.topSpeedKmh).toBeCloseTo(stageSpeedKmh(STAGES[1], spec.speedFactor * core.sim.vehicle.profile.speed));
@@ -1347,9 +1345,13 @@ describe('Reha-Parcours', () => {
     const saw = core.sim.movers[0];
     expect(saw.angle).toBeCloseTo(-saw.def.angle);
     const ap = new Autopilot(REHA.line!);
-    // drive until the vehicle is past the seesaw
-    drive(core, ap, 60, () => core.sim.vehicle.body.translation().z > saw.def.pos[2] + saw.def.half[2] - 0.5 && core.sim.vehicle.body.translation().x > 10);
-    expect(saw.angle).toBeCloseTo(saw.def.angle);
+    // drive until the vehicle is off the far end, watching the plank go over under it
+    let most = -1;
+    drive(core, ap, 60, () => {
+      most = Math.max(most, saw.angle);
+      return core.sim.vehicle.body.translation().z > saw.def.pos[2] + saw.def.half[2] + 0.5 && core.sim.vehicle.body.translation().x > 10;
+    });
+    expect(most).toBeCloseTo(saw.def.angle);
     drive(core, ap, 6);
     expect(saw.angle).toBeCloseTo(-saw.def.angle);
     core.dispose();
@@ -1386,6 +1388,29 @@ describe('Reha-Parcours', () => {
     p.graduate();
     const again = new Progress(store);
     expect(again.stages).toEqual({ komet: 2, trex: 1 });
+  });
+
+  it('exports the save with its shadows to a file and reads it back into an empty browser', () => {
+    const mem = () => {
+      const data = new Map<string, string>();
+      return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) };
+    };
+    const here = mem();
+    const p = new Progress(here);
+    p.earn(77);
+    p.stageIndex = 2;
+    p.tutorialDone = true;
+    p.saveGhost('reha', { time: 31, vehicle: 'trex', samples: [1, 2, 3, 4, 5, 6, 7] });
+    const file = p.exportSave(TRACKS.map((t) => t.id));
+    const there = mem();
+    expect(Progress.importSave(there, 'kein Spielstand')).toBe(false);
+    expect(Progress.importSave(there, JSON.stringify({ game: 'anderes' }))).toBe(false);
+    expect(Progress.importSave(there, file)).toBe(true);
+    const back = new Progress(there);
+    expect(back.money).toBe(77);
+    expect(back.stageIndex).toBe(2);
+    expect(back.tutorialDone).toBe(true);
+    expect(back.loadGhost('reha')?.time).toBe(31);
   });
 
   it('ends the tutorial at its stage: every vehicle is free of its throttle, and the car park opens', () => {

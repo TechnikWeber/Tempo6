@@ -42,7 +42,7 @@ const GHOST_KEY = 'tempo6.ghost.';
 export class Progress {
   /** Schrauben. */
   money = 0;
-  /** Tuning stage per vehicle id; every vehicle starts at walking pace. */
+  /** Tuning stage per vehicle id; every vehicle starts at stage 0. */
   readonly stages: Record<string, number> = {};
   /**
    * Whether the tutorial in the Reha-Parcours is over: one vehicle got through and was tuned
@@ -57,14 +57,13 @@ export class Progress {
   readonly profiles: Record<string, number> = {};
   /** Ids of bought vehicles and tracks. */
   readonly unlocked = new Set<string>();
-  /** The name on the leaderboards. */
-  name = 'Du';
+  /** The name on the leaderboards; they only ever hold this device's own laps. */
+  readonly name = 'Du';
+  /** Whether the workshop (F2) has been unlocked with the cheat code. */
+  workshop = false;
   /** Whether the best lap drives along as a shadow. */
   showGhost = true;
-  /**
-   * Best laps per track id, fastest first. Kept on this device for now; the same entries
-   * are what a shared board on a server would hold.
-   */
+  /** Best laps per track id, fastest first. Kept on this device, to beat your own times. */
   readonly boards: Record<string, BoardEntry[]> = {};
 
   constructor(private readonly store?: Store) {
@@ -82,7 +81,7 @@ export class Progress {
       for (const [k, v] of Object.entries(d.bestLaps ?? {})) if (typeof v === 'number') this.bestLaps[k] = v;
       for (const [k, v] of Object.entries(d.profiles ?? {})) if (typeof v === 'number') this.profiles[k] = v;
       for (const id of d.unlocked ?? []) if (typeof id === 'string') this.unlocked.add(id);
-      if (typeof d.name === 'string' && d.name.trim()) this.name = d.name.slice(0, 16);
+      this.workshop = d.workshop === true;
       if (typeof d.showGhost === 'boolean') this.showGhost = d.showGhost;
       for (const [k, list] of Object.entries(d.boards ?? {})) {
         if (Array.isArray(list)) this.boards[k] = list.filter((e) => typeof e?.time === 'number' && e.vehicle in VEHICLES).slice(0, BOARD_SIZE);
@@ -214,11 +213,43 @@ export class Progress {
         bestLaps: this.bestLaps,
         profiles: this.profiles,
         unlocked: [...this.unlocked],
-        name: this.name,
+        workshop: this.workshop,
         showGhost: this.showGhost,
         boards: this.boards,
       }),
     );
+  }
+
+  /**
+   * Everything this device knows about the game as one text, for a file to keep: the save
+   * and the shadows of the given tracks. The browser's own storage goes when its data is
+   * cleared; a file does not.
+   */
+  exportSave(trackIds: readonly string[]): string {
+    this.save();
+    const ghosts: Record<string, unknown> = {};
+    for (const id of trackIds) {
+      const g = this.loadGhost(id);
+      if (g) ghosts[id] = g;
+    }
+    return JSON.stringify({ game: 'tempo6', version: 1, save: JSON.parse(this.store?.getItem(KEY) ?? '{}'), ghosts });
+  }
+
+  /**
+   * Put an exported save back into the store; a Progress made afterwards reads it.
+   * @returns false if the text is not a Tempo6 save, and then nothing is touched
+   */
+  static importSave(store: Store, text: string): boolean {
+    let d: { game?: unknown; save?: unknown; ghosts?: Record<string, unknown> };
+    try {
+      d = JSON.parse(text);
+    } catch {
+      return false;
+    }
+    if (d?.game !== 'tempo6' || typeof d.save !== 'object' || d.save === null) return false;
+    store.setItem(KEY, JSON.stringify(d.save));
+    for (const [id, g] of Object.entries(d.ghosts ?? {})) store.setItem(GHOST_KEY + id, JSON.stringify(g));
+    return true;
   }
 
   wipe(): void {

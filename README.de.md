@@ -2,7 +2,7 @@
 
 # Tempo6
 
-Ein Rennspiel für den Browser mit Elektrorollstühlen und Seniorenmobilen. Jedes Gefährt startet mit den erlaubten 6 km/h im Reha-Parcours (Wippe, Wackelbrücke, Schwebebalken). Wer einmal durch ist, bekommt die Drossel raus, verdient sich mit Runden und Kunststücken Schrauben und steckt sie in immer fragwürdigeres Tuning, bis 75 km/h.
+Ein Rennspiel für den Browser mit Elektrorollstühlen und Seniorenmobilen. Jedes Gefährt startet mit 12 km/h (laut Prospekt die erlaubten 6) im Reha-Parcours (Wippe, Wackelbrücke, Schwebebalken). Wer einmal durch ist, bekommt die Drossel raus, verdient sich mit Runden und Kunststücken Schrauben und steckt sie in immer fragwürdigeres Tuning, bis 75 km/h.
 
 Stand: spielbarer Prototyp mit Startbildschirm, zwei Strecken, fünf weiteren im Rohbau, einer Kurven-Teststrecke, dreizehn Fahrzeugen und Tuning-Leiter.
 

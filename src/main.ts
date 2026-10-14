@@ -8,7 +8,10 @@ import { View } from './render/View';
 import { GameCore, type GameInput } from './sim/GameCore';
 import { Progress } from './sim/Progress';
 import { initPhysics, STEP } from './sim/Sim';
-import { AFTER_TRAINING, trackById, TRAINING } from './tracks';
+import { AFTER_TRAINING, trackById, TRACKS, TRAINING } from './tracks';
+import { GARAGE } from './tracks/garage';
+import type { TrackDef } from './sim/Track';
+import { Garage } from './ui/Garage';
 import { formatTime, Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
 
@@ -21,9 +24,14 @@ let core!: GameCore;
 /** Build the level; the old physics world is thrown away. */
 function loadTrack(id: string): void {
   const track = trackById(id);
-  core?.dispose();
   progress.track = track.id;
   progress.save();
+  build(track);
+}
+
+/** Put up a scene, the garage too, without making it the track to come back to. */
+function build(track: TrackDef): void {
+  core?.dispose();
   core = new GameCore(track, progress);
   view.setTrack(track);
   view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
@@ -74,6 +82,52 @@ const menu = new Menu(progress, {
     setRacing(true);
     const v = core.sim.vehicle.spec;
     hud.toast(core.track.name, `${v.label} · ${core.sim.vehicle.profile.name}`, 2.5);
+  },
+  onGarage() {
+    sound.unlock();
+    tutorialBefore = progress.tutorialDone;
+    menu.hide();
+    build(GARAGE);
+    garage.show();
+  },
+  onExport() {
+    const url = URL.createObjectURL(new Blob([progress.exportSave(TRACKS.map((t) => t.id))], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tempo6-spielstand-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+  async onImport(text) {
+    if (!Progress.importSave(window.localStorage, text)) return 'Das ist kein Tempo6-Spielstand.';
+    // (simplest way to have everything read the loaded save afresh)
+    location.reload();
+    return null;
+  },
+  onCheat(code) {
+    switch (code.trim().toLowerCase()) {
+      case '1337':
+        progress.workshop = true;
+        progress.save();
+        return 'Werkstatt freigeschaltet: F2 öffnet sie.';
+      case 'money':
+        progress.earn(1000);
+        return '+1000 Schrauben!';
+      default:
+        return null;
+    }
+  },
+});
+
+/** Whether the tutorial was already over when the garage was entered. */
+let tutorialBefore = false;
+const garage = new Garage({
+  core: () => core,
+  back() {
+    garage.hide();
+    // tuned to the end of the tutorial in the garage: out onto the car park
+    loadTrack(!tutorialBefore && progress.tutorialDone ? AFTER_TRAINING : progress.track);
+    menu.show();
   },
 });
 
@@ -210,7 +264,8 @@ function frame(now: number): void {
     progress.save();
     if (racing) hud.toast(progress.showGhost ? 'Schatten an' : 'Schatten aus', 'Die Bestzeit fährt mit.', 1.5);
   }
-  if (input.take('debug')) gui.show(gui._hidden);
+  // (the workshop only opens once its cheat code has been typed in)
+  if (input.take('debug') && progress.workshop) gui.show(gui._hidden);
   if (input.take('menu') && racing) setRacing(false);
   // On the start screen the vehicle just stands there and gets looked at.
   if (!racing) cmd = { ...IDLE };

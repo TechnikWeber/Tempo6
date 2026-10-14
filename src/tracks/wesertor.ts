@@ -21,7 +21,7 @@ export const WESERTOR: TrackDef = {
   id: 'wesertor',
   name: 'Altwerk Wesertor',
   blurb: `Einmal ums alte Werk: ${Math.round(SITE.length / 10) * 10} m um verwinkelte Hallen. Rohbau.`,
-  unlockPrice: 300,
+  unlockPrice: 150,
   lapPay: 40,
   spawn: SITE.spawn,
   statics: SITE.statics,

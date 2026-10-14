@@ -98,7 +98,7 @@ export const FLUGPLATZ: TrackDef = {
   id: 'flugplatz',
   name: 'Alter Flugplatz',
   blurb: 'Über 500 m pro Runde, breite Bahn, große Schanzen. Erst mit Tuning ein Vergnügen.',
-  unlockPrice: 400,
+  unlockPrice: 180,
   lapPay: 40,
   spawn: { pos: [-20, 0.6, -LINE_Z], yaw: Math.PI / 2 },
   statics,

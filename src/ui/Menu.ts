@@ -10,6 +10,14 @@ interface MenuHandlers {
   /** Highlighted track changed (it is unlocked). */
   onTrack(id: string): void;
   onStart(): void;
+  /** Into the tuning garage with the highlighted vehicle (it is unlocked). */
+  onGarage(): void;
+  /** The whole save as a file to download. */
+  onExport(): void;
+  /** A save file picked to load; resolves to a message if it was no good. */
+  onImport(text: string): Promise<string | null>;
+  /** A cheat code typed in; returns what it did, or null if it is not one. */
+  onCheat(code: string): string | null;
 }
 
 /** Why something cannot be had yet: what the card says, and what it costs if it can be bought. */
@@ -40,6 +48,10 @@ export class Menu {
   private readonly trackList = h('div', 'cards tracks');
   private readonly start = h('button', 'start');
   private readonly ghost = h('input');
+  private readonly garage = h('button', 'garage-btn');
+  /** Answer to the last save or cheat action, shown in the header for a moment. */
+  private readonly note = h('span', 'note');
+  private noteTimer = 0;
   /** What the cursor is on; may be locked, unlike the progress selection. */
   private vehicle: VehicleId;
   private track: string;
@@ -52,17 +64,7 @@ export class Menu {
     head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', 'Verdien dir Schrauben. Tune dein Gefährt. Werde zu schnell.'));
     const purse = h('p', 'purse', '🔩 ');
     purse.append(this.money);
-    // who the laps are entered under, and whether the best one drives along
-    const who = h('label', 'who', 'Name ');
-    const name = h('input');
-    name.maxLength = 16;
-    name.value = progress.name;
-    name.addEventListener('change', () => {
-      progress.name = name.value.trim() || 'Du';
-      name.value = progress.name;
-      progress.save();
-    });
-    who.append(name);
+    // whether the best lap drives along
     const shadow = h('label', 'who');
     this.ghost.type = 'checkbox';
     this.ghost.addEventListener('change', () => {
@@ -71,15 +73,18 @@ export class Menu {
     });
     shadow.append(this.ghost, ' Schatten');
     shadow.title = 'Die Bestzeit fährt als Schatten mit (Taste G)';
-    head.append(who, shadow, purse);
+    head.append(shadow, this.tools(), purse);
 
     const left = h('section', 'col');
     this.vehicleList.append(this.vehicleCards);
     left.append(this.vehicleList);
+    this.garage.textContent = '🔧 Garage';
+    this.garage.title = 'Gefährt in der Werkstatt ansehen und tunen (T)';
+    this.garage.addEventListener('click', () => this.openGarage());
     const right = h('section', 'col');
     right.append(h('h2', '', 'Strecke'), this.trackList, this.start);
     const hint = h('p', 'keys');
-    hint.innerHTML = '<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los';
+    hint.innerHTML = '<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los';
     right.append(hint);
     this.root.append(head, left, this.detail, right);
 
@@ -96,12 +101,63 @@ export class Menu {
         case 'KeyW': case 'ArrowUp': this.pickTrack(step(tracks, this.track, -1)); break;
         case 'KeyS': case 'ArrowDown': this.pickTrack(step(tracks, this.track, 1)); break;
         case 'Enter': case 'Space': this.go(); break;
+        case 'KeyT': this.openGarage(); break;
         default: return;
       }
       e.preventDefault();
       // Keep the driving controls from seeing the key that started the race.
       e.stopImmediatePropagation();
     }, true);
+  }
+
+  /** Save to a file, load from one, and the box for cheat codes. */
+  private tools(): HTMLElement {
+    const box = h('div', 'tools');
+    const save = h('button', 'tool', '💾 Speichern');
+    save.title = 'Spielstand als Datei herunterladen. Bleibt, auch wenn der Browser seine Daten löscht.';
+    save.addEventListener('click', () => this.handlers.onExport());
+    const file = h('input');
+    file.type = 'file';
+    file.accept = '.json,application/json';
+    file.hidden = true;
+    file.addEventListener('change', async () => {
+      const f = file.files?.[0];
+      file.value = '';
+      if (f) this.say((await this.handlers.onImport(await f.text())) ?? '');
+    });
+    const load = h('button', 'tool', '📂 Laden');
+    load.title = 'Einen gespeicherten Spielstand laden';
+    load.addEventListener('click', () => file.click());
+    const cheat = h('form', 'cheat');
+    const code = h('input');
+    code.placeholder = 'Cheatcode';
+    code.size = 9;
+    code.autocomplete = 'off';
+    const ok = h('button', 'tool', '🎮');
+    ok.title = 'Cheatcode eingeben';
+    cheat.append(code, ok);
+    cheat.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const said = this.handlers.onCheat(code.value);
+      code.value = '';
+      code.blur();
+      this.say(said ?? 'Nichts passiert.');
+      this.render();
+    });
+    box.append(save, load, file, cheat, this.note);
+    return box;
+  }
+
+  /** A short message in the header. */
+  private say(text: string): void {
+    this.note.textContent = text;
+    clearTimeout(this.noteTimer);
+    this.noteTimer = window.setTimeout(() => (this.note.textContent = ''), 4000);
+  }
+
+  private openGarage(): void {
+    if (this.vehicleOpen(this.vehicle)) this.handlers.onGarage();
+    else this.nope();
   }
 
   get visible(): boolean {
@@ -237,6 +293,7 @@ export class Menu {
       h('p', 'kind', `${v.kind} · Fahrprofile: ${v.profiles.map((p) => p.name).join(', ')}`),
       h('p', '', v.blurb),
       stats,
+      this.garage,
       h('p', 'kind', `Aktuell ${top.toFixed(1).replace('.', ',')} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`),
     );
 
@@ -272,6 +329,7 @@ export class Menu {
           ? `Erst Reha-Parcours bis Stufe ${TUTORIAL_STAGE}`
           : 'Los!';
     this.start.classList.toggle('buy', lockedV || !!lockT);
+    this.garage.disabled = lockedV;
     this.fit();
   }
 }

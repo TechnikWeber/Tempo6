@@ -42,7 +42,7 @@ export const SCHLEIFE: TrackDef = {
   id: 'schleife',
   name: 'Große Schleife',
   blurb: `Lang, flüssig, bergauf und bergab: ${Math.round(ROAD.length / 10) * 10} m pro Runde, ${Math.round(Math.max(...ROAD.heights))} m Höhenunterschied. Rohbau.`,
-  unlockPrice: 900,
+  unlockPrice: 275,
   lapPay: 80,
   spawn: ROAD.spawn,
   statics,

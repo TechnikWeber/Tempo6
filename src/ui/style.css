@@ -219,7 +219,15 @@ kbd {
 #menu .purse { margin: 0; font-size: 20px; background: var(--panel); padding: 6px 14px; border-radius: 10px; }
 #menu .purse b { color: var(--accent); }
 #menu .who { font-size: 14px; background: var(--panel); padding: 6px 10px; border-radius: 10px; display: flex; align-items: center; gap: 6px; }
-#menu .who input:not([type]) , #menu .who input[type='text'] { width: 7em; font: inherit; color: var(--ink); background: rgb(255 255 255 / 0.12); border: 0; border-radius: 6px; padding: 3px 6px; }
+#menu .tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+#menu .tool, #menu .garage-btn { font: inherit; font-size: 14px; color: var(--ink); background: var(--panel); border: 0; border-radius: 10px; padding: 6px 10px; cursor: pointer; }
+#menu .tool:hover, #menu .garage-btn:hover:not(:disabled) { background: rgb(60 66 78 / 0.95); }
+#menu .cheat { display: flex; gap: 4px; background: var(--panel); border-radius: 10px; padding: 3px 3px 3px 8px; }
+#menu .cheat input { width: 7em; font: inherit; font-size: 14px; color: var(--ink); background: rgb(255 255 255 / 0.12); border: 0; border-radius: 6px; padding: 3px 6px; }
+#menu .cheat .tool { padding: 3px 8px; background: transparent; }
+#menu .note { font-size: 14px; color: var(--accent); text-shadow: 0 1px 0 #000; }
+#menu .garage-btn { align-self: flex-start; margin: 8px 0 4px; font-size: 16px; font-weight: 700; color: #111; background: var(--accent); }
+#menu .garage-btn:disabled { opacity: 0.4; cursor: default; }
 #menu .board { margin: 4px 0 0; padding-left: 20px; font-size: 12px; line-height: 1.5; opacity: 0.9; }
 #menu h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.75; }
 #menu .col { display: flex; flex-direction: column; min-height: 0; }
@@ -306,3 +314,29 @@ kbd {
   #menu h1 { font-size: 40px; }
   #menu .keys { display: none; }
 }
+
+/* The tuning garage: the vehicle on its bay in the middle, the ladder on the right. */
+#garage { position: fixed; inset: 0; display: flex; justify-content: flex-end; align-items: center; padding: 20px; pointer-events: none; user-select: none; }
+#garage .panel { pointer-events: auto; width: min(380px, 100%); max-height: 100%; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+#garage h2 { margin: 0; font-size: 22px; color: var(--accent); }
+#garage h3 { margin: 8px 0 0; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.7; }
+#garage .money { margin: 0; font-size: 15px; }
+#garage .ladder { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+#garage .ladder li { display: grid; grid-template-columns: 1.6em 1fr auto auto; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 8px; font-size: 14px; }
+#garage .ladder li.done { opacity: 0.55; }
+#garage .ladder li.now { background: rgb(255 210 63 / 0.18); outline: 1px solid var(--accent); }
+#garage .ladder li.next { background: rgb(255 255 255 / 0.08); }
+#garage .ladder li.later { opacity: 0.7; filter: grayscale(1); }
+#garage .ladder .kmh { opacity: 0.8; font-variant-numeric: tabular-nums; }
+#garage .ladder .price { min-width: 6.5em; text-align: right; font-size: 13px; }
+#garage button { font: inherit; color: var(--ink); border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; background: rgb(255 255 255 / 0.1); text-align: left; }
+#garage button:disabled { opacity: 0.45; cursor: default; }
+#garage .buy { font-weight: 700; color: #111; background: var(--accent); text-align: center; }
+#garage .buy:disabled { color: var(--ink); background: rgb(255 255 255 / 0.1); }
+#garage .profiles { display: flex; flex-direction: column; gap: 4px; }
+#garage .profile { display: flex; flex-direction: column; gap: 1px; }
+#garage .profile span { font-size: 12px; opacity: 0.75; }
+#garage .profile.on { outline: 2px solid var(--accent); }
+#garage .said { margin: 0; min-height: 1.3em; font-size: 14px; color: var(--accent); }
+#garage .back { align-self: flex-start; }
+@media (max-width: 700px) { #garage { align-items: flex-end; padding: 10px; } #garage .panel { max-height: 60vh; } }

@@ -148,6 +148,33 @@ export class GameCore {
     return this.track.id !== TRAINING || this.progress.trained();
   }
 
+  /** Buy the next tuning stage, on the track or in the garage; the events say how it went. */
+  tune(): void {
+    const { progress } = this;
+    const next = progress.nextStage;
+    const learning = !progress.tutorialDone;
+    if (progress.buyNext()) {
+      this.applyStage();
+      this.events.push({ type: 'tuned', stage: progress.stage });
+      if (learning && progress.tutorialDone) this.events.push({ type: 'tutorialDone' });
+    } else if (next && !progress.trained()) {
+      this.events.push({ type: 'untrained' });
+    } else if (next) {
+      this.events.push({ type: 'broke', missing: next.price - progress.money });
+    }
+  }
+
+  buyBoost(): void {
+    const { progress } = this;
+    if (progress.hasBoost) return;
+    if (progress.buyBoost()) {
+      this.applyStage();
+      this.events.push({ type: 'boostBought' });
+    } else {
+      this.events.push({ type: 'broke', missing: BOOST.price - progress.money });
+    }
+  }
+
   step(input: GameInput): void {
     const { sim, progress, race } = this;
     const paying = this.paying;
@@ -157,28 +184,8 @@ export class GameCore {
     } else if (input.upright) {
       sim.vehicle.upright();
     }
-    if (input.tune) {
-      const next = progress.nextStage;
-      const learning = !progress.tutorialDone;
-      if (progress.buyNext()) {
-        this.applyStage();
-        this.events.push({ type: 'tuned', stage: progress.stage });
-        if (learning && progress.tutorialDone) this.events.push({ type: 'tutorialDone' });
-      } else if (next && !progress.trained()) {
-        this.events.push({ type: 'untrained' });
-      } else if (next) {
-        this.events.push({ type: 'broke', missing: next.price - progress.money });
-      }
-    }
-
-    if (input.buyBoost && !progress.hasBoost) {
-      if (progress.buyBoost()) {
-        this.applyStage();
-        this.events.push({ type: 'boostBought' });
-      } else {
-        this.events.push({ type: 'broke', missing: BOOST.price - progress.money });
-      }
-    }
+    if (input.tune) this.tune();
+    if (input.buyBoost) this.buyBoost();
 
     const wasBoosting = sim.vehicle.boosting;
     if (this.countdown > 0) {

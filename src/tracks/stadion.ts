@@ -41,7 +41,7 @@ export const STADION: TrackDef = {
   id: 'stadion',
   name: 'Stadionkurs',
   blurb: `Schnelle Bögen durch den Wald, Haarnadel, enges Geschlängel vor der Tribüne: ${Math.round(ROAD.length / 10) * 10} m. Rohbau.`,
-  unlockPrice: 600,
+  unlockPrice: 225,
   lapPay: 50,
   spawn: ROAD.spawn,
   statics,

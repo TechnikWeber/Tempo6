@@ -8,12 +8,12 @@ export interface TuningStage {
   price: number;
 }
 
-// Each vehicle starts at walking pace in the Reha-Parcours, and getting through once takes the
+// Each vehicle starts out in the Reha-Parcours (12 km/h, whatever the brochure says), and getting through once takes the
 // throttle off. Two more stages there end the tutorial; from then on every vehicle starts at
 // stage 1. The ladder is short and quick: up to stage 5 in no time, all the way in about five
 // minutes. Vehicles, tracks and the boost cost more.
 export const STAGES: TuningStage[] = [
-  { name: 'Werkszustand', blurb: 'Zugelassen bis 6 km/h. Leider.', topSpeedKmh: 6, accel: 2.5, price: 0 },
+  { name: 'Werkszustand', blurb: 'Zugelassen bis 6 km/h. Steht so im Prospekt.', topSpeedKmh: 12, accel: 3.7, price: 0 },
   { name: 'Drossel raus', blurb: 'Der kleine Stecker unterm Sitz war eh locker.', topSpeedKmh: 18, accel: 4.7, price: 0 },
   { name: 'Reifen aufgepumpt', blurb: 'Zum ersten Mal seit 2009.', topSpeedKmh: 24, accel: 5.5, price: 20 },
   { name: 'Zweitakku vom Nachbarn', blurb: 'Er merkt es frühestens Dienstag.', topSpeedKmh: 30, accel: 6.2, price: 20 },
@@ -30,7 +30,7 @@ export const TUTORIAL_STAGE = 3;
 /**
  * Top speed of a stage in km/h for a vehicle whose own factors (vehicle times driving profile)
  * come to `factor`. A quicker vehicle gets more than the stage says, a slower one never less:
- * the 6 km/h at the start are 6 for everyone.
+ * the 12 km/h at the start are 12 for everyone.
  */
 export function stageSpeedKmh(stage: TuningStage, factor: number): number {
   return stage.topSpeedKmh * Math.max(1, factor);

@@ -21,7 +21,7 @@ export const TALSTADT: TrackDef = {
   id: 'talstadt',
   name: 'Werk Talstadt',
   blurb: `Einmal ums Werk: ${Math.round(SITE.length / 10) * 10} m um die große Halle. Rohbau.`,
-  unlockPrice: 200,
+  unlockPrice: 100,
   lapPay: 35,
   spawn: SITE.spawn,
   statics: SITE.statics,

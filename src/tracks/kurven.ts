@@ -122,7 +122,7 @@ export const KURVEN: TrackDef = {
   id: 'kurven',
   name: 'Kurven-Teststrecke',
   blurb: 'Vier Kurven von weit bis am engsten, daneben Ringe von 5 bis 30 m. Zum Ausprobieren.',
-  unlockPrice: 150,
+  unlockPrice: 75,
   lapPay: 15,
   spawn: { pos: [CX - 8, 0.6, -B], yaw: Math.PI / 2 },
   statics,

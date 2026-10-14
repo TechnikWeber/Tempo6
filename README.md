@@ -2,7 +2,7 @@
 
 # Tempo6
 
-A browser racing game with power wheelchairs and mobility scooters. Every vehicle starts at the legal 6 km/h in the Reha-Parcours, a training course with seesaws, a rocking bridge and a balance beam. Get through once and the throttle comes off; then earn Schrauben (screws) with laps and stunts and spend them on increasingly questionable tuning until 75 km/h.
+A browser racing game with power wheelchairs and mobility scooters. Every vehicle starts at 12 km/h (on paper: the legal 6) in the Reha-Parcours, a training course with seesaws, a rocking bridge and a balance beam. Get through once and the throttle comes off; then earn Schrauben (screws) with laps and stunts and spend them on increasingly questionable tuning until 75 km/h.
 
 Status: playable prototype with a start screen, two tracks, five more roughed in, a curve test ground, thirteen vehicles and a tuning ladder.
 

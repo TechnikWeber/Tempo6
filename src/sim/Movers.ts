@@ -3,9 +3,9 @@ import type { MoverDef } from './Track';
 import { Tracked } from './Tracked';
 
 /** How hard a seesaw tips towards the end the vehicle stands on, in rad/s² at the very end. */
-const TIP = 4;
+const TIP = 9;
 /** And how much it is held back, per second. */
-const TIP_DAMPING = 4;
+const TIP_DAMPING = 5;
 /**
  * A counterweight under the way in, in rad/s²: empty, it tips back for the next lap, and
  * loaded it only goes over once the vehicle is a little past the middle.

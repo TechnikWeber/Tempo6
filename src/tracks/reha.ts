@@ -7,7 +7,7 @@ const WOOD = 0xc9a15a;
 const RAIL = 0xf2c230;
 const STEEL = 0x8c949c;
 
-// The training course every vehicle has to get through once, at walking pace. Small, so
+// The training course every vehicle has to get through once, at stage 0. Small, so
 // nothing is a long crawl: a square of about 27 × 23 m driven clockwise, one toy after the
 // other. South: slalom and bumps. East: the seesaw, then the rocking bridge. North: the
 // turntable and a kerb. West: up onto the balance beam and down again.
@@ -131,7 +131,7 @@ const BEAM_Y = 0.55;
 const BEAM = 0.85;
 const BEAM_Z = -1.6;
 const BEAM_HALF = 3;
-/** (longer ramps for the higher beam, or the walking-pace motor would not get up them) */
+/** (longer ramps for the higher beam, or the weak stage-0 motor would not get up them) */
 const BEAM_RUN = 3.4;
 statics.push(
   ...easedRamp([W, BEAM_Z + BEAM_HALF + BEAM_RUN], SOUTH, BEAM_RUN, 2 * BEAM, BEAM_Y, WOOD),
@@ -194,7 +194,7 @@ const STREET: [number, number][] = [[-190, ROAD_Z + 2], [190, ROAD_Z + 2], [190,
 export const REHA: TrackDef = {
   id: 'reha',
   name: 'Reha-Parcours',
-  blurb: 'Wippe, Wackelbrücke, Drehscheibe, Schwebebalken. Jedes Gefährt muss einmal durch, mit 6 km/h.',
+  blurb: 'Wippe, Wackelbrücke, Drehscheibe, Schwebebalken. Hier lernst du fahren, mit 12 km/h.',
   unlockPrice: 0,
   lapPay: 8,
   spawn: { pos: [-12, 0.5, S], yaw: EAST },

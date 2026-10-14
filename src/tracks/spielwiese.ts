@@ -74,7 +74,7 @@ export const SPIELWIESE: TrackDef = {
   id: 'spielwiese',
   name: 'Spielwiese',
   blurb: 'Looping, Wellenbahn, Riesenschanzen: alles, was Unsinn ist. Rohbau.',
-  unlockPrice: 500,
+  unlockPrice: 200,
   lapPay: 20,
   spawn: { pos: [-135, 0.6, 0], yaw: EAST },
   statics,
