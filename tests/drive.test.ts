@@ -1546,6 +1546,27 @@ describe('modes', () => {
     core.dispose();
   });
 
+  it("leaves the player's boost unanswered, so it is the way past", () => {
+    const progress = trained(5);
+    progress.unlockEverything([]);
+    const core = new GameCore(PARKPLATZ, progress, 'race');
+    core.random = dice(3);
+    core.restart(true);
+    const ap = new Autopilot(PARKPLATZ.line!, 2.5).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
+    let mine = 0, theirs = 0;
+    for (let i = 0; i < 60 * 40; i++) {
+      // the others' batteries never quite full: only an answer to the player would set them off
+      for (const r of core.rivals) r.vehicle.boostCharge = Math.min(r.vehicle.boostCharge, 0.9);
+      core.step({ ...ap.input(core), boost: true });
+      core.events.length = 0;
+      if (core.sim.vehicle.boosting) mine++;
+      if (core.rivals.some((r) => r.vehicle.boosting)) theirs++;
+    }
+    expect(mine).toBeGreaterThan(60);
+    expect(theirs).toBe(0);
+    core.dispose();
+  });
+
   it('sends everyone into the crashtest flat out with the boost battery, whatever they have bought', () => {
     const core = new GameCore(trackById('crashtest'), trained(1), 'crash');
     expect(core.topSpeedKmh).toBeCloseTo(stageSpeedKmh(STAGES[STAGES.length - 1], 1));

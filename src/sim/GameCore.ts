@@ -185,10 +185,10 @@ export class GameCore {
   private rivalInput(r: Rival): DriveInput {
     const input = r.pilot.drive(r.vehicle);
     const v = r.vehicle;
-    // on a straight, at speed and with charge to spare; when the player boosts, the others answer
+    // on a straight, at speed, once the battery is full, and then until the straight ends. They
+    // do not answer the player's boost: that is the moment to get past them.
     const straight = Math.abs(input.steer) < 0.25 && input.throttle > 0 && v.speed > v.topSpeed * 0.6;
-    const answer = this.sim.vehicle.boosting || v.boosting;
-    input.boost = v.boostFitted && straight && (answer || v.boostCharge > 0.95);
+    input.boost = v.boostFitted && straight && (v.boosting || v.boostCharge > 0.95);
     return input;
   }
 

@@ -56,7 +56,7 @@ export const RACE = {
    * line, so even the quickest stays a little under it; with the boost battery bought, they get
    * one too.
    */
-  skill: [0.92, 0.95, 0.98],
+  skill: [0.955, 0.97, 0.98],
   /** Grid slots behind the start line: how far back and how far to the left (m). Who gets which is drawn. */
   grid: [[0.5, 1.2], [0.5, -1.2], [3.1, 1.2], [3.1, -1.2]] as [number, number][],
   /** Prize for the places, in lap money of the track. */
