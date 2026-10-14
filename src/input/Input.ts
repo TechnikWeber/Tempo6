@@ -5,9 +5,6 @@ type Action = 'upright' | 'respawn' | 'tune' | 'buyBoost' | 'menu' | 'mute' | 'd
 const KEY_ACTIONS: Record<string, Action> = {
   KeyR: 'upright',
   Backspace: 'respawn',
-  KeyT: 'tune',
-  KeyE: 'tune',
-  KeyK: 'buyBoost',
   Escape: 'menu',
   KeyM: 'mute',
   KeyG: 'ghost',
@@ -15,8 +12,8 @@ const KEY_ACTIONS: Record<string, Action> = {
 };
 const HELD = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyB'];
 
-// Standard gamepad mapping: A = handbrake, B / RB = boost, X = tune, Y = upright, Back = respawn, triggers = gas/reverse.
-const PAD_ACTIONS: [number, Action][] = [[2, 'tune'], [3, 'upright'], [8, 'respawn'], [9, 'menu']];
+// Standard gamepad mapping: A = handbrake, B / RB = boost, Y = upright, Back = respawn, triggers = gas/reverse.
+const PAD_ACTIONS: [number, Action][] = [[3, 'upright'], [8, 'respawn'], [9, 'menu']];
 
 /**
  * Merges keyboard, gamepad and touch into one driving intent. The game only ever sees

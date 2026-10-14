@@ -66,7 +66,6 @@ Der Quellcode bleibt in diesem Repo; `npm run deploy` legt nur das gebaute Spiel
 | In der Luft: drehen und versetzen / Nase kippen, Sprung strecken | Lenken / Gas und Bremse | linker Stick / Trigger |
 | Handbremse | Leertaste | A |
 | Boost (Autobatterie auf dem Schoß) | Umschalt oder B | B / RB |
-| Nächste Tuning-Stufe kaufen | T | X |
 | Aufrichten | R | Y |
 | Level neu starten | Rücktaste | Back |
 | Zurück zum Startbildschirm | Esc | Start |

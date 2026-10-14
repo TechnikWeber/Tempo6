@@ -24,9 +24,6 @@ export class Hud {
   private readonly lapTime = el('lap-time');
   private readonly lapBest = el('lap-best');
   private readonly money = el('money');
-  private readonly stageNo = el('stage-no');
-  private readonly stage = el('stage');
-  private readonly tune = el<HTMLButtonElement>('tune');
   private readonly toastEl = el('toast');
   private readonly flipped = el('flipped');
   private readonly wrecked = el('wrecked');
@@ -35,24 +32,12 @@ export class Hud {
   private readonly damageText = el('damage-text');
   private readonly boostRow = el('boost-row');
   private readonly boostBar = el('boost-bar');
-  private readonly buyBoost = el<HTMLButtonElement>('buy-boost');
   private toastTimer = 0;
   private readonly pending = el('pending');
   private readonly stuntEl = el('stunt');
   private stuntTimer = 0;
   private readonly lightsEl = el('lights');
   private lightsTimer = 0;
-
-  constructor(onTune: () => void, onBuyBoost: () => void) {
-    this.tune.addEventListener('click', () => {
-      onTune();
-      this.tune.blur();
-    });
-    this.buyBoost.addEventListener('click', () => {
-      onBuyBoost();
-      this.buyBoost.blur();
-    });
-  }
 
   private set(e: HTMLElement, text: string): void {
     if (this.cache.get(e) === text) return;
@@ -155,7 +140,6 @@ export class Hud {
     this.pending.hidden = (open === 0 && core.stunts.chain === 0) || core.mode === 'freestyle' || core.mode === 'crash';
     this.set(this.pending, `+${open} offen${core.stunts.multiplier > 1 ? ` · ×${core.stunts.multiplier.toFixed(1).replace('.', ',')}` : ''}`);
     const kmh = Math.abs(sim.vehicle.speed) * 3.6;
-    const stage = progress.stage;
     this.set(this.speed, kmh.toFixed(1).replace('.', ','));
     this.speedBar.style.width = `${Math.min(100, (kmh / core.topSpeedKmh) * 100).toFixed(0)}%`;
     const top = core.topSpeedKmh;
@@ -163,27 +147,6 @@ export class Hud {
     this.set(this.vehicle, sim.vehicle.spec.label);
     this.lapPanel(core);
     this.set(this.money, formatMoney(progress.money));
-    this.set(this.stageNo, String(progress.stageIndex));
-    this.set(this.stage, stage.name);
-
-    const next = progress.nextStage;
-    if (!next) {
-      this.set(this.tune, 'Ausgetunt. Mehr geht nicht. Noch nicht.');
-      this.tune.disabled = true;
-    } else if (!progress.trained()) {
-      this.set(this.tune, `Einmal durch den Parcours → ${next.name}, ${next.topSpeedKmh} km/h`);
-      this.tune.disabled = true;
-    } else {
-      const missing = next.price - progress.money;
-      this.set(
-        this.tune,
-        missing <= 0
-          ? `[T] ${next.name} → ${next.topSpeedKmh} km/h (${formatMoney(next.price)})`
-          : `${next.name} → ${next.topSpeedKmh} km/h · noch ${formatMoney(missing)}`,
-      );
-      this.tune.disabled = false;
-    }
-    this.tune.classList.toggle('ready', progress.canTune);
     const v = sim.vehicle;
     this.wrecked.hidden = !v.wrecked;
     this.flipped.hidden = v.wrecked || core.flippedFor < 1;
@@ -199,12 +162,6 @@ export class Hud {
       this.boostBar.style.width = `${(v.boostCharge * 100).toFixed(0)}%`;
       this.boostRow.classList.toggle('on', v.boosting);
       this.boostRow.classList.toggle('low', !v.boosting && v.boostCharge < BOOST.minCharge);
-    }
-    this.buyBoost.hidden = v.boostFitted;
-    if (!v.boostFitted) {
-      const missing = BOOST.price - progress.money;
-      this.set(this.buyBoost, missing <= 0 ? `[K] Autobatterie: Boost! (${formatMoney(BOOST.price)})` : `Autobatterie (Boost) · noch ${formatMoney(missing)}`);
-      this.buyBoost.classList.toggle('ready', missing <= 0);
     }
   }
 }

@@ -66,7 +66,6 @@ The source stays in this repo; `npm run deploy` puts only the built game into th
 | In the air: turn and shift / tip the nose, stretch the jump | Steer / throttle and brake | left stick / triggers |
 | Handbrake | Space | A |
 | Boost (car battery on the lap) | Shift or B | B / RB |
-| Buy next tuning stage | T | X |
 | Back on the wheels | R | Y |
 | Restart the level | Backspace | Back |
 | Back to the start screen | Esc | Start |

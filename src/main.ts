@@ -61,7 +61,8 @@ const input = new Input();
 const sound = new Sound();
 input.onFirstGesture = () => sound.unlock();
 installTouchControls(input);
-const hud = new Hud(() => input.trigger('tune'), () => input.trigger('buyBoost'));
+// (tuning is done in the garage only, so the HUD has no shop)
+const hud = new Hud();
 const gui = createDebugPanel(() => core, () => {
   const p = core.sim.vehicle.profile;
   hud.toast(`Fahrprofil: ${p.name}`, p.blurb, 2.5);

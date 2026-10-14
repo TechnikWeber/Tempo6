@@ -60,28 +60,11 @@ html, body {
 
 #laps { left: 16px; top: 16px; font-size: 18px; }
 
-#shop { right: 16px; top: 16px; max-width: 290px; text-align: right; }
+/* just the purse now: tuning is done in the garage */
+#shop { right: 16px; top: 16px; max-width: 290px; text-align: right; padding: 6px 12px; }
 .money { font-size: 22px; }
 .money b { color: var(--accent); }
 
-#tune, #buy-boost {
-  pointer-events: auto;
-  margin-top: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  text-align: center;
-  color: #ddd;
-  background: rgb(255 255 255 / 0.14);
-  cursor: pointer;
-}
-#tune.ready, #buy-boost.ready { color: #1a1300; background: var(--accent); animation: pulse 0.9s ease-in-out infinite alternate; }
-#buy-boost { margin-top: 6px; font-size: 13px; }
-#tune:disabled { cursor: default; }
 @keyframes pulse { to { transform: scale(1.04); } }
 
 #toast {
