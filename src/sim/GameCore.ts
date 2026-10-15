@@ -1,4 +1,4 @@
-import { CRASH, FREESTYLE, RACE, type ModeId } from '../config/modes';
+﻿import { CRASH, FREESTYLE, RACE, type ModeId } from '../config/modes';
 import { BONUS, BOOST, PICKUP_VALUE, stageSpeedKmh, STAGES, type TuningStage } from '../config/tuning';
 import { VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import { Autopilot } from './Autopilot';
@@ -36,9 +36,9 @@ export type GameEvent =
   | { type: 'lap'; time: number; best: boolean }
   | { type: 'tuned'; stage: TuningStage }
   | { type: 'broke'; missing: number }
-  /** Tuning asked for before the vehicle has been through the Reha-Parcours. */
+  /** Tuning asked for before the vehicle has been through the tutorial. */
   | { type: 'untrained' }
-  /** Through the Reha-Parcours for the first time with this vehicle: the throttle comes off. */
+  /** Through the tutorial for the first time with this vehicle: the throttle comes off. */
   | { type: 'graduated'; stage: TuningStage }
   | { type: 'boostBought' }
   | { type: 'boost' }
@@ -309,7 +309,7 @@ export class GameCore {
   }
 
   /**
-   * Whether Schrauben are out to be had. Not on the first run through the Reha-Parcours: that
+   * Whether Schrauben are out to be had. Not on the first run through the tutorial: that
    * one is for learning to drive, and getting through is its own reward.
    */
   get paying(): boolean {
@@ -333,12 +333,30 @@ export class GameCore {
   buyBoost(): void {
     const { progress } = this;
     if (progress.hasBoost) return;
+    if (progress.boostOwned) {
+      // already owned, just switched off: turning it back on costs nothing
+      progress.setBoostActive(true);
+      this.applyStage();
+      return;
+    }
     if (progress.buyBoost()) {
       this.applyStage();
       this.events.push({ type: 'boostBought' });
     } else {
       this.events.push({ type: 'broke', missing: BOOST.price - progress.money });
     }
+  }
+
+  /** Switch the boost battery off without losing it; buyBoost() fits it again for free. */
+  dropBoost(): void {
+    this.progress.setBoostActive(false);
+    this.applyStage();
+  }
+
+  /** Switch to a tuning stage already owned (lower or higher), without paying again. */
+  setStage(i: number): void {
+    this.progress.setStage(i);
+    this.applyStage();
   }
 
   step(input: GameInput): void {
@@ -401,9 +419,10 @@ export class GameCore {
     // (a crashtest is about the knocks, not the tricks)
     const tricks = paying && this.mode !== 'crash';
     for (const s of this.stunts.update(v, sim.traffic.cars.filter((c) => c.def.type !== 'walker').map((c) => c.tracked), STEP)) if (tricks) this.events.push({ type: 'stunt', ...s });
-    if (this.mode === 'freestyle' && !this.halted) {
+    // Open World banks each chain of stunts as it ends, same as freestyle, but never ends itself.
+    if ((this.mode === 'freestyle' || this.mode === 'open') && !this.halted) {
       if (this.stunts.chain === 0 && this.stunts.pending > 0) this.bankChain();
-      if (this.countdown === 0 && (this.timeLeft = Math.max(0, this.timeLeft - STEP)) === 0) this.finishFreestyle();
+      if (this.mode === 'freestyle' && this.countdown === 0 && (this.timeLeft = Math.max(0, this.timeLeft - STEP)) === 0) this.finishFreestyle();
     }
     if (this.mode === 'crash') this.watchCrash();
     if (sim.traffic.honk) {
@@ -431,7 +450,8 @@ export class GameCore {
     this.watchFall(p.y);
     if (ev === 'start') this.events.push({ type: 'lapStart' });
     if (ev === 'lap') {
-      const best = this.mode === 'time' && race.best === race.lastLap;
+      // the tutorial keeps no lap times of its own: it is driven once, then it is gone
+      const best = this.mode === 'time' && this.track.id !== TRAINING && race.best === race.lastLap;
       if (best) {
         progress.bestLaps[this.track.id] = race.best!;
         progress.save();
@@ -443,7 +463,8 @@ export class GameCore {
         this.halted = true;
         this.events.push({ type: 'graduated', stage: progress.stage });
       }
-      if (this.mode === 'time') {
+      // the tutorial keeps no lap times of its own: it is driven once, then it is gone
+      if (this.mode === 'time' && this.track.id !== TRAINING) {
         const place = progress.addTime(this.track.id, { time: race.lastLap!, name: progress.name, vehicle: v.spec.id, stage: progress.stageIndex, date: Date.now() });
         if (place > 0) this.events.push({ type: 'ranked', place });
       }
@@ -613,3 +634,4 @@ export class GameCore {
     this.events.push({ type: 'fell' });
   }
 }
+

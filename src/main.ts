@@ -10,7 +10,7 @@ import { View } from './render/View';
 import { GameCore, type GameInput } from './sim/GameCore';
 import { Progress } from './sim/Progress';
 import { initPhysics, STEP } from './sim/Sim';
-import { trackById, trackOpen, TRACKS, TRAINING } from './tracks';
+import { DEFAULT_TRACK, trackById, trackOpen, TRACKS, TRAINING } from './tracks';
 import { GARAGE } from './tracks/garage';
 import type { TrackDef } from './sim/Track';
 import { Garage } from './ui/Garage';
@@ -27,7 +27,7 @@ const progress = new Progress(DEMO ? memoryStore() : window.localStorage);
 if (DEMO) {
   progress.money = 999;
   progress.unlockEverything([...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]);
-  for (const id of VEHICLE_ORDER) progress.stages[id] = 5;
+  for (const id of VEHICLE_ORDER) progress.stages[id] = progress.maxStages[id] = 5;
 }
 
 function memoryStore() {
@@ -54,9 +54,10 @@ function build(track: TrackDef): void {
   view.setTrack(track, core.laps);
   view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
 }
-// Before the tutorial there is only the Reha-Parcours; and a track that was only looked at
-// in the menu, never bought, is not where the game starts either.
-loadTrack(trackOpen(progress, progress.track) ? progress.track : TRAINING);
+// Before the tutorial there is only the tutorial; and a track that was only looked at in the
+// menu, never bought, is not where the game starts either. Once the tutorial is done it is
+// gone for good, so a stale save pointing at it lands on the car park instead.
+loadTrack(trackOpen(progress, progress.track) ? progress.track : progress.tutorialDone ? DEFAULT_TRACK : TRAINING);
 
 const input = new Input();
 const sound = new Sound();
@@ -129,9 +130,13 @@ const menu = new Menu(progress, {
     if (!on) gui.hide();
   },
   onUnlockAll() {
-    // (tutorial over, every vehicle and track bought, the boost fitted, everything tuned all the way)
+    // (tutorial over, every vehicle and track bought, the boost fitted and switched on, everything tuned all the way)
     progress.unlockEverything([...VEHICLE_ORDER, ...TRACKS.map((t) => t.id)]);
-    for (const id of VEHICLE_ORDER) progress.stages[id] = STAGES.length - 1;
+    for (const id of VEHICLE_ORDER) {
+      progress.stages[id] = STAGES.length - 1;
+      progress.maxStages[id] = STAGES.length - 1;
+    }
+    progress.boostActive = true;
     progress.save();
     core.applyStage();
     return L('Alles freigeschaltet und voll getunt.', 'Everything unlocked and fully tuned.');
@@ -289,7 +294,7 @@ function handleEvents(): void {
         break;
       case 'untrained':
         sound.nope();
-        hud.toast(L('Erst einmal durch den Parcours', 'Get through the course first'), L('Dann ist die Drossel raus.', 'Then the limiter comes out.'), 2);
+        hud.toast(L('Erst einmal durchs Tutorial', 'Get through the tutorial first'), L('Dann ist die Drossel raus.', 'Then the limiter comes out.'), 2);
         break;
       case 'graduated':
         sound.tuned();

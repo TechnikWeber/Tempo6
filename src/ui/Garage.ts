@@ -63,7 +63,7 @@ export class Garage {
     for (const e of core.events) {
       if (e.type === 'tuned') this.said = `${e.stage.name}! ${e.stage.blurb}`;
       if (e.type === 'broke') this.said = L(`Es fehlen noch ${formatMoney(e.missing)}.`, `${formatMoney(e.missing)} short.`);
-      if (e.type === 'untrained') this.said = L('Erst einmal durch den Reha-Parcours, dann geht die Drossel raus.', 'Get through the Rehab Course first, then the limiter comes out.');
+      if (e.type === 'untrained') this.said = L('Erst einmal durchs Tutorial, dann geht die Drossel raus.', 'Get through the tutorial first, then the limiter comes out.');
       if (e.type === 'boostBought') this.said = L('Autobatterie auf dem Schoß! Umschalt halten für den Boost.', 'Car battery on the lap! Hold Shift to boost.');
     }
     core.events.length = 0;
@@ -76,14 +76,25 @@ export class Garage {
     const v = core.sim.vehicle;
     const factor = v.spec.speedFactor * v.profile.speed;
     const now = progress.stageIndex;
+    const max = progress.maxStageIndex;
 
     const ladder = h('ol', 'ladder');
     STAGES.forEach((s, i) => {
-      const row = h('li', i < now ? 'done' : i === now ? 'now' : i === now + 1 ? 'next' : 'later');
+      const row = h('li', i === now ? 'now' : i <= max ? 'done' : i === max + 1 ? 'next' : 'later');
       row.append(h('b', '', `${i}`), h('span', 'name', s.name), h('span', 'kmh', `${stageSpeedKmh(s, factor).toFixed(0)} km/h`));
-      if (i <= now) row.append(h('span', 'price', i === now ? L('eingebaut', 'fitted') : '✓'));
-      else if (i === 1 && !progress.trained()) row.append(h('span', 'price', L('Reha-Parcours', 'Rehab Course')));
+      if (i === now) row.append(h('span', 'price', L('eingebaut', 'fitted')));
+      else if (i <= max) row.append(h('span', 'price', '✓'));
+      else if (i === 1 && !progress.trained()) row.append(h('span', 'price', 'Tutorial'));
       else row.append(h('span', 'price', formatMoney(s.price)));
+      // any stage already owned can be switched back to (or up to again) without paying twice
+      if (i <= max && i !== now) {
+        row.title = L('Zurück auf diese Stufe wechseln, ohne nochmal zu kaufen', 'Switch back to this stage, without buying it again');
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => {
+          core.setStage(i);
+          this.render();
+        });
+      }
       ladder.append(row);
     });
 
@@ -93,7 +104,7 @@ export class Garage {
       buy.textContent = L('Ausgetunt. Mehr geht nicht. Noch nicht.', 'Fully tuned. That is all there is. For now.');
       buy.disabled = true;
     } else if (!progress.trained()) {
-      buy.textContent = L('Erst durch den Reha-Parcours', 'Finish the Rehab Course first');
+      buy.textContent = L('Erst durchs Tutorial', 'Finish the tutorial first');
       buy.disabled = true;
     } else {
       buy.textContent = L(`${next.name} einbauen · ${formatMoney(next.price)}`, `Fit ${next.name} · ${formatMoney(next.price)}`);
@@ -101,15 +112,23 @@ export class Garage {
     }
     buy.addEventListener('click', () => this.tune());
 
+    // owned already: a plain on/off switch, nothing more to pay; not yet owned: buy it
     const boost = h('button', 'buy boost');
-    if (progress.hasBoost) {
-      boost.textContent = L('⚡ Boost-Batterie eingebaut', '⚡ Boost battery fitted');
-      boost.disabled = true;
+    if (progress.boostOwned) {
+      boost.textContent = progress.hasBoost
+        ? L('⚡ Boost-Batterie an (abklemmen)', '⚡ Boost battery on (unfit it)')
+        : L('⚡ Boost-Batterie aus (wieder anklemmen)', '⚡ Boost battery off (fit it again)');
+      boost.classList.toggle('on', progress.hasBoost);
+      boost.addEventListener('click', () => {
+        if (progress.hasBoost) core.dropBoost();
+        else core.buyBoost();
+        this.render();
+      });
     } else {
       boost.textContent = `⚡ ${L('Boost-Batterie', 'Boost battery')} · ${formatMoney(BOOST.price)}`;
       boost.disabled = progress.money < BOOST.price;
+      boost.addEventListener('click', () => this.buyBoost());
     }
-    boost.addEventListener('click', () => this.buyBoost());
 
     const profiles = h('div', 'profiles');
     v.spec.profiles.forEach((p, i) => {

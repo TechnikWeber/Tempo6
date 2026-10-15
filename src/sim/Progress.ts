@@ -1,4 +1,4 @@
-import { MODES, type ModeId } from '../config/modes';
+﻿import { MODES, type ModeId } from '../config/modes';
 import { BOOST, STAGES, type TuningStage } from '../config/tuning';
 import { UNLOCK_ALL, VEHICLES, type VehicleId } from '../config/vehicles';
 
@@ -43,10 +43,15 @@ const GHOST_KEY = 'tempo6.ghost.';
 export class Progress {
   /** Schrauben. */
   money = 0;
-  /** Tuning stage per vehicle id; every vehicle starts at stage 0. */
+  /** Tuning stage per vehicle id in use right now; every vehicle starts at stage 0. */
   readonly stages: Record<string, number> = {};
   /**
-   * Whether the tutorial is over: one vehicle got through the Reha-Parcours. From then on
+   * Highest tuning stage ever bought per vehicle id: once bought, a stage stays owned even
+   * when a lower one is driven instead, and going back up to it costs nothing again.
+   */
+  readonly maxStages: Record<string, number> = {};
+  /**
+   * Whether the tutorial is over: one vehicle got through the tutorial. From then on
    * every vehicle has its throttle off, and the modes and tracks open.
    */
   tutorialDone = false;
@@ -65,6 +70,8 @@ export class Progress {
   readonly name = 'Du';
   /** Dev mode: whether the workshop (F2) is available. */
   workshop = false;
+  /** Whether the boost battery, once bought, is fitted right now; owning it is separate. */
+  boostActive = true;
   /** Whether the best lap drives along as a shadow. */
   showGhost = true;
   /** Best laps per track id, fastest first. Kept on this device, to beat your own times. */
@@ -80,6 +87,8 @@ export class Progress {
       for (const [k, v] of Object.entries(d.stages ?? {})) if (typeof v === 'number') this.stages[k] = Math.min(STAGES.length - 1, Math.max(0, v | 0));
       // (an older save had one stage for all; it goes to the vehicle it was driven with)
       if (!d.stages && d.stageIndex > 0) this.stages[this.vehicle] = Math.min(STAGES.length - 1, d.stageIndex | 0);
+      // (an older save had no ceiling of its own: whatever was driven is what was bought)
+      for (const [k, v] of Object.entries(d.maxStages ?? this.stages)) if (typeof v === 'number') this.maxStages[k] = Math.min(STAGES.length - 1, Math.max(0, v | 0));
       this.tutorialDone = d.tutorialDone === true || Object.values(this.stages).some((n) => n >= 1);
       if (typeof d.track === 'string') this.track = d.track;
       if (MODES.some((m) => m.id === d.mode)) this.mode = d.mode;
@@ -90,6 +99,7 @@ export class Progress {
       // (a vehicle that was looked at in the menu but never bought is not the one to drive)
       if (!this.isUnlocked(this.vehicle, VEHICLES[this.vehicle].unlockPrice)) this.vehicle = 'trex';
       this.workshop = d.workshop === true;
+      if (typeof d.boostActive === 'boolean') this.boostActive = d.boostActive;
       if (typeof d.showGhost === 'boolean') this.showGhost = d.showGhost;
       for (const [k, list] of Object.entries(d.boards ?? {})) {
         if (Array.isArray(list)) this.boards[k] = list.filter((e) => typeof e?.time === 'number' && e.vehicle in VEHICLES).slice(0, BOARD_SIZE);
@@ -106,10 +116,32 @@ export class Progress {
 
   set stageIndex(i: number) {
     this.stages[this.vehicle] = i;
+    // (reaching a stage this way, same as buying it, owns it for good)
+    if (i > (this.maxStages[this.vehicle] ?? 0)) this.maxStages[this.vehicle] = i;
+  }
+
+  /** Highest tuning stage ever bought for a vehicle; after the tutorial at least the first (free) one. */
+  maxStageOf(id: string = this.vehicle): number {
+    return Math.max(this.maxStages[id] ?? 0, this.tutorialDone ? 1 : 0);
+  }
+
+  /** Highest tuning stage owned by the current vehicle. */
+  get maxStageIndex(): number {
+    return this.maxStageOf(this.vehicle);
   }
 
   /**
-   * Whether a vehicle has been through the Reha-Parcours. Until then it is held at walking
+   * Switch the current vehicle to any tuning stage already owned (bought before, or the
+   * free ones), without paying again. Going down and back up two stages at once is fine:
+   * it is just this number changing, the ones between are not separately tracked.
+   */
+  setStage(i: number): void {
+    this.stageIndex = Math.max(0, Math.min(this.maxStageIndex, i | 0));
+    this.save();
+  }
+
+  /**
+   * Whether a vehicle has been through the tutorial. Until then it is held at walking
    * pace and that is the only track it may take.
    */
   trained(id: VehicleId = this.vehicle): boolean {
@@ -121,7 +153,7 @@ export class Progress {
     return Math.max(this.stages[id] ?? 0, this.tutorialDone ? 1 : 0);
   }
 
-  /** The Reha-Parcours is done: the first stage comes free, and the tutorial is over. */
+  /** The tutorial is done: the first stage comes free, and the tutorial is over. */
   graduate(): void {
     if (this.stageIndex === 0) this.stageIndex = 1;
     this.tutorialDone = true;
@@ -132,8 +164,9 @@ export class Progress {
     return STAGES[this.stageIndex];
   }
 
+  /** The next stage still to buy, beyond the highest one owned (not necessarily the one driven). */
   get nextStage(): TuningStage | null {
-    return STAGES[this.stageIndex + 1] ?? null;
+    return STAGES[this.maxStageIndex + 1] ?? null;
   }
 
   get canTune(): boolean {
@@ -150,7 +183,8 @@ export class Progress {
     const n = this.nextStage;
     if (!n || !this.trained() || this.money < n.price) return false;
     this.money -= n.price;
-    this.stageIndex++;
+    // bought, fitted at once, and owned for good: driving a lower stage later costs nothing to undo
+    this.stageIndex = this.maxStageIndex + 1;
     this.save();
     return true;
   }
@@ -186,13 +220,31 @@ export class Progress {
     }
   }
 
-  /** Whether the boost battery has been bought. */
-  get hasBoost(): boolean {
+  /** Whether the boost battery has ever been bought, whether fitted right now or not. */
+  get boostOwned(): boolean {
     return this.isUnlocked(BOOST_ID, BOOST.price);
   }
 
+  /** Whether the boost battery is bought and switched on right now. */
+  get hasBoost(): boolean {
+    return this.boostActive && this.boostOwned;
+  }
+
   buyBoost(): boolean {
-    return this.unlock(BOOST_ID, BOOST.price);
+    if (!this.unlock(BOOST_ID, BOOST.price)) return false;
+    this.boostActive = true;
+    this.save();
+    return true;
+  }
+
+  /**
+   * Fit or unfit the boost battery already owned; owning it is a separate matter, so this
+   * never costs anything and never has to be bought again.
+   */
+  setBoostActive(on: boolean): void {
+    if (on && !this.boostOwned) return;
+    this.boostActive = on;
+    this.save();
   }
 
   /** Everything there is to buy, for trying things out: every vehicle and track, and the boost battery. */
@@ -222,6 +274,7 @@ export class Progress {
       JSON.stringify({
         money: this.money,
         stages: this.stages,
+        maxStages: this.maxStages,
         tutorialDone: this.tutorialDone,
         vehicle: this.vehicle,
         track: this.track,
@@ -231,6 +284,7 @@ export class Progress {
         profiles: this.profiles,
         unlocked: [...this.unlocked],
         workshop: this.workshop,
+        boostActive: this.boostActive,
         showGhost: this.showGhost,
         boards: this.boards,
       }),
@@ -272,7 +326,9 @@ export class Progress {
   wipe(): void {
     this.money = 0;
     for (const k of Object.keys(this.stages)) delete this.stages[k];
+    for (const k of Object.keys(this.maxStages)) delete this.maxStages[k];
     this.tutorialDone = false;
+    this.boostActive = true;
     this.unlocked.clear();
     for (const k of Object.keys(this.bestLaps)) delete this.bestLaps[k];
     for (const k of Object.keys(this.boards)) delete this.boards[k];
@@ -280,3 +336,4 @@ export class Progress {
     this.save();
   }
 }
+

@@ -1432,6 +1432,75 @@ describe('Reha-Parcours', () => {
     // free after the tutorial: the car park and the crashtest ground; the rest is bought
     expect(TRACKS.filter((t) => t.unlockPrice === 0).map((t) => t.id).sort()).toEqual(['crashtest', 'parkplatz', TRAINING].sort());
     expect(trackOpen(progress, 'stadion')).toBe(false);
+    // it was for learning to drive, and that is done now: it is gone for good
+    expect(trackOpen(progress, TRAINING)).toBe(false);
+  });
+
+  it('keeps no lap times or ghost of the tutorial, done once or many times', () => {
+    const progress = new Progress();
+    const core = new GameCore(REHA, progress);
+    const ap = new Autopilot(REHA.line!);
+    drive(core, ap, 180, () => core.events.some((e) => e.type === 'graduated'));
+    expect(progress.tutorialDone).toBe(true);
+    expect(progress.bestLaps[REHA.id]).toBeUndefined();
+    expect(progress.boards[REHA.id]).toBeUndefined();
+    expect(core.ghost).toBeNull();
+    core.dispose();
+  });
+});
+
+describe('deactivating tuning and the boost battery', () => {
+  it('owns a tuning stage for good once bought, switches back to it for free, and sells nothing in between', () => {
+    const progress = new Progress();
+    progress.tutorialDone = true;
+    progress.stageIndex = 3;
+    expect(progress.maxStageIndex).toBe(3);
+    // drive a lower stage for a while…
+    progress.setStage(1);
+    expect(progress.stageIndex).toBe(1);
+    expect(progress.maxStageIndex).toBe(3);
+    expect(progress.nextStage).toBe(STAGES[4]);
+    // …two stages up again, still free, and still owns stage 2 in between
+    progress.setStage(3);
+    expect(progress.stageIndex).toBe(3);
+    // out of reach: not owned yet
+    progress.setStage(5);
+    expect(progress.stageIndex).toBe(3);
+  });
+
+  it('switches the boost battery off and on again without buying it twice', () => {
+    const progress = new Progress();
+    progress.tutorialDone = true;
+    progress.earn(1000);
+    expect(progress.hasBoost).toBe(false);
+    expect(progress.buyBoost()).toBe(true);
+    expect(progress.hasBoost).toBe(true);
+    const spent = progress.money;
+    progress.setBoostActive(false);
+    expect(progress.hasBoost).toBe(false);
+    expect(progress.boostOwned).toBe(true);
+    progress.setBoostActive(true);
+    expect(progress.hasBoost).toBe(true);
+    // switching it back on cost nothing more
+    expect(progress.money).toBe(spent);
+    // trying to switch on a battery never bought does nothing
+    const fresh = new Progress();
+    fresh.setBoostActive(true);
+    expect(fresh.hasBoost).toBe(false);
+  });
+});
+
+describe('Open World', () => {
+  it('has no laps and never ends, but still pays for bottles and stunts', () => {
+    const progress = new Progress();
+    progress.tutorialDone = true;
+    progress.stageIndex = 3;
+    const core = new GameCore(PARKPLATZ, progress, 'open');
+    expect(core.laps).toBe(false);
+    for (let i = 0; i < 60 * 30; i++) core.step({ ...idle, throttle: 1 });
+    expect(core.halted).toBe(false);
+    expect(core.progress.money).toBeGreaterThan(0);
+    core.dispose();
   });
 });
 
@@ -1443,13 +1512,18 @@ describe('modes', () => {
     return p;
   };
 
-  it('has every track of every mode, and each mode at least one that is free after the tutorial', () => {
+  it('has every track of every mode, and each mode but Freestyle at least one that is free after the tutorial', () => {
     for (const m of MODES) {
       for (const id of m.tracks) expect(TRACKS.some((t) => t.id === id)).toBe(true);
-      expect(m.tracks.some((id) => trackOpen(trained(), id))).toBe(true);
+      // (Freestyle is the one mode that is bought into on purpose: its two tracks both cost)
+      if (m.id !== 'freestyle') expect(m.tracks.some((id) => trackOpen(trained(), id))).toBe(true);
     }
     // the others need a line to follow
     for (const id of MODES.find((m) => m.id === 'race')!.tracks) expect(trackById(id).line).toBeTruthy();
+  });
+
+  it('keeps Freestyle to the airfield and the playground, both of them room to launch off things', () => {
+    expect(MODES.find((m) => m.id === 'freestyle')!.tracks.sort()).toEqual(['flugplatz', 'spielwiese'].sort());
   });
 
   it('races three others round the car park; they drive off and whoever is first over the line after three laps wins', () => {

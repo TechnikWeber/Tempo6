@@ -1,15 +1,15 @@
-import { L } from '../i18n';
+﻿import { L } from '../i18n';
 /** One step on the tuning ladder. Prices are in Schrauben (screws), the game's money. */
 export interface TuningStage {
   name: string;
   blurb: string;
   topSpeedKmh: number;
-  /** Motor acceleration in m/s². */
+  /** Motor acceleration in m/sÂ². */
   accel: number;
   price: number;
 }
 
-// The first vehicle starts out in the Reha-Parcours (12 km/h, whatever the brochure says);
+// The first vehicle starts out in the Tutorial (12 km/h, whatever the brochure says);
 // getting through once is the tutorial, and from then on every vehicle has the throttle off.
 // The ladder is short and quick: up to stage 5 in no time, all the way in about five minutes.
 // Vehicles, tracks and the boost cost more.
@@ -17,12 +17,12 @@ export const STAGES: TuningStage[] = [
   { name: L('Werkszustand', 'Factory Setting'), blurb: L('Zugelassen bis 6 km/h. Steht so im Prospekt.', 'Approved for 6 km/h. Says so in the brochure.'), topSpeedKmh: 12, accel: 3.7, price: 0 },
   { name: L('Drossel raus', 'Limiter Out'), blurb: L('Der kleine Stecker unterm Sitz war eh locker.', 'The little plug under the seat was loose anyway.'), topSpeedKmh: 18, accel: 4.7, price: 0 },
   { name: L('Reifen aufgepumpt', 'Tyres Pumped Up'), blurb: L('Zum ersten Mal seit 2009.', 'For the first time since 2009.'), topSpeedKmh: 24, accel: 5.5, price: 20 },
-  { name: L('Zweitakku vom Nachbarn', 'Neighbour’s Spare Battery'), blurb: L('Er merkt es frühestens Dienstag.', 'He won’t notice before Tuesday.'), topSpeedKmh: 30, accel: 6.2, price: 20 },
+  { name: L('Zweitakku vom Nachbarn', 'Neighbourâ€™s Spare Battery'), blurb: L('Er merkt es frÃ¼hestens Dienstag.', 'He wonâ€™t notice before Tuesday.'), topSpeedKmh: 30, accel: 6.2, price: 20 },
   { name: L('Akkuschrauber-Motor', 'Cordless Drill Motor'), blurb: L('18 Volt pure Gewalt.', '18 volts of pure violence.'), topSpeedKmh: 37, accel: 6.9, price: 20 },
   { name: L('Waschmaschinenmotor', 'Washing Machine Motor'), blurb: L('Schleudergang: 1400 Umdrehungen.', 'Spin cycle: 1400 rpm.'), topSpeedKmh: 45, accel: 7.6, price: 25 },
   { name: L('Starkstrom', 'Three-Phase Power'), blurb: L('Die rote Dose im Keller.', 'The red socket in the basement.'), topSpeedKmh: 54, accel: 8.4, price: 40 },
   { name: L('Sahnekapsel-Lachgas', 'Whipped-Cream Nitrous'), blurb: L('Vierzig Kapseln, ein Traum.', 'Forty cartridges, a dream.'), topSpeedKmh: 64, accel: 9.6, price: 55 },
-  { name: L('Laubbläser-Triebwerk', 'Leaf Blower Jet'), blurb: L('Die Krankenkasse darf das nie erfahren.', 'The health insurer must never find out.'), topSpeedKmh: 75, accel: 11.0, price: 70 },
+  { name: L('LaubblÃ¤ser-Triebwerk', 'Leaf Blower Jet'), blurb: L('Die Krankenkasse darf das nie erfahren.', 'The health insurer must never find out.'), topSpeedKmh: 75, accel: 11.0, price: 70 },
 ];
 
 
@@ -108,3 +108,4 @@ export function formatMoney(screws: number): string {
   const n = Math.round(screws);
   return `${n} ${n === 1 ? L('Schraube', 'screw') : L('Schrauben', 'screws')}`;
 }
+

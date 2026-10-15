@@ -119,13 +119,25 @@ export class Hud {
         this.set(this.lapSub, core.finished ? L('Im Ziel', 'Finished') : `${L('Runde', 'Lap')} ${Math.min(RACE.laps, race.laps + 1)} / ${RACE.laps}`);
         this.set(this.lapBest, race.running && !core.finished ? formatTime(race.lapTime) : '');
         break;
-      case 'freestyle':
-        // the time left up top; the run in progress and the session so far below
+      case 'freestyle': {
+        // the time left up top; the big number always shows the session total, the open chain
+        // included as it grows, so the points earned just now are never out of sight
+        const open = Math.round(core.stunts.pending);
         this.set(this.lapLabel, L('Noch', 'Left'));
         this.set(this.lapTime, formatTime(core.timeLeft).replace(/\.\d+$/, ''));
-        this.set(this.lapSub, core.stunts.chain ? `${L('Kette', 'Chain')} +${Math.round(core.stunts.pending)} ×${num(core.stunts.multiplier)} ·` : `${L('Bisher', 'So far')}`);
-        this.set(this.lapBest, core.stunts.chain ? `${core.sessionTotal}` : `${core.sessionTotal}${record ? ` / ${record}` : ''}`);
+        this.set(this.lapSub, core.stunts.chain ? `${L('Kette', 'Chain')} ×${num(core.stunts.multiplier)}` : L('Bisher', 'So far'));
+        this.set(this.lapBest, `${core.sessionTotal + open}${!core.stunts.chain && record ? ` / ${record}` : ''}`);
         break;
+      }
+      case 'open': {
+        // no clock, no laps: just what driving around has earned so far, the open chain included
+        const open = Math.round(core.stunts.pending);
+        this.set(this.lapLabel, L('Frei', 'Free'));
+        this.set(this.lapTime, L('ohne Limit', 'no limit'));
+        this.set(this.lapSub, core.stunts.chain ? `${L('Kette', 'Chain')} ×${num(core.stunts.multiplier)}` : L('Verdient', 'Earned'));
+        this.set(this.lapBest, `${core.sessionTotal + open}`);
+        break;
+      }
       case 'crash':
         this.set(this.lapLabel, 'Crash');
         this.set(this.lapTime, core.crash.started ? `${core.crash.score} ${L('Punkte', 'points')}` : L('Gas!', 'Floor it!'));
@@ -140,7 +152,7 @@ export class Hud {
     // what the lap has earned so far and is not safe yet
     const open = Math.round(core.stunts.pending);
     // (freestyle shows its run in the big panel, the crashtest has no tricks)
-    this.pending.hidden = (open === 0 && core.stunts.chain === 0) || core.mode === 'freestyle' || core.mode === 'crash';
+    this.pending.hidden = (open === 0 && core.stunts.chain === 0) || core.mode === 'freestyle' || core.mode === 'open' || core.mode === 'crash';
     this.set(this.pending, `+${open} ${L('offen', 'pending')}${core.stunts.multiplier > 1 ? ` · ×${num(core.stunts.multiplier)}` : ''}`);
     const kmh = Math.abs(sim.vehicle.speed) * 3.6;
     this.set(this.speed, num(kmh));

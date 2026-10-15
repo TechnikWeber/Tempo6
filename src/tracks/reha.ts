@@ -212,8 +212,8 @@ const STREET: [number, number][] = [[-190, ROAD_Z + 2], [190, ROAD_Z + 2], [190,
 
 export const REHA: TrackDef = {
   id: 'reha',
-  name: L('Reha-Parcours', 'Rehab Course'),
-  blurb: L('Wippe, Wackelbrücke, Drehscheibe, Schwebebalken. Hier lernst du fahren, mit 12 km/h.', 'Seesaw, wobble bridge, turntable, balance beam. This is where you learn to drive, at 12 km/h.'),
+  name: 'Tutorial',
+  blurb: L('Wippe, Wackelbrücke, Drehscheibe, Schwebebalken. Hier lernst du fahren, mit 12 km/h. Einmal durch, dann ist es vorbei.', 'Seesaw, wobble bridge, turntable, balance beam. This is where you learn to drive, at 12 km/h. Once through, it is done.'),
   unlockPrice: 0,
   lapPay: 8,
   spawn: { pos: [-12, 0.5, S], yaw: EAST },

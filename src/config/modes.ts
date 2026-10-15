@@ -1,5 +1,5 @@
 import { L } from '../i18n';
-export type ModeId = 'time' | 'race' | 'freestyle' | 'crash';
+export type ModeId = 'time' | 'race' | 'freestyle' | 'open' | 'crash';
 
 export interface ModeDef {
   id: ModeId;
@@ -33,7 +33,14 @@ export const MODES: ModeDef[] = [
     id: 'freestyle',
     name: 'Freestyle',
     blurb: L('Drei Minuten, keine Runden: Stunts aneinanderreihen. Jede Kette zahlt, sobald sie endet, am Ende wird abgerechnet.', 'Three minutes, no laps: string stunts together. Every chain pays as soon as it ends, and it all adds up at the end.'),
-    tracks: ['spielwiese', 'flugplatz', 'parkplatz', 'crashtest', 'reha'],
+    // (the open airfield and the fairground: room for a run-up and things to launch off)
+    tracks: ['flugplatz', 'spielwiese'],
+  },
+  {
+    id: 'open',
+    name: L('Freie Fahrt', 'Open World'),
+    blurb: L('Ohne Zeit, ohne Runden, kein Limit: fahr, wie du willst. Flaschen und Stunts zahlen trotzdem.', 'No time, no laps, no limit: drive however you like. Bottles and stunts still pay.'),
+    tracks: ['parkplatz', 'flugplatz', 'spielwiese'],
   },
   {
     id: 'crash',
