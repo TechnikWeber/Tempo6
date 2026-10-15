@@ -29,7 +29,7 @@ const statics: BoxDef[] = [
 // scissor mechanism, up on a low hydraulic pump, a shallow ramp up from the roller door's
 // side. The platform's top is a solid static — the vehicle actually stands on it, not through it.
 const LIFT_HALF = 1.0;
-const LIFT_H = 0.3;
+const LIFT_H = 0.5;
 const PLATE_T = 0.05;
 statics.push({ pos: [0, LIFT_H - PLATE_T, 0], half: [LIFT_HALF, PLATE_T, LIFT_HALF], color: YELLOW });
 
@@ -38,7 +38,10 @@ const decor: DecorDef[] = [
   { type: 'box', pos: [0, 0.03, 0], half: [LIFT_HALF + 0.15, 0.03, LIFT_HALF + 0.15], color: 0x3a3c3e },
   { type: 'box', pos: [0, LIFT_H + 0.002, 0], half: [LIFT_HALF - 0.12, 0.002, LIFT_HALF - 0.12], color: 0x2a2a2a },
   { type: 'label', pos: [0, LIFT_H + 0.003, -LIFT_HALF + 0.35], half: [0.3, 0, 0.6], yaw: Math.PI, text: 'TUNING' },
-  { type: 'ring', pos: [0, LIFT_H + 0.004, 0], half: [LIFT_HALF + 0.22, 0, 0.07], color: YELLOW },
+  // a painted ring, inset well clear of the platform's edge so it never crosses the ramp
+  // (same height as the ramp's own surface there, which used to flicker against it), raised
+  // a bit further and a different colour from the platform's yellow so it reads as its own thing
+  { type: 'ring', pos: [0, LIFT_H + 0.02, 0], half: [LIFT_HALF - 0.13, 0, 0.05], color: 0xff6a13 },
 ];
 // the ramp up from the front (the roller door's side), its top landing flush on the platform
 const RAMP_ANGLE = 0.15;
