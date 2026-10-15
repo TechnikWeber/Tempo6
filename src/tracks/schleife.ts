@@ -27,7 +27,7 @@ const ROAD = road([
 // No boundary wall: the lot's outer rim rises into hills instead, well above the highest
 // ridge the road itself climbs to, eased in over the last 10 m so the village and the
 // stands at the bends — both set back further than that — stand on their own flat ground.
-const TERRAIN = rimHills(terrainFor(ROAD, [LOT_X, LOT_Z], GRASS), 10, 35);
+const TERRAIN = rimHills(terrainFor(ROAD, [LOT_X, LOT_Z], GRASS), 10, 20);
 
 // (no floor: the terrain is the ground)
 const statics: BoxDef[] = [];
@@ -88,5 +88,4 @@ export const SCHLEIFE: TrackDef = {
   line: ROAD.line,
   roadHalf: WIDTH / 2,
   terrain: TERRAIN,
-  weather: 'storm',
 };

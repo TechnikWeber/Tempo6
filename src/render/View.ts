@@ -520,7 +520,7 @@ export class View {
     this.scene.add(level);
     this.skids.clear();
     this.camReady = false;
-    this.buildWeather(track.weather);
+    this.buildWeather(this.rollWeather());
     this.randomizeTimeOfDay();
   }
 
@@ -559,8 +559,20 @@ export class View {
     this.lightningFlash = 0;
   }
 
+  /**
+   * Every track can get weather, rolled fresh each time it is picked rather than fixed to
+   * where it is: clear, most of the time, so it stays the exception that makes the odd grim
+   * or snowy lap stand out instead of the usual look.
+   */
+  private rollWeather(): 'snow' | 'storm' | undefined {
+    const r = Math.random();
+    if (r < 0.15) return 'snow';
+    if (r < 0.3) return 'storm';
+    return undefined;
+  }
+
   /** Snow or a rain storm, built fresh for the track just loaded; neither, on a clear one. */
-  private buildWeather(kind: TrackDef['weather']): void {
+  private buildWeather(kind: 'snow' | 'storm' | undefined): void {
     if (this.weather) {
       this.scene.remove(this.weather);
       this.weather.geometry.dispose();

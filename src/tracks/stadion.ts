@@ -24,7 +24,7 @@ const ROAD = road([
 // No boundary wall: the lot's outer rim rises into hills instead, tall enough that nothing
 // is seen over or past them. Eased in over the last 10 m, so the stands and car park (both
 // well inside that) stand on the flat ground the road itself was given.
-const TERRAIN = rimHills(terrainFor(ROAD, [LOT_X, LOT_Z], GRASS), 10, 35);
+const TERRAIN = rimHills(terrainFor(ROAD, [LOT_X, LOT_Z], GRASS), 10, 15);
 
 // (no floor: the terrain is the ground)
 const statics: BoxDef[] = [
@@ -90,5 +90,4 @@ export const STADION: TrackDef = {
   line: ROAD.line,
   roadHalf: WIDTH / 2,
   terrain: TERRAIN,
-  weather: 'snow',
 };
