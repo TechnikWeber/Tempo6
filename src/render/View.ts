@@ -3,6 +3,7 @@ import {
   AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, CapsuleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
   Float32BufferAttribute, Fog, Group,
   HemisphereLight, IcosahedronGeometry, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
+  Points, PointsMaterial,
   Quaternion, RingGeometry, Scene, Shape, ShapeGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
 } from 'three';
 import { groundY, HANDLING, VEHICLES, type VehicleId, type VehicleSpec } from '../config/vehicles';
@@ -22,11 +23,13 @@ const SKY = 0x9fd3f0;
 const GHOST = new MeshStandardMaterial({ color: 0xdfe9f5, transparent: true, opacity: 0.18, depthWrite: false, roughness: 1 });
 const SHADOW_HALF = 22;
 const SHADOW_MAP = 2048;
-// The sun's direction and the two axes of its shadow map.
-const SUN = new Vector3(18, 34, -12);
-const SUN_DIR = SUN.clone().normalize();
-const SUN_RIGHT = new Vector3(0, 1, 0).cross(SUN_DIR).normalize();
-const SUN_UP = SUN_DIR.clone().cross(SUN_RIGHT);
+// The sun's direction and the two axes of its shadow map. Not the time of day any more --
+// randomizeTimeOfDay() below picks a fresh one, on much the same lines, each time a track
+// is loaded (so the menu's own preview already shows it) and each time the ride changes.
+let SUN = new Vector3(18, 34, -12);
+let SUN_DIR = SUN.clone().normalize();
+let SUN_RIGHT = new Vector3(0, 1, 0).cross(SUN_DIR).normalize();
+let SUN_UP = SUN_DIR.clone().cross(SUN_RIGHT);
 const snapped = new Vector3();
 const qa = new Quaternion();
 const qb = new Quaternion();
@@ -336,6 +339,14 @@ export class View {
   private camReady = false;
   private lean = 0;
   private time = 0;
+  private readonly hemi = new HemisphereLight(0xcfe8ff, 0x5a5f55, 1.1);
+  private readonly ambient = new AmbientLight(0xffffff, 0.25);
+  /** Snow or rain, falling round wherever the vehicle is; null on a clear track. */
+  private weather: Points | null = null;
+  private weatherKind: 'snow' | 'storm' | undefined;
+  /** Storm only: seconds until the next flash, and how far into the current one (0 = none). */
+  private nextLightning = 0;
+  private lightningFlash = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true });
@@ -345,7 +356,7 @@ export class View {
 
     this.scene.background = new Color(SKY);
     this.scene.fog = new Fog(SKY, 80, 320);
-    this.scene.add(new HemisphereLight(0xcfe8ff, 0x5a5f55, 1.1), new AmbientLight(0xffffff, 0.25));
+    this.scene.add(this.hemi, this.ambient);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
     const sc = this.sun.shadow.camera;
@@ -509,6 +520,122 @@ export class View {
     this.scene.add(level);
     this.skids.clear();
     this.camReady = false;
+    this.buildWeather(track.weather);
+    this.randomizeTimeOfDay();
+  }
+
+  /**
+   * A fresh time of day, picked at random -- not tied to the clock, just varied. Called for
+   * every track load (so the menu's own preview already shows it) and again whenever the
+   * ride changes there, without reloading the track. A storm forces its own overcast mood
+   * regardless of what is rolled; snow just cools it a little.
+   */
+  randomizeTimeOfDay(): void {
+    const storm = this.weatherKind === 'storm';
+    const snow = this.weatherKind === 'snow';
+    const elevation = (storm ? 55 + Math.random() * 20 : 20 + Math.random() * 55) * (Math.PI / 180);
+    const azimuth = Math.random() * Math.PI * 2;
+    const dist = 32;
+    SUN = new Vector3(Math.cos(elevation) * Math.cos(azimuth), Math.sin(elevation), Math.cos(elevation) * Math.sin(azimuth)).multiplyScalar(dist);
+    SUN_DIR = SUN.clone().normalize();
+    SUN_RIGHT = new Vector3(0, 1, 0).cross(SUN_DIR).normalize();
+    SUN_UP = SUN_DIR.clone().cross(SUN_RIGHT);
+    // low sun = warm and soft, high sun = bright and nearly white; a storm is grey throughout
+    const low = 1 - Math.min(1, (elevation - Math.PI / 12) / (Math.PI / 4.5));
+    const warm = new Color(0xffb067), neutral = new Color(0xfff1d6), sky = new Color(storm ? 0x7a828c : 0x9fd3f0);
+    const sunColor = storm ? new Color(0x9aa3ac) : neutral.clone().lerp(warm, Math.max(0, low));
+    const skyColor = storm ? sky : sky.clone().lerp(new Color(0xffcf9e), Math.max(0, low) * 0.55);
+    this.sun.color.copy(sunColor);
+    this.sun.intensity = storm ? 0.9 : 2.1 + (1 - Math.max(0, low)) * 0.8;
+    this.hemi.intensity = storm ? 0.5 : 1.0 + (1 - Math.max(0, low)) * 0.25;
+    this.ambient.intensity = storm ? 0.35 : snow ? 0.32 : 0.22 + Math.max(0, low) * 0.08;
+    this.scene.background = skyColor;
+    if (this.scene.fog instanceof Fog) {
+      this.scene.fog.color.copy(skyColor);
+      this.scene.fog.near = storm ? 22 : 80;
+      this.scene.fog.far = storm ? 130 : 320;
+    }
+    this.nextLightning = storm ? 3 + Math.random() * 6 : Infinity;
+    this.lightningFlash = 0;
+  }
+
+  /** Snow or a rain storm, built fresh for the track just loaded; neither, on a clear one. */
+  private buildWeather(kind: TrackDef['weather']): void {
+    if (this.weather) {
+      this.scene.remove(this.weather);
+      this.weather.geometry.dispose();
+      (this.weather.material as PointsMaterial).dispose();
+      this.weather = null;
+    }
+    this.weatherKind = kind;
+    if (!kind) return;
+    const count = kind === 'snow' ? 1400 : 2200;
+    const span = 70, height = 34;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * span * 2;
+      positions[i * 3 + 1] = Math.random() * height;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * span * 2;
+    }
+    const geo = new BufferGeometry();
+    geo.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    const points = new Points(
+      geo,
+      new PointsMaterial({
+        color: kind === 'snow' ? 0xffffff : 0xcfd8e3,
+        size: kind === 'snow' ? 0.22 : 0.1,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: kind === 'snow' ? 0.9 : 0.55,
+        depthWrite: false,
+      }),
+    );
+    points.frustumCulled = false;
+    points.userData.span = span;
+    points.userData.height = height;
+    points.userData.fall = kind === 'snow' ? 2.2 : 16;
+    points.userData.drift = kind === 'snow' ? 0.5 : 2.5;
+    this.weather = points;
+    this.scene.add(points);
+  }
+
+  /** Falls the weather round wherever `center` is, and times the storm's lightning. */
+  private animateWeather(dt: number, center: Vector3): void {
+    const w = this.weather;
+    if (w) {
+      w.position.x = center.x;
+      w.position.z = center.z;
+      const span = w.userData.span as number, height = w.userData.height as number;
+      const fall = (w.userData.fall as number) * dt, drift = w.userData.drift as number;
+      const pos = w.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) - fall;
+        let x = pos.getX(i) + drift * dt;
+        if (y < 0) {
+          y = height;
+          x = (Math.random() - 0.5) * span * 2;
+          pos.setZ(i, (Math.random() - 0.5) * span * 2);
+        }
+        pos.setX(i, x);
+        pos.setY(i, y);
+      }
+      pos.needsUpdate = true;
+    }
+    if (this.weatherKind !== 'storm') return;
+    if (this.lightningFlash > 0) {
+      this.lightningFlash = Math.max(0, this.lightningFlash - dt);
+      const share = this.lightningFlash / 0.18;
+      this.sun.intensity = 0.9 + share * 7;
+      this.ambient.intensity = 0.35 + share * 1.4;
+      if (this.lightningFlash === 0) {
+        this.nextLightning = 3 + Math.random() * 7;
+        this.sun.intensity = 0.9;
+        this.ambient.intensity = 0.35;
+      }
+      return;
+    }
+    this.nextLightning -= dt;
+    if (this.nextLightning <= 0) this.lightningFlash = 0.18;
   }
 
   /**
@@ -734,6 +861,7 @@ export class View {
     core.sim.movers.forEach((m, i) => place(this.moverMeshes[i], m.tracked, alpha));
     this.placeRivals(core, alpha);
     this.animateSky(dt);
+    this.animateWeather(dt, model.root.position);
     for (const s of this.smokes) {
       s.children.forEach((puff, i) => {
         const f = (this.time * 0.45 + (puff.userData.phase as number)) % 1;

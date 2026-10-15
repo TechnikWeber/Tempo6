@@ -90,4 +90,5 @@ export const STADION: TrackDef = {
   line: ROAD.line,
   roadHalf: WIDTH / 2,
   terrain: TERRAIN,
+  weather: 'snow',
 };

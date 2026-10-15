@@ -387,12 +387,18 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 
 /* The tuning garage: the vehicle on its bay in the middle, the ladder on the right. */
 #garage { position: fixed; inset: 0; display: flex; justify-content: flex-end; align-items: center; padding: 20px; pointer-events: none; user-select: none; }
-#garage .panel { pointer-events: auto; width: min(380px, 100%); max-height: 100%; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+/* min-width: 0 overrides the flex item's default min-width: auto -- without it, a long
+   stage name in the ladder below forces this panel (and the whole page) wider than its
+   own `width`, which is exactly how it used to run off the side of a phone screen. */
+#garage .panel { pointer-events: auto; width: min(380px, 100%); min-width: 0; max-height: 100%; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding: 16px; box-sizing: border-box; }
 #garage h2 { margin: 0; font-size: 22px; color: var(--accent); }
 #garage h3 { margin: 8px 0 0; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.7; }
 #garage .money { margin: 0; font-size: 15px; }
-#garage .ladder { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
-#garage .ladder li { display: grid; grid-template-columns: 1.6em 1fr auto auto; gap: 8px; align-items: baseline; padding: 4px 8px; border-radius: 8px; font-size: 14px; }
+#garage .ladder { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+/* minmax(0, 1fr), not a bare 1fr: a grid track's default minimum is its content's width too,
+   so the name column needs the same override to actually give ground to the other three. */
+#garage .ladder li { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto auto; gap: 6px 8px; align-items: baseline; padding: 4px 8px; border-radius: 8px; font-size: 14px; min-width: 0; }
+#garage .ladder .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #garage .ladder li.done { opacity: 0.55; }
 #garage .ladder li.now { background: rgb(255 210 63 / 0.18); outline: 1px solid var(--accent); }
 #garage .ladder li.next { background: rgb(255 255 255 / 0.08); }
@@ -409,7 +415,16 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #garage .profile.on { outline: 2px solid var(--accent); }
 #garage .said { margin: 0; min-height: 1.3em; font-size: 14px; color: var(--accent); }
 #garage .back { align-self: flex-start; }
-@media (max-width: 700px) { #garage { align-items: flex-end; padding: 10px; } #garage .panel { max-height: 60vh; } }
+@media (max-width: 700px) {
+  #garage { align-items: flex-end; padding: 10px; overflow-x: hidden; }
+  #garage .panel { max-height: 60vh; }
+}
+/* Phone width: the ladder's price column gives up some of its own floor too, on top of the
+   name column already shrinking above -- between the two there is room to spare now. */
+@media (max-width: 420px) {
+  #garage .ladder li { font-size: 13px; gap: 5px 6px; padding: 4px 6px; }
+  #garage .ladder .price { min-width: 4.6em; font-size: 12px; }
+}
 
 /* The purse top right; along the bottom the settings (folded away) and full screen. */
 #menu header .purse { margin-left: auto; }

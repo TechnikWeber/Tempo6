@@ -191,6 +191,11 @@ export interface TrackDef {
   roadHalf?: number;
   /** With terrain the track brings no floor of its own in `statics`. */
   terrain?: TerrainDef;
+  /**
+   * Snow falling, or a rain storm with lightning and its own low fog; neither, left out. The
+   * time of day is still random on top of this -- a storm just keeps it overcast throughout.
+   */
+  weather?: 'snow' | 'storm';
 }
 
 /** Collider dimensions per prop type, shared by physics and visuals. */

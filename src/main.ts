@@ -95,6 +95,8 @@ const menu = new Menu(progress, {
   onVehicle(id) {
     core.setVehicle(id);
     view.setVehicle(core.sim.vehicle.spec, progress.hasBoost);
+    // a fresh time of day for the preview each time the ride changes, same as picking a track
+    view.randomizeTimeOfDay();
   },
   onTrack: loadTrack,
   onStart() {
