@@ -160,10 +160,15 @@ export class Progress {
     return chosen !== undefined ? chosen : this.tutorialDone ? 1 : 0;
   }
 
-  /** The tutorial is done: the first stage comes free, and the tutorial is over. */
+  /**
+   * The tutorial is done: the first stage comes free, the tutorial is over, and -- since every
+   * mode but Zeitrennen was locked until now, so this is the first real choice of one -- Rennen
+   * becomes the one to land on, rather than keeping the tutorial's own Zeitrennen by default.
+   */
   graduate(): void {
     if (this.stageIndex === 0) this.stageIndex = 1;
     this.tutorialDone = true;
+    this.mode = 'race';
     this.save();
   }
 

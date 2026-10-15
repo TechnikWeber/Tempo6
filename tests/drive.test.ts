@@ -1448,6 +1448,8 @@ describe('Reha-Parcours', () => {
     expect(trackOpen(progress, PARKPLATZ.id)).toBe(false);
     progress.graduate();
     expect(progress.tutorialDone).toBe(true);
+    // Zeitrennen was the only mode open during the tutorial; Rennen is the one to land on now
+    expect(progress.mode).toBe('race');
     for (const [id] of ALL) expect(progress.stageOf(id)).toBeGreaterThanOrEqual(1);
     expect(progress.stageOf('komet')).toBe(1);
     expect(trackOpen(progress, PARKPLATZ.id)).toBe(true);
