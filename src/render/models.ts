@@ -186,6 +186,7 @@ const DRIVERS: Record<VehicleSpec['id'], DriverStyle> = {
   komet: { shirt: 0x3f8f5f, trousers: 0x8a6f4d, hair: 0xf0f0f0, arms: 'forward', hat: 0x8a8068 },
   avantifx: { shirt: 0xf2f2f2, trousers: 0x2b2b30, hair: 0xc9a227, arms: 'rest', hat: 0x29b6f6 },
   arrivo: { shirt: 0x2f2f35, trousers: 0xb9b2a0, hair: 0x1c1c1c, arms: 'rest', scarf: 0x7b2d8e },
+  sprite: { shirt: 0x3a6ea5, trousers: 0x25252a, hair: 0x2a2018, arms: 'rest', hat: 0x1565c0 },
   piepmatz: { shirt: 0xf7c8d8, trousers: 0x6a6f80, hair: 0xe9e9e9, arms: 'forward', hat: 0xffd23f },
   tiger: { shirt: 0x7a5a3a, trousers: 0x4a4a52, hair: 0xdadada, arms: 'forward', hat: 0x1a1a1a },
   wagen: { shirt: 0x24457a, trousers: 0x3a3a40, hair: 0xb0b0b0, arms: 'forward', hat: 0x1f3f7a, beard: 0xd0d0d0 },

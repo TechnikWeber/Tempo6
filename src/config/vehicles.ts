@@ -1,6 +1,6 @@
 import { L } from '../i18n';
 export type VehicleId =
-  | 'trex' | 'avanti' | 'avantifx' | 'orkan'
+  | 'trex' | 'avanti' | 'avantifx' | 'orkan' | 'sprite'
   | 'arrivo'
   | 'eskalation' | 'enix' | 'schubs'
   | 'ekaptn'
@@ -255,6 +255,39 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     gripFactor: 1,
     look: 'front',
     colors: { body: 0x17181c, accent: 0x29b6f6, seat: 0x101114, hub: 0x29b6f6 },
+  }),
+
+  sprite: define({
+    id: 'sprite',
+    label: L('Alber Esprit', 'Alber Esprit'),
+    profiles: [
+      BASE,
+      prof(L('Starrrahmen', 'Rigid Frame'), L('Kein Gelenk zum Klappen heißt kein Gelenk zum Wackeln. Direkt und stramm.', 'No hinge to fold means no hinge to flex. Direct and taut.'), { sharp: 1.15, grip: 1.1, tip: 0.9, turn: 0.95 }),
+      prof(L('Renngestell', 'Racing Frame'), L('So leicht gemacht, wie es ohne Klappgelenk eben geht.', 'As light as it gets without a folding hinge.'), { accel: 1.2, turn: 1.15, sharp: 1.1 }),
+    ],
+    category: 'power',
+    kind: L('Elektrorollstuhl · Heckantrieb, starr', 'Power wheelchair · rear-wheel drive, rigid'),
+    blurb: L('Quasi ein Arrivo, nur dass hier niemand auf die Idee kam, ein Gelenk einzubauen. Steifer, etwas schwerer, dafür nichts, was im Fahrbetrieb nachgibt.', 'Basically an Arrivo, except nobody here thought to fit a hinge. Stiffer, a touch heavier, but nothing that gives while driving.'),
+    stats: { tempo: 3, antritt: 4, wendig: 4, standfest: 3 },
+    unlockPrice: 85,
+    mass: 125,
+    half: [0.29, 0.21, 0.44],
+    clearance: 0.13,
+    com: [0, -0.1, 0],
+    inertia: [16, 14, 10],
+    wheels: [
+      ...pair(0.3, { z: -0.23, radius: 0.16, load: 0.3, drive: true, turn: true }),
+      ...pair(0.23, { z: 0.36, radius: 0.09, load: 0.2, caster: true }),
+    ],
+    maxYawRate: 2.6,
+    maxSteer: 0,
+    wheelbase: 0.59,
+    speedFactor: 1.02,
+    accelFactor: 1.08,
+    tipFactor: 0.95,
+    gripFactor: 1,
+    look: 'rear',
+    colors: { body: 0x1c1f24, accent: BLUE, seat: 0x15161a, hub: 0xc9ccd1 },
   }),
 
   arrivo: define({
@@ -597,7 +630,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
 /** Menu groups. The titles stay close to what the trade calls these things. */
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
-  { id: 'power', title: L('Bordstein-Brecher', 'Kerb Crushers'), vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
+  { id: 'power', title: L('Bordstein-Brecher', 'Kerb Crushers'), vehicles: ['trex', 'avanti', 'avantifx', 'orkan', 'sprite'] },
   { id: 'folder', title: L('Falt(en)wunder', 'Fold Wonders'), vehicles: ['arrivo'] },
   { id: 'push', title: 'Power Addons', vehicles: ['eskalation', 'enix', 'schubs'] },
   { id: 'tractor', title: L('Vorderlader', 'Front Loaders'), vehicles: ['ekaptn'] },
