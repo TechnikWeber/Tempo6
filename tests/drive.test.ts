@@ -522,20 +522,23 @@ describe('boost battery', () => {
     expect(sim.vehicle.speed).toBeLessThan(top * 1.03);
   });
 
-  it('recharges while driving, faster while slowing down, and waits for some charge before firing again', () => {
+  it('does not recharge while driving or slowing down -- only starting the course over tops it back up', () => {
     const sim = fitted(VEHICLES.trex, 40, 7.4);
     drive(sim, 6, 1);
     boost(sim, 3);
     expect(sim.vehicle.boostCharge).toBe(0);
     drive(sim, 1, 1);
-    const cruising = sim.vehicle.boostCharge;
-    expect(cruising).toBeCloseTo(1 / BOOST.recharge, 2);
-    // not enough yet
-    boost(sim, 0.2);
-    expect(sim.vehicle.boosting).toBe(false);
+    expect(sim.vehicle.boostCharge).toBe(0);
+    // slowing down used to recharge it faster; now it does nothing either
     drive(sim, 1, 0);
-    expect(sim.vehicle.boostCharge - cruising).toBeGreaterThan((1 / BOOST.recharge) * 2);
-    drive(sim, BOOST.recharge, 1);
+    expect(sim.vehicle.boostCharge).toBe(0);
+    boost(sim, 0.5);
+    expect(sim.vehicle.boosting).toBe(false);
+    // driven dry for as long as a full recharge used to take: still nothing
+    drive(sim, 10, 1);
+    expect(sim.vehicle.boostCharge).toBe(0);
+    // back to the start: a fresh battery, same as a new course run
+    sim.respawn();
     expect(sim.vehicle.boostCharge).toBe(1);
     boost(sim, 0.5);
     expect(sim.vehicle.boosting).toBe(true);

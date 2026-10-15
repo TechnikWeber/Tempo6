@@ -41,10 +41,6 @@ export const BOOST = {
   price: 250,
   /** Seconds a full charge lasts. */
   duration: 2.4,
-  /** Seconds from empty to full while just driving along. */
-  recharge: 10,
-  /** Charging is this much faster while slowing down. */
-  recuperation: 2.5,
   /** Charge needed before it fires again after running dry. */
   minCharge: 0.25,
   /** Extra top speed at full boost: a share of the current top speed plus a fixed bit (m/s). */

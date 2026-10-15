@@ -650,17 +650,12 @@ export class Vehicle {
   private updateBoost(input: DriveInput, dt: number): void {
     const want = !!input.boost && this.boostFitted && input.throttle >= 0 && !input.handbrake;
     const was = this.boosting;
-    // Once empty it has to recover a little before it fires again.
+    // A battery, not a capacitor: once run below minCharge it will not fire again until
+    // topped back up, which only happens by starting the course over -- see place() below.
     if (this.boosting) this.boosting = want && this.boostCharge > 0;
     else this.boosting = want && this.boostCharge >= BOOST.minCharge;
     this.boostKick = this.boosting && !was ? BOOST_KICK : Math.max(0, this.boostKick - dt);
-    if (this.boosting) {
-      this.boostCharge = Math.max(0, this.boostCharge - dt / BOOST.duration);
-    } else if (!input.boost) {
-      // Recuperation: slowing down charges it faster.
-      const slowing = Math.abs(this.speed) > 1 && input.throttle * this.speed <= 0;
-      this.boostCharge = Math.min(1, this.boostCharge + (dt / BOOST.recharge) * (slowing ? BOOST.recuperation : 1));
-    }
+    if (this.boosting) this.boostCharge = Math.max(0, this.boostCharge - dt / BOOST.duration);
     const step = dt / (this.boosting ? BOOST.rampUp : BOOST.rampDown);
     this.boostRamp = clamp(this.boostRamp + (this.boosting ? step : -step), 0, 1);
     // Smoothstep: no kick at either end.
