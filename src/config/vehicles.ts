@@ -268,7 +268,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
       prof(L('Federgewicht', 'Featherweight'), L('Springt los, dreht sofort, fällt gern um.', 'Leaps off, turns at once, likes falling over.'), { accel: 1.4, turn: 1.3, sharp: 1.15, tip: 1.0, assist: 0.8, brake: 1.2 }),
       prof(L('Carbon-Renner', 'Carbon Racer'), L('Steif, schnell, klebt in der Kurve.', 'Stiff, fast, glued to the corner.'), { speed: 1.2, sharp: 1.2, grip: 1.2, tip: 0.8, turn: 0.9 }),
     ],
-    category: 'power',
+    category: 'folder',
     kind: L('Elektrorollstuhl · Heckantrieb, Batterie vorn unterm Sitz', 'Power wheelchair · rear-wheel drive, battery under the seat, up front'),
     blurb: L('Baugleich mit dem Arrivo Karton, bis auf eine Stelle: die Batterie sitzt vorn unterm Sitz statt im Klappgelenk. Darum bleibt hier auch nichts mehr zum Zusammenklappen.', 'The same chair as the Arrivo Cardboard underneath, but for one thing: the battery sits up front, under the seat, instead of in the folding hinge. So there is nothing left here to fold.'),
     stats: { tempo: 3, antritt: 4, wendig: 4, standfest: 2 },
@@ -633,8 +633,8 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
 /** Menu groups. The titles stay close to what the trade calls these things. */
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
-  { id: 'power', title: L('Bordstein-Brecher', 'Kerb Crushers'), vehicles: ['trex', 'avanti', 'avantifx', 'orkan', 'sprite'] },
-  { id: 'folder', title: L('Falt(en)wunder', 'Fold Wonders'), vehicles: ['arrivo'] },
+  { id: 'power', title: L('Bordstein-Brecher', 'Kerb Crushers'), vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
+  { id: 'folder', title: L('Falt(en)wunder', 'Fold Wonders'), vehicles: ['arrivo', 'sprite'] },
   { id: 'push', title: 'Power Addons', vehicles: ['eskalation', 'enix', 'schubs'] },
   { id: 'tractor', title: L('Vorderlader', 'Front Loaders'), vehicles: ['ekaptn'] },
   { id: 'scooter', title: L('Seniorenraketen', 'Silver Rockets'), vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },

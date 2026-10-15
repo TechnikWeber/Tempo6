@@ -28,8 +28,8 @@ const statics: BoxDef[] = [
 // The lift: a platform sized to the vehicle plus a little margin (not a vast pad), on a
 // scissor mechanism, up on a low hydraulic pump, a shallow ramp up from the roller door's
 // side. The platform's top is a solid static — the vehicle actually stands on it, not through it.
-const LIFT_HALF = 1.0;
-const LIFT_H = 0.5;
+const LIFT_HALF = 0.75;
+const LIFT_H = 0.8;
 const PLATE_T = 0.05;
 statics.push({ pos: [0, LIFT_H - PLATE_T, 0], half: [LIFT_HALF, PLATE_T, LIFT_HALF], color: YELLOW });
 
@@ -37,18 +37,18 @@ const decor: DecorDef[] = [
   // the base plate on the floor, hazard stripes, an inset panel just proud of the platform's top
   { type: 'box', pos: [0, 0.03, 0], half: [LIFT_HALF + 0.15, 0.03, LIFT_HALF + 0.15], color: 0x3a3c3e },
   { type: 'box', pos: [0, LIFT_H + 0.002, 0], half: [LIFT_HALF - 0.12, 0.002, LIFT_HALF - 0.12], color: 0x2a2a2a },
-  { type: 'label', pos: [0, LIFT_H + 0.003, -LIFT_HALF + 0.35], half: [0.3, 0, 0.6], yaw: Math.PI, text: 'TUNING' },
+  { type: 'label', pos: [0, LIFT_H + 0.003, -LIFT_HALF + 0.3], half: [0.22, 0, 0.35], yaw: Math.PI, text: 'TUNING' },
   // a painted ring, inset well clear of the platform's edge so it never crosses the ramp
   // (same height as the ramp's own surface there, which used to flicker against it), raised
   // a bit further and a different colour from the platform's yellow so it reads as its own thing
   { type: 'ring', pos: [0, LIFT_H + 0.02, 0], half: [LIFT_HALF - 0.13, 0, 0.05], color: 0xff6a13 },
 ];
-// the ramp up from the front (the roller door's side), its top landing flush on the platform
-const RAMP_ANGLE = 0.15;
+// the ramp up from the front (the roller door's side), its top landing flush on the platform —
+// just the slope itself, no kerbs either side of it
+const RAMP_ANGLE = 0.22;
 const RAMP_LEN = LIFT_H / Math.sin(RAMP_ANGLE);
 const RAMP_PROJ = RAMP_LEN * Math.cos(RAMP_ANGLE);
 statics.push(ramp([0, LIFT_HALF + RAMP_PROJ], Math.PI, RAMP_LEN, LIFT_HALF * 2, RAMP_ANGLE, YELLOW));
-for (const s of [-1, 1]) decor.push({ type: 'box', pos: [s * LIFT_HALF, LIFT_H / 2, LIFT_HALF + RAMP_PROJ / 2], half: [0.03, LIFT_H / 2 + 0.02, RAMP_PROJ / 2], color: 0x2a2a2a });
 
 /** A thin diagonal beam at a fixed X, from (x, y0, z0) to (x, y1, z1): one arm of the scissor. */
 function beam(x: number, y0: number, z0: number, y1: number, z1: number, color: number): BoxDef {
