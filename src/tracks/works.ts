@@ -149,7 +149,7 @@ export function frame(x: number, z: number, yaw: number) {
 }
 
 /** A box in an object's frame. */
-function part(f: ReturnType<typeof frame>, yaw: number, lx: number, y: number, lz: number, hx: number, hy: number, hz: number, color: number): DecorDef {
+export function part(f: ReturnType<typeof frame>, yaw: number, lx: number, y: number, lz: number, hx: number, hy: number, hz: number, color: number): DecorDef {
   const [x, z] = f(lx, lz);
   return { type: 'box', pos: [x, y, z], half: [hx, hy, hz], yaw, color };
 }
