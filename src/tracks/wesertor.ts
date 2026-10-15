@@ -231,11 +231,13 @@ for (const [t, k, pose] of [[0.32, 0, 'wave'], [0.35, 2, 'stand'], [0.38, 7, 'po
   roadworks(y, s, s.len * 0.45, s.len * 0.45 + 20, lane, L('BAUSTELLE', 'ROADWORKS'));
 }
 
-// Trees beyond the yard.
+// Trees beyond the yard: south and east are plain woods; north keeps clear of the railway
+// (it runs on past the yard in both directions); west is the railway's own corner, left open.
 const [LX, LZ] = SITE.lot;
 y.decor.push(
   ...forest({ x: [-LX - 40, LX + 40], z: [-LZ - 40, -LZ - 8], count: 40, seed: 41 }),
   ...forest({ x: [LX + 8, LX + 40], z: [-LZ, LZ], count: 20, seed: 42 }),
+  ...forest({ x: [-LX - 40, LX + 40], z: [LZ + 8, LZ + 40], count: 36, seed: 43, avoid: [trainPath], clear: 12 }),
 );
 
 export const WESERTOR: TrackDef = {

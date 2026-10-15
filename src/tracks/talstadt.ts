@@ -254,11 +254,14 @@ const beside = (k: number, t: number, out: number) => across(k, t, out);
   roadworks(y, side(7), 6, 24, lane(7, false), L('BAUSTELLE', 'ROADWORKS'));
 }
 
-// Trees beyond the yard.
+// Trees beyond the yard, all four sides: north and south across the full width, east and
+// west filling in what those two bands leave out at the corners.
 const [LX, LZ] = SITE.lot;
 y.decor.push(
   ...forest({ x: [-LX - 40, LX + 40], z: [LZ + 8, LZ + 40], count: 40, seed: 31 }),
   ...forest({ x: [-LX - 40, LX + 40], z: [-LZ - 40, -LZ - 8], count: 40, seed: 32 }),
+  ...forest({ x: [LX + 8, LX + 40], z: [-LZ, LZ], count: 24, seed: 33 }),
+  ...forest({ x: [-LX - 40, -LX - 8], z: [-LZ, LZ], count: 24, seed: 34 }),
 );
 
 export const TALSTADT: TrackDef = {
