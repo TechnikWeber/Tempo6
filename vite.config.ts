@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { defineConfig, type Plugin } from 'vite';
 
@@ -32,7 +32,10 @@ function profileChoices(): Plugin {
 /** The version shown at the foot of the menu: the commit the build was made from, and when. */
 function version(): string {
   try {
-    const out = execSync("git log -1 --date=format-local:'%d.%m.%Y %H:%M' --format='%h · %cd'", { env: { ...process.env, TZ: 'Europe/Berlin' } });
+    // (an args array, not a shell string: single quotes meant for a POSIX shell break under cmd.exe on Windows)
+    const out = execFileSync('git', ['log', '-1', '--date=format-local:%d.%m.%Y %H:%M', '--format=%h · %cd'], {
+      env: { ...process.env, TZ: 'Europe/Berlin' },
+    });
     return out.toString().trim();
   } catch {
     return 'dev';

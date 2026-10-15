@@ -7,7 +7,7 @@ import type { Gate } from './Track';
 export type RaceEvent = 'start' | 'lap' | 'missed' | 'skipped' | null;
 
 /** A checkpoint counts this far (m) beyond its posts on every side: nobody has to thread it. */
-export const GATE_SLACK = 2;
+export const GATE_SLACK = 3;
 
 /**
  * Lap timing over ordered checkpoints. Pure logic, no physics.

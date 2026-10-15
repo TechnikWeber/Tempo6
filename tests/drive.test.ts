@@ -4,7 +4,7 @@ import { CRASH, FREESTYLE, MODES, RACE } from '../src/config/modes';
 import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameEvent, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
-import { Race } from '../src/sim/Race';
+import { GATE_SLACK, Race } from '../src/sim/Race';
 import { initPhysics, Sim } from '../src/sim/Sim';
 import { Stunts } from '../src/sim/Stunts';
 import { looping, ramp, type TrackDef } from '../src/sim/Track';
@@ -1097,7 +1097,7 @@ describe('start lights, leaderboard and ghost', () => {
     expect(Math.abs(ghost.samples.length / 7 - ghost.time * 10)).toBeLessThan(3);
     // it starts at the finish line and is back near it at the end
     const [gate] = PARKPLATZ.gates;
-    expect(Math.hypot(ghost.samples[0] - gate.x, ghost.samples[2] - gate.z)).toBeLessThan(4);
+    expect(Math.hypot(ghost.samples[0] - gate.x, ghost.samples[2] - gate.z)).toBeLessThan(GATE_SLACK + 2);
     expect(progress.boards.parkplatz[0].time).toBeCloseTo(ghost.time, 5);
     expect(core.events.some((e) => e.type === 'ranked' && e.place === 1)).toBe(true);
     core.dispose();

@@ -474,7 +474,7 @@ export class View {
         const a = track.line[best], b = track.line[(best + 1) % track.line.length];
         yaw = Math.atan2(b[0] - a[0], b[1] - a[1]);
       }
-      const half = track.roadHalf ? track.roadHalf + 0.5 : Math.max(g.hx, g.hz) - 0.3;
+      const half = track.roadHalf ? track.roadHalf + 1.0 : Math.max(g.hx, g.hz) + 0.2;
       const lx = Math.cos(yaw), lz = -Math.sin(yaw);
       for (const s of [-1, 1]) {
         const x = g.x + lx * half * s, z = g.z + lz * half * s, y = ground(x, z);
