@@ -129,6 +129,42 @@ const SHOPPERS: [number, number][] = [[-30, 43.2], [30, 43.2], [30, 42.8], [-30,
 // a stack of tyres for sale, and a few rolled off it
 tyres(yard, [[52, 18], [52.8, 18.6], [51.4, 19.2], [49, 15], [55, 13]], [4, 3, 2, 1, 1]);
 
+// A car and trailer in the open band north of the island: boards going on, two at it, one
+// directing. The open bands either side of the island were bare asphalt; this, the fast-food
+// sign and the extra trees and lamps below fill them in.
+const TRAILER_X = -48, TRAILER_Z = 20;
+decor.push(...car(TRAILER_X, TRAILER_Z + 3.3, 0, 0x3a6ea5));
+decor.push(
+  // the flat bed, on two wheels, a drawbar up to the car's tow hitch
+  { type: 'box', pos: [TRAILER_X, 0.42, TRAILER_Z - 0.2], half: [0.95, 0.06, 1.8], color: 0x5a5f66 },
+  { type: 'box', pos: [TRAILER_X, 0.3, TRAILER_Z + 2.0], half: [0.04, 0.04, 0.9], color: 0x2a2a2a },
+  { type: 'box', pos: [TRAILER_X, 0.14, TRAILER_Z + 1.35], half: [0.05, 0.1, 0.05], color: 0x2a2a2a },
+);
+for (const s of [-1, 1]) decor.push({ type: 'box', pos: [TRAILER_X + s * 0.95, 0.22, TRAILER_Z - 0.2], half: [0.09, 0.22, 0.22], color: 0x1d1d1f });
+// a stack of boards on the bed, and a loose one being carried across
+for (let k = 0; k < 6; k++) decor.push({ type: 'box', pos: [TRAILER_X, 0.5 + k * 0.08, TRAILER_Z - 0.2], half: [0.88, 0.035, 1.7], color: k % 2 ? 0xb9875a : 0xc9a15a });
+decor.push(
+  person(TRAILER_X - 1.9, TRAILER_Z - 0.6, Math.PI / 2, 0xe3c04a, 'carry', true),
+  person(TRAILER_X - 1.6, TRAILER_Z + 0.3, Math.PI / 2 + 0.3, 0xe3c04a, 'carry', true),
+  person(TRAILER_X + 1.6, TRAILER_Z + 1.2, -Math.PI / 2.4, 0x2a2a2e, 'point', true),
+);
+// trees and lamps breaking up the rest of that open band
+for (const [x, z] of [[-65, 20], [-20, 20], [-20, -20], [15, -20], [25, 20], [60, 20], [60, -20], [-65, -20]] as const) {
+  decor.push({ type: 'tree', pos: [x, 0, z] }, { type: 'lamp', pos: [x + 4, 0, z] });
+}
+
+// The fast-food stop by the east wall, visible from well back: a big pole sign with the
+// chain's own letter, same shape as the famous one, but it is a W here, not an M (trademarks
+// and all). Clear of the outer loop's traffic along x = 64.
+// (no person stood right by the wall here: that is exactly where a wheelchair hugging the
+// wall slides past, person colliders included — see "slides along a wall" in the tests)
+decor.push(
+  { type: 'board', pos: [67.5, 11, 10], half: [2.0, 2.0, 0.18], yaw: Math.PI / 2, text: 'W', color: 0xffffff },
+  { type: 'box', pos: [67.5, 0.1, 10], half: [1.3, 0.1, 1.3], color: 0xe8e4d8 },
+);
+// (well clear of the southeast corner, where a vehicle sliding along the east wall sweeps through)
+decor.push(...car(45, 20, Math.PI, 0xc8c8c8), person(44, 18.7, Math.PI, 0xd23b3b, 'stand'));
+
 // (keeping right: eastwards on the near side, back westwards on the far one)
 const MAIN_ROAD: [number, number][] = [[-250, ROAD_Z + 2.2], [250, ROAD_Z + 2.2], [250, ROAD_Z - 2.2], [-250, ROAD_Z - 2.2]];
 
