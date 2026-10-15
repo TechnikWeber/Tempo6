@@ -19,6 +19,11 @@ import { SkidMarks } from './Skid';
 import { Wreckage } from './Wreckage';
 
 const SKY = 0x9fd3f0;
+// A storm's own baseline lighting, dim and grey but still enough to see the track by; the
+// lightning flash in animateWeather() lifts off these same numbers, so they live here once.
+const STORM_SUN = 1.5;
+const STORM_HEMI = 0.8;
+const STORM_AMBIENT = 0.55;
 /** What the shadow of the best lap is made of. */
 const GHOST = new MeshStandardMaterial({ color: 0xdfe9f5, transparent: true, opacity: 0.18, depthWrite: false, roughness: 1 });
 const SHADOW_HALF = 22;
@@ -546,9 +551,9 @@ export class View {
     const sunColor = storm ? new Color(0x9aa3ac) : neutral.clone().lerp(warm, Math.max(0, low));
     const skyColor = storm ? sky : sky.clone().lerp(new Color(0xffcf9e), Math.max(0, low) * 0.55);
     this.sun.color.copy(sunColor);
-    this.sun.intensity = storm ? 0.9 : 2.1 + (1 - Math.max(0, low)) * 0.8;
-    this.hemi.intensity = storm ? 0.5 : 1.0 + (1 - Math.max(0, low)) * 0.25;
-    this.ambient.intensity = storm ? 0.35 : snow ? 0.32 : 0.22 + Math.max(0, low) * 0.08;
+    this.sun.intensity = storm ? STORM_SUN : 2.1 + (1 - Math.max(0, low)) * 0.8;
+    this.hemi.intensity = storm ? STORM_HEMI : 1.0 + (1 - Math.max(0, low)) * 0.25;
+    this.ambient.intensity = storm ? STORM_AMBIENT : snow ? 0.32 : 0.22 + Math.max(0, low) * 0.08;
     this.scene.background = skyColor;
     if (this.scene.fog instanceof Fog) {
       this.scene.fog.color.copy(skyColor);
@@ -637,12 +642,12 @@ export class View {
     if (this.lightningFlash > 0) {
       this.lightningFlash = Math.max(0, this.lightningFlash - dt);
       const share = this.lightningFlash / 0.18;
-      this.sun.intensity = 0.9 + share * 7;
-      this.ambient.intensity = 0.35 + share * 1.4;
+      this.sun.intensity = STORM_SUN + share * 7;
+      this.ambient.intensity = STORM_AMBIENT + share * 1.4;
       if (this.lightningFlash === 0) {
         this.nextLightning = 3 + Math.random() * 7;
-        this.sun.intensity = 0.9;
-        this.ambient.intensity = 0.35;
+        this.sun.intensity = STORM_SUN;
+        this.ambient.intensity = STORM_AMBIENT;
       }
       return;
     }
@@ -674,11 +679,11 @@ export class View {
       const half = track.roadHalf ? track.roadHalf + 1.0 : Math.max(g.hx, g.hz) + 0.2;
       const lx = Math.cos(yaw), lz = -Math.sin(yaw);
       for (const s of [-1, 1]) {
-        const x = g.x + lx * half * s, z = g.z + lz * half * s, y = ground(x, z);
+        const x = g.x + lx * half * s, z = g.z + lz * half * s, y = g.y ?? ground(x, z);
         for (let k = 0; k < 4; k++) box(level, 0.14, 0.4, 0.14, k % 2 ? 0x1d1d1f : 0xf2c230, x, y + 0.2 + k * 0.4, z).castShadow = false;
         box(level, 0.02, 0.35, 0.5, i === 0 || last ? 0xd23b3b : 0x2f6db5, x, y + 1.45, z + 0.27).rotation.y = yaw;
       }
-      const label: DecorDef = { type: 'label', pos: [g.x, 0.11, g.z], half: [1.0, 0, Math.min(2.4, half - 0.8)], yaw: yaw + Math.PI, text: i === 0 ? 'START' : last ? L('ZIEL', 'FINISH') : `CP ${i}` };
+      const label: DecorDef = { type: 'label', pos: [g.x, (g.y ?? ground(g.x, g.z)) + 0.11, g.z], half: [1.0, 0, Math.min(2.4, half - 0.8)], yaw: yaw + Math.PI, text: i === 0 ? 'START' : last ? L('ZIEL', 'FINISH') : `CP ${i}` };
       level.add(buildDecor(label, ground));
     });
   }

@@ -43,7 +43,7 @@ function plank(from: [number, number], to: [number, number], width: number): voi
 
 /** A checkpoint across the way at a point, its gate square around it. */
 function checkpoint(x: number, z: number, half = 2.5): void {
-  gates.push({ x, z, hx: half, hz: half });
+  gates.push({ x, z, hx: half, hz: half, y: Y });
 }
 
 // Start: a big platform, then a wide plank to get the feel.

@@ -25,6 +25,9 @@ export interface Gate {
   hz: number;
   /** Counts only exactly as drawn, e.g. through an obstacle that could otherwise be driven round. */
   exact?: boolean;
+  /** Where its posts stand, for a track with no ground at that point to measure from (the
+   * sky path's planks, floating with nothing below) -- the terrain height there otherwise. */
+  y?: number;
 }
 
 export type PickupType = 'screw' | 'toolbox';
