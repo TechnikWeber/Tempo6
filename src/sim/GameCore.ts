@@ -468,6 +468,11 @@ export class GameCore {
         const place = progress.addTime(this.track.id, { time: race.lastLap!, name: progress.name, vehicle: v.spec.id, stage: progress.stageIndex, date: Date.now() });
         if (place > 0) this.events.push({ type: 'ranked', place });
       }
+      // Zeitrennen: every lap is its own fresh attempt, so the boost battery tops back up at
+      // the line, same as a full restart would. A race is one continuous run over every lap
+      // of it, so there the battery stays shared across all of them -- it does not reset here.
+      // (a course track resets it anyway, in full, when it sends the vehicle back to the start)
+      if (this.mode === 'time' && !this.track.course) v.boostCharge = 1;
       if (best) {
         this.ghost = { time: race.lastLap!, vehicle: v.spec.id, samples: this.recording };
         progress.saveGhost(this.track.id, this.ghost);

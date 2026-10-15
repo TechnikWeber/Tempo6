@@ -544,6 +544,22 @@ describe('boost battery', () => {
     expect(sim.vehicle.boosting).toBe(true);
   });
 
+  it('tops the battery back up every lap in a time trial, but keeps it shared across a race', () => {
+    for (const mode of ['time', 'race'] as const) {
+      const core = new GameCore(PARKPLATZ, new Progress(), mode);
+      core.sim.vehicle.boostFitted = true;
+      core.sim.vehicle.setMotor(12 / 3.6, 4);
+      const ap = new Autopilot(PARKPLATZ.line!, 2).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
+      // run the battery dry right away
+      for (let i = 0; i < 60 * 3; i++) core.step({ ...ap.input(core), boost: true });
+      expect(core.sim.vehicle.boostCharge).toBe(0);
+      for (let i = 0; i < 60 * 200 && core.race.laps === 0; i++) core.step(ap.input(core));
+      expect(core.race.laps).toBe(1);
+      expect(core.sim.vehicle.boostCharge).toBe(mode === 'time' ? 1 : 0);
+      core.dispose();
+    }
+  });
+
   it('gives a push from a standstill without touching the throttle, but not while braking', () => {
     const sim = fitted(VEHICLES.komet, 20, 5);
     drive(sim, 1, 0);
