@@ -142,15 +142,22 @@ export class Progress {
 
   /**
    * Whether a vehicle has been through the tutorial. Until then it is held at walking
-   * pace and that is the only track it may take.
+   * pace and that is the only track it may take. The tutorial is driven once, ever, with
+   * whichever vehicle is at hand; from then on every vehicle counts as trained, whatever
+   * stage it happens to be sitting at right now (deactivating stage 1 again does not undo this).
    */
-  trained(id: VehicleId = this.vehicle): boolean {
-    return this.stageOf(id) > 0;
+  trained(_id: VehicleId = this.vehicle): boolean {
+    return this.tutorialDone;
   }
 
-  /** Tuning stage of any vehicle; after the tutorial none is below the first. */
+  /**
+   * Tuning stage of a vehicle actually chosen to drive. An explicit choice (including back
+   * down to 0, Werkszustand) stands as made; only a vehicle never touched at all defaults to
+   * the first stage once the tutorial is done, same as `trained()` above.
+   */
   stageOf(id: string): number {
-    return Math.max(this.stages[id] ?? 0, this.tutorialDone ? 1 : 0);
+    const chosen = this.stages[id];
+    return chosen !== undefined ? chosen : this.tutorialDone ? 1 : 0;
   }
 
   /** The tutorial is done: the first stage comes free, and the tutorial is over. */

@@ -1110,6 +1110,7 @@ describe('start lights, leaderboard and ghost', () => {
 describe('game on the Parkplatz', () => {
   it('collects screws on the start straight and tunes once the money is there', () => {
     const progress = new Progress();
+    progress.tutorialDone = true;
     progress.stageIndex = 1;
     const core = new GameCore(PARKPLATZ, progress);
     for (let i = 0; i < 60 * 20; i++) core.step({ ...idle, throttle: 1 });
@@ -1147,6 +1148,7 @@ describe('game on the Parkplatz', () => {
 
   it('cannot tune without money', () => {
     const progress = new Progress();
+    progress.tutorialDone = true;
     progress.stageIndex = 1;
     const core = new GameCore(PARKPLATZ, progress);
     core.step({ ...idle, tune: true });
@@ -1326,6 +1328,7 @@ describe('Reha-Parcours', () => {
 
   it('puts the screws out from the second run on', () => {
     const progress = new Progress();
+    progress.tutorialDone = true;
     progress.stageIndex = 1;
     const core = new GameCore(REHA, progress);
     const ap = new Autopilot(REHA.line!);
@@ -1466,6 +1469,23 @@ describe('deactivating tuning and the boost battery', () => {
     // out of reach: not owned yet
     progress.setStage(5);
     expect(progress.stageIndex).toBe(3);
+  });
+
+  it('goes all the way down to stage 0 after the tutorial and stays there, same as any other owned stage', () => {
+    const progress = new Progress();
+    progress.tutorialDone = true;
+    progress.stageIndex = 3;
+    progress.setStage(0);
+    // it must stick: stage 1 is free once trained, but 0 is a choice like any other, not a floor
+    expect(progress.stageIndex).toBe(0);
+    expect(progress.stage).toBe(STAGES[0]);
+    expect(progress.trained()).toBe(true);
+    expect(progress.maxStageIndex).toBe(3);
+    // and back up again, still free, still owned
+    progress.setStage(3);
+    expect(progress.stageIndex).toBe(3);
+    // a vehicle never touched at all still defaults to stage 1, not 0, once trained
+    expect(progress.stageOf('piepmatz')).toBe(1);
   });
 
   it('switches the boost battery off and on again without buying it twice', () => {
