@@ -1,4 +1,4 @@
-﻿import { CRASH, FREESTYLE, RACE, type ModeId } from '../config/modes';
+import { CRASH, FREESTYLE, RACE, type ModeId } from '../config/modes';
 import { BONUS, BOOST, PICKUP_VALUE, stageSpeedKmh, STAGES, type TuningStage } from '../config/tuning';
 import { VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import { Autopilot } from './Autopilot';

@@ -1,4 +1,4 @@
-﻿import { MODES, type ModeId } from '../config/modes';
+import { MODES, type ModeId } from '../config/modes';
 import { BOOST, STAGES, type TuningStage } from '../config/tuning';
 import { UNLOCK_ALL, VEHICLES, type VehicleId } from '../config/vehicles';
 

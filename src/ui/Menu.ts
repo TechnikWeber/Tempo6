@@ -1,4 +1,4 @@
-﻿import { L, lang, num, switchLanguage } from '../i18n';
+import { L, lang, num, switchLanguage } from '../i18n';
 import { MODES, modeById, type ModeId } from '../config/modes';
 import { formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
 import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
@@ -31,7 +31,7 @@ interface Lock {
 }
 
 const STAT_LABELS = { tempo: L('Tempo', 'Speed'), antritt: L('Antritt', 'Acceleration'), wendig: L('Wendigkeit', 'Agility'), standfest: L('Standfest', 'Stability') } as const;
-const TUTORIAL_LOCK = L('ðŸ”’ Erst durchs Tutorial', 'ðŸ”’ Finish the tutorial first');
+const TUTORIAL_LOCK = L('🔒 Erst durchs Tutorial', '🔒 Finish the tutorial first');
 
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -62,7 +62,7 @@ export class Menu {
   private readonly start = h('button', 'start', L('Los!', 'Go!'));
   private readonly ghost = h('input');
   private readonly dev = h('input');
-  private readonly garage = h('button', 'garage-btn', 'ðŸ”§ Garage');
+  private readonly garage = h('button', 'garage-btn', '🔧 Garage');
   private readonly buyVehicle = h('button', 'unlock');
   private readonly buyTrack = h('button', 'unlock');
   /** Answer to the last save or settings action, shown in the header for a moment. */
@@ -77,26 +77,26 @@ export class Menu {
     this.track = progress.track || TRACKS[0].id;
 
     const head = h('header');
-    head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', L('Verdien dir Schrauben. Tune dein GefÃ¤hrt. Werde zu schnell.', 'Earn screws. Tune your ride. Get too fast.')));
-    const purse = h('p', 'purse', 'ðŸ”© ');
+    head.append(h('h1', '', 'Tempo6'), h('p', 'tagline', L('Verdien dir Schrauben. Tune dein Gefährt. Werde zu schnell.', 'Earn screws. Tune your ride. Get too fast.')));
+    const purse = h('p', 'purse', '🔩 ');
     purse.append(this.money);
     head.append(purse);
 
     // One ride at a time: arrows to step through them (beside the vehicle itself as well), the
     // categories to jump between, and the rides of the current one.
     const left = h('section', 'col');
-    const prev = h('button', 'arrow', 'â€¹'), next = h('button', 'arrow', 'â€º');
-    prev.title = next.title = L('GefÃ¤hrt wechseln (A/D)', 'Change ride (A/D)');
+    const prev = h('button', 'arrow', '‹'), next = h('button', 'arrow', '›');
+    prev.title = next.title = L('Gefährt wechseln (A/D)', 'Change ride (A/D)');
     prev.addEventListener('click', () => this.stepVehicle(-1));
     next.addEventListener('click', () => this.stepVehicle(1));
     const picker = h('div', 'picker');
     picker.append(prev, this.pickerName, next);
-    left.append(h('h2', '', L('GefÃ¤hrt', 'Ride')), picker, this.rides, this.detail);
-    const bigPrev = h('button', 'stage-arrow left', 'â€¹'), bigNext = h('button', 'stage-arrow right', 'â€º');
+    left.append(h('h2', '', L('Gefährt', 'Ride')), picker, this.rides, this.detail);
+    const bigPrev = h('button', 'stage-arrow left', '‹'), bigNext = h('button', 'stage-arrow right', '›');
     bigPrev.title = bigNext.title = prev.title;
     bigPrev.addEventListener('click', () => this.stepVehicle(-1));
     bigNext.addEventListener('click', () => this.stepVehicle(1));
-    this.garage.title = L('GefÃ¤hrt in der Werkstatt ansehen und tunen (T)', 'Look at your ride in the workshop and tune it (T)');
+    this.garage.title = L('Gefährt in der Werkstatt ansehen und tunen (T)', 'Look at your ride in the workshop and tune it (T)');
     this.garage.addEventListener('click', () => this.openGarage());
     this.buyVehicle.addEventListener('click', () => this.unlockVehicle());
     this.buyTrack.addEventListener('click', () => this.unlockTrack());
@@ -106,14 +106,14 @@ export class Menu {
       this.render();
     });
     // the track header carries arrows to step through the tracks, for touch
-    const up = h('button', 'step', 'â–²'), down = h('button', 'step', 'â–¼');
+    const up = h('button', 'step', '▲'), down = h('button', 'step', '▼');
     up.title = down.title = L('Strecke wechseln (W/S)', 'Change track (W/S)');
     up.addEventListener('click', () => this.pickTrack(this.stepIn(this.tracksOfMode(), this.track, -1)));
     down.addEventListener('click', () => this.pickTrack(this.stepIn(this.tracksOfMode(), this.track, 1)));
     this.trackHead.append(up, down);
     right.append(h('h2', '', L('Modus', 'Mode')), this.modeButton, this.modeList, this.modeBlurb, this.trackHead, this.trackList, this.buyTrack, this.start);
     const hint = h('p', 'keys');
-    hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> GefÃ¤hrt Â· <kbd>T</kbd> Garage Â· <kbd>Q</kbd><kbd>E</kbd> Modus Â· <kbd>W</kbd><kbd>S</kbd> Strecke Â· <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride Â· <kbd>T</kbd> garage Â· <kbd>Q</kbd><kbd>E</kbd> mode Â· <kbd>W</kbd><kbd>S</kbd> track Â· <kbd>Enter</kbd> go');
+    hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
     right.append(hint);
     this.root.append(head, left, right, this.bar(), bigPrev, bigNext, h('p', 'version', `Version ${__VERSION__}`));
 
@@ -151,14 +151,14 @@ export class Menu {
     const bar = h('div', 'menubar');
     const panel = h('div', 'settings');
     panel.hidden = true;
-    const cog = h('button', 'tool', L('âš™ Einstellungen', 'âš™ Settings'));
+    const cog = h('button', 'tool', L('⚙ Einstellungen', '⚙ Settings'));
     cog.addEventListener('click', () => {
       panel.hidden = !panel.hidden;
       cog.classList.toggle('on', !panel.hidden);
     });
     const box = panel;
-    const save = h('button', 'tool', L('ðŸ’¾ Speichern', 'ðŸ’¾ Save'));
-    save.title = L('Spielstand als Datei herunterladen. Bleibt, auch wenn der Browser seine Daten lÃ¶scht.', 'Download your progress as a file. It stays even if the browser clears its data.');
+    const save = h('button', 'tool', L('💾 Speichern', '💾 Save'));
+    save.title = L('Spielstand als Datei herunterladen. Bleibt, auch wenn der Browser seine Daten löscht.', 'Download your progress as a file. It stays even if the browser clears its data.');
     save.addEventListener('click', () => this.handlers.onExport());
     const file = h('input');
     file.type = 'file';
@@ -169,7 +169,7 @@ export class Menu {
       file.value = '';
       if (f) this.say((await this.handlers.onImport(await f.text())) ?? '');
     });
-    const load = h('button', 'tool', L('ðŸ“‚ Laden', 'ðŸ“‚ Load'));
+    const load = h('button', 'tool', L('📂 Laden', '📂 Load'));
     load.title = L('Einen gespeicherten Spielstand laden', 'Load a saved game');
     load.addEventListener('click', () => file.click());
     // dev mode: the workshop (F2) to tune the handling live
@@ -177,12 +177,12 @@ export class Menu {
     this.dev.type = 'checkbox';
     this.dev.addEventListener('change', () => {
       this.handlers.onDevMode(this.dev.checked);
-      this.say(this.dev.checked ? L('Dev-Mode an: F2 Ã¶ffnet die Werkstatt.', 'Dev mode on: F2 opens the workshop.') : L('Dev-Mode aus.', 'Dev mode off.'));
+      this.say(this.dev.checked ? L('Dev-Mode an: F2 öffnet die Werkstatt.', 'Dev mode on: F2 opens the workshop.') : L('Dev-Mode aus.', 'Dev mode off.'));
     });
-    dev.append(this.dev, L(' ðŸ›  Dev-Mode', ' ðŸ›  Dev mode'));
-    dev.title = L('Macht die Werkstatt (F2) verfÃ¼gbar: Fahrverhalten live einstellen', 'Makes the workshop (F2) available: tune the handling live');
-    const all = h('button', 'tool', L('ðŸ”“ Alles freischalten', 'ðŸ”“ Unlock everything'));
-    all.title = L('Alle GefÃ¤hrte und Strecken, Boost-Batterie, volles Tuning', 'Every ride and track, the boost battery, full tuning');
+    dev.append(this.dev, L(' 🛠 Dev-Mode', ' 🛠 Dev mode'));
+    dev.title = L('Macht die Werkstatt (F2) verfügbar: Fahrverhalten live einstellen', 'Makes the workshop (F2) available: tune the handling live');
+    const all = h('button', 'tool', L('🔓 Alles freischalten', '🔓 Unlock everything'));
+    all.title = L('Alle Gefährte und Strecken, Boost-Batterie, volles Tuning', 'Every ride and track, the boost battery, full tuning');
     all.addEventListener('click', () => {
       this.say(this.handlers.onUnlockAll());
       this.render();
@@ -195,16 +195,16 @@ export class Menu {
       this.progress.save();
     });
     shadow.append(this.ghost, L(' Schatten der Bestzeit', ' Best-lap ghost'));
-    shadow.title = L('Im Zeitrennen fÃ¤hrt die Bestzeit als Schatten mit (beim Fahren auch Taste G)', 'In the time trial your best lap drives along as a ghost (key G while driving)');
+    shadow.title = L('Im Zeitrennen fährt die Bestzeit als Schatten mit (beim Fahren auch Taste G)', 'In the time trial your best lap drives along as a ghost (key G while driving)');
     // the other language, one tap away
-    const other = h('button', 'tool', L('ðŸŒ English', 'ðŸŒ Deutsch'));
+    const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
     other.title = L('Switch to English', 'Auf Deutsch umstellen');
     other.addEventListener('click', () => switchLanguage(lang === 'de' ? 'en' : 'de'));
     box.append(save, load, file, other, shadow, dev, all);
     bar.append(panel, cog);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {
-      const full = h('button', 'tool', L('â›¶ Vollbild', 'â›¶ Full screen'));
+      const full = h('button', 'tool', L('⛶ Vollbild', '⛶ Full screen'));
       full.title = L('Vollbild an oder aus', 'Full screen on or off');
       full.addEventListener('click', async () => {
         if (document.fullscreenElement) return void document.exitFullscreen();
@@ -272,7 +272,7 @@ export class Menu {
   }
 
   private priced(price: number): Lock {
-    return { text: `ðŸ”’ ${formatMoney(price)}`, price };
+    return { text: `🔒 ${formatMoney(price)}`, price };
   }
 
   /** The same look for anything locked: greyed out, a padlock, and the price if it has one. */
@@ -359,7 +359,7 @@ export class Menu {
   private unlockButton(b: HTMLButtonElement, name: string, lock: Lock | null): void {
     b.hidden = lock?.price === undefined;
     if (lock?.price === undefined) return;
-    b.textContent = L(`ðŸ”“ ${name} freischalten Â· ${formatMoney(lock.price)}`, `ðŸ”“ Unlock ${name} Â· ${formatMoney(lock.price)}`);
+    b.textContent = L(`🔓 ${name} freischalten · ${formatMoney(lock.price)}`, `🔓 Unlock ${name} · ${formatMoney(lock.price)}`);
     b.classList.toggle('can', this.progress.money >= lock.price);
   }
 
@@ -373,11 +373,11 @@ export class Menu {
     const cat = CATEGORIES.find((c) => c.vehicles.includes(v.id))!;
     const lockV = this.vehicleLock(this.vehicle);
     this.pickerName.style.setProperty('--tint', `#${BRAND_COLORS[v.brand].toString(16).padStart(6, '0')}`);
-    this.pickerName.replaceChildren(h('small', '', cat.title), h('strong', '', lockV ? `ðŸ”’ ${v.label}` : v.label));
+    this.pickerName.replaceChildren(h('small', '', cat.title), h('strong', '', lockV ? `🔒 ${v.label}` : v.label));
     this.rides.replaceChildren(
       ...cat.vehicles.map((id) => {
         const lock = this.vehicleLock(id);
-        const b = h('button', `chip${id === v.id ? ' on' : ''}${lock ? ' locked' : ''}`, lock ? `ðŸ”’ ${VEHICLES[id].label}` : VEHICLES[id].label);
+        const b = h('button', `chip${id === v.id ? ' on' : ''}${lock ? ' locked' : ''}`, lock ? `🔒 ${VEHICLES[id].label}` : VEHICLES[id].label);
         if (lock?.price !== undefined && this.progress.money >= lock.price) b.classList.add('can');
         b.addEventListener('click', () => this.pickVehicle(id));
         return b;
@@ -398,17 +398,17 @@ export class Menu {
     const actions = h('div', 'actions');
     actions.append(this.garage, this.buyVehicle);
     this.detail.replaceChildren(
-      h('p', 'kind words', `${v.kind} Â· ${L('Fahrprofile', 'Driving profiles')}: ${v.profiles.map((p) => p.name).join(', ')}`),
+      h('p', 'kind words', `${v.kind} · ${L('Fahrprofile', 'Driving profiles')}: ${v.profiles.map((p) => p.name).join(', ')}`),
       h('p', 'words', v.blurb),
       stats,
       actions,
-      h('p', 'kind words', L(`Aktuell ${num(top)} km/h Â· Tuning-Stufe ${stageNo}: ${stage.name} Â· Fahrprofil: ${profile.name}`, `Now ${num(top)} km/h Â· tuning stage ${stageNo}: ${stage.name} Â· driving profile: ${profile.name}`)),
+      h('p', 'kind words', L(`Aktuell ${num(top)} km/h · Tuning-Stufe ${stageNo}: ${stage.name} · Fahrprofil: ${profile.name}`, `Now ${num(top)} km/h · tuning stage ${stageNo}: ${stage.name} · driving profile: ${profile.name}`)),
     );
 
     const modeButtons = (list: typeof MODES) => list.map((m) => {
         const lock = this.modeLock(m.id);
         const b = h('button', `mode${m.id === mode.id ? ' on' : ''}`);
-        b.append(h('strong', '', lock ? `ðŸ”’ ${m.name}` : m.name), h('span', '', m.blurb));
+        b.append(h('strong', '', lock ? `🔒 ${m.name}` : m.name), h('span', '', m.blurb));
         if (lock) {
           b.classList.add('locked');
           b.title = lock.text;
@@ -419,13 +419,13 @@ export class Menu {
     // (what is still being tried out sits apart, under its own label)
     const trial = h('div', 'trial');
     trial.append(h('small', '', L('Experimentell', 'Experimental')), ...modeButtons(MODES.filter((m) => m.experimental)));
-    const back = h('button', 'mode-back', L('â† ZurÃ¼ck', 'â† Back'));
+    const back = h('button', 'mode-back', L('← Zurück', '← Back'));
     back.addEventListener('click', () => {
       this.choosingMode = false;
       this.render();
     });
     this.modeList.replaceChildren(...modeButtons(MODES.filter((m) => !m.experimental)), trial, back);
-    this.modeButton.replaceChildren(h('strong', '', mode.name), h('span', '', L('Modus wechseln â–¾', 'Change mode â–¾')));
+    this.modeButton.replaceChildren(h('strong', '', mode.name), h('span', '', L('Modus wechseln ▾', 'Change mode ▾')));
     this.modeBlurb.textContent = mode.blurb;
     // never both lists at once: either the modes, or the tracks with everything that goes with them
     const choosing = this.choosingMode;
@@ -445,7 +445,7 @@ export class Menu {
         if (t.id === this.track && !lock && mode.id === 'time') {
           const board = h('ol', 'board');
           for (const e of (this.progress.boards[t.id] ?? []).slice(0, 3)) {
-            board.append(h('li', '', `${formatTime(e.time)} Â· ${L('Du', 'You')} Â· ${VEHICLES[e.vehicle].label} Â· ${L('Stufe', 'stage')} ${e.stage}`));
+            board.append(h('li', '', `${formatTime(e.time)} · ${L('Du', 'You')} · ${VEHICLES[e.vehicle].label} · ${L('Stufe', 'stage')} ${e.stage}`));
           }
           if (board.children.length) b.append(board);
         }
