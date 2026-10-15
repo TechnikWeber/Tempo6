@@ -13,7 +13,9 @@ const PEGBOARD = 0xc9b896;
 // each other or are a little thinner, so no two faces share a plane.
 const R = 6;
 const WALL_T = 0.2;
-const H = 2.8;
+// Tall enough that the showroom camera, which climbs with the lift, never looks out over
+// the top of the walls — and a roof on top, or it would be looking out at the sky anyway.
+const H = 4.2;
 /** The inner faces of the walls. */
 const IN = R - WALL_T;
 
@@ -23,6 +25,12 @@ const statics: BoxDef[] = [
   { pos: [0, H / 2, R], half: [R + WALL_T, H / 2, WALL_T], color: WALL },
   { pos: [-R, H / 2, 0], half: [WALL_T, H / 2, R - WALL_T], color: WALL },
   { pos: [R, H / 2, 0], half: [WALL_T, H / 2, R - WALL_T], color: WALL },
+  { pos: [0, H + 0.1, 0], half: [R + WALL_T, 0.1, R + WALL_T], color: 0x6b6d70 },
+];
+// a couple of strip lights on the ceiling, so it reads as a lit room and not just a dark lid
+const CEILING_LIGHTS: DecorDef[] = [
+  { type: 'box', pos: [-2, H - 0.05, 0], half: [1.4, 0.04, 0.12], color: 0xfff6d6 },
+  { type: 'box', pos: [2.5, H - 0.05, -2], half: [1.4, 0.04, 0.12], color: 0xfff6d6 },
 ];
 
 // The lift: a platform sized to the vehicle plus a little margin (not a vast pad), on a
@@ -34,6 +42,7 @@ const PLATE_T = 0.05;
 statics.push({ pos: [0, LIFT_H - PLATE_T, 0], half: [LIFT_HALF, PLATE_T, LIFT_HALF], color: YELLOW });
 
 const decor: DecorDef[] = [
+  ...CEILING_LIGHTS,
   // the base plate on the floor, hazard stripes, an inset panel just proud of the platform's top
   { type: 'box', pos: [0, 0.03, 0], half: [LIFT_HALF + 0.15, 0.03, LIFT_HALF + 0.15], color: 0x3a3c3e },
   { type: 'box', pos: [0, LIFT_H + 0.002, 0], half: [LIFT_HALF - 0.12, 0.002, LIFT_HALF - 0.12], color: 0x2a2a2a },
@@ -86,9 +95,9 @@ for (let y = 0.15; y < 2.4; y += 0.3) decor.push({ type: 'box', pos: [0, y, IN -
 const BENCH_X = -2;
 decor.push(
   { type: 'box', pos: [BENCH_X, 0.9, -IN + 0.4], half: [1.6, 0.04, 0.4], color: WOOD },
-  { type: 'box', pos: [BENCH_X, 1.7, -IN + 0.02], half: [1.4, 0.6, 0.02], color: 0xc8b48a },
-  // the pegboard itself: one clearly visible panel, everything below hangs within its bounds
-  { type: 'box', pos: [BENCH_X, 2.0, -IN + 0.03], half: [1.75, 0.95, 0.02], color: PEGBOARD },
+  // the pegboard itself: one clearly visible panel, sized with real headroom so nothing hung
+  // on it — the spanners' heads swing wide with their roll — ever reaches past its edge
+  { type: 'box', pos: [BENCH_X, 2.0, -IN + 0.03], half: [1.75, 1.05, 0.02], color: PEGBOARD },
 );
 for (const dx of [-1.5, 1.5]) for (const dz of [0.08, 0.72]) decor.push({ type: 'box', pos: [BENCH_X + dx, 0.43, -IN + dz], half: [0.04, 0.43, 0.04], color: STEEL });
 // a toolbox and a battery on the bench (standing on its top, at 0.94)
