@@ -79,6 +79,8 @@ export class Menu {
   private mobileStep: 'vehicle' | 'track' = 'vehicle';
   private readonly nextStep = h('button', 'mobile-step mobile-next', L('Weiter: Strecke wählen →', 'Next: pick a track →'));
   private readonly backStep = h('button', 'mobile-step mobile-back', L('← Zurück zum Gefährt', '← Back to the ride'));
+  /** Right over the ride itself, whenever the highlighted one is still locked. */
+  private readonly lockedBadge = h('div', 'locked-badge', L('🔒 Nicht freigeschaltet', '🔒 Not unlocked'));
 
   constructor(private readonly progress: Progress, private readonly handlers: MenuHandlers) {
     this.vehicle = progress.vehicle;
@@ -133,7 +135,7 @@ export class Menu {
     const hint = h('p', 'keys');
     hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
     right.append(hint);
-    this.root.append(head, left, right, this.bar(), bigPrev, bigNext, h('p', 'version', `Version ${__VERSION__}`));
+    this.root.append(head, left, right, this.bar(), bigPrev, bigNext, this.lockedBadge, h('p', 'version', `Version ${__VERSION__}`));
 
     this.start.addEventListener('click', () => this.go());
     window.addEventListener('keydown', (e) => {
@@ -397,6 +399,7 @@ export class Menu {
     const v = VEHICLES[this.vehicle];
     const cat = CATEGORIES.find((c) => c.vehicles.includes(v.id))!;
     const lockV = this.vehicleLock(this.vehicle);
+    this.lockedBadge.hidden = !lockV;
     this.pickerName.style.setProperty('--tint', `#${BRAND_COLORS[v.brand].toString(16).padStart(6, '0')}`);
     this.pickerName.replaceChildren(h('small', '', cat.title), h('strong', '', lockV ? `🔒 ${v.label}` : v.label));
     this.rides.replaceChildren(

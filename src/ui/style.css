@@ -448,10 +448,37 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #menu .track-head .step { margin-left: auto; font: inherit; font-size: 12px; color: var(--ink); background: var(--panel); border: 0; border-radius: 8px; padding: 3px 9px; cursor: pointer; }
 #menu .track-head .step + .step { margin-left: 0; }
 #menu .version { position: fixed; right: 10px; bottom: 4px; margin: 0; font-size: 11px; opacity: 0.6; text-shadow: 0 1px 0 #000; }
+/* Right over the ride itself: the showroom camera always centres it in the full viewport (not
+   just the gap between the side panels), so a fixed, centred badge lands on it without having
+   to track the model in 3D. A touch above the exact middle, where the camera's own look-at
+   point sits a little low on the model (around the seat, not the silhouette as a whole).
+   Desktop only: on the narrow one-column phone layout the ride panel itself already runs
+   most of the way down the screen (more so still with the unlock row a locked ride adds),
+   leaving no clear patch of model for a second badge to land on without just sitting on top
+   of that panel -- the lock there is already said plainly by the name and the price button. */
+#menu .locked-badge {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  max-width: 85vw;
+  padding: 9px 20px;
+  background: rgb(18 20 24 / 0.58);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.7);
+  border-radius: 999px;
+  pointer-events: none;
+}
 @media (max-width: 900px), (max-height: 500px) {
   #menu .version { position: static; justify-self: center; }
   /* one column: the bar comes last, in the flow */
   #menu .menubar { position: relative; left: auto; bottom: auto; transform: none; justify-self: center; margin-bottom: 8px; }
+  #menu .locked-badge { display: none; }
 }
 
 /* On a phone the ride's words go: the bars and the buttons are enough, and the page stays short. */
