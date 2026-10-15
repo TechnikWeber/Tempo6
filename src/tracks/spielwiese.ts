@@ -73,10 +73,36 @@ const spinners = [
 // Slalom between the lanes.
 for (let i = 0; i < 10; i++) props.push({ type: 'cone', pos: [-100 + i * 9, 0.26, 22 + (i % 2 ? 2 : -2)] });
 
-// Outside the north wall a fair: a big wheel that keeps turning, and a row of booths.
+// Northwest pocket: a catapult. A short run-up onto a steep tipper that slams over and flings
+// whatever is on it, same trick as the Tutorial's "Kippe" but bigger and meaner.
+board(L('SCHLEUDER', 'CATAPULT'), -150, 73);
+const FLING_X = -138, FLING_Z = 75, FLING_HALF = 3;
+// the trestle it turns on, same as the Tutorial's Kippe
+decor.push({ type: 'box', pos: [FLING_X, (FLING_HALF * Math.sin(0.5)) / 2, FLING_Z], half: [2.3, (FLING_HALF * Math.sin(0.5)) / 2, 0.15], color: STEEL });
+
+// Southeast pocket: a lookout platform, ramped up from the track side, a steeper slide down
+// the far side. Both ramps' ground ends are worked out so their tops land flush on the deck.
+board(L('AUSSICHT', 'LOOKOUT'), 100, -65);
+const DECK_X = 112, DECK_Z = -85, DECK_HALF = 6, DECK_H = 2.74;
+const UP_LEN = 8, UP_ANGLE = 0.35, UP_RUN = UP_LEN * Math.cos(UP_ANGLE);
+const DOWN_LEN = DECK_H / Math.sin(0.5), DOWN_ANGLE = 0.5, DOWN_RUN = DOWN_LEN * Math.cos(DOWN_ANGLE);
+statics.push(
+  ramp([DECK_X, DECK_Z + DECK_HALF + UP_RUN], Math.PI, UP_LEN, 7, UP_ANGLE, RAMP), // up, from the track side (near edge)
+  { pos: [DECK_X, DECK_H - 0.1, DECK_Z], half: [DECK_HALF, 0.1, DECK_HALF], color: RAMP }, // the deck
+  ramp([DECK_X, DECK_Z - DECK_HALF - DOWN_RUN], 0, DOWN_LEN, 6, DOWN_ANGLE, RAMP), // down, steeper, the far side
+);
+for (const s of [-1, 1]) decor.push({ type: 'box', pos: [DECK_X + s * (DECK_HALF - 0.1), DECK_H / 2, DECK_Z], half: [0.1, DECK_H / 2, DECK_HALF - 0.1], color: 0x5a5f66 });
+// a soft landing of cartons at the foot of the slide
+cartons(DECK_X, DECK_Z - DECK_HALF - DOWN_RUN - 3, 3, 7);
+
+// Outside the north wall a fair: a big wheel with gondolas that keeps turning, and a row of booths.
 const WHEEL_Z = LOT_Z + 26;
 const WHEEL_R = 18;
-const movers: MoverDef[] = [{ type: 'propeller', pos: [0, WHEEL_R + 3, WHEEL_Z], yaw: 0, half: [0.3, WHEEL_R / 2, 0.3], angle: 0, blades: 12, spin: 0.25, color: 0xe8e2d0 }];
+const movers: MoverDef[] = [
+  { type: 'propeller', pos: [0, WHEEL_R + 3, WHEEL_Z], yaw: 0, half: [0.3, WHEEL_R / 2, 0.3], angle: 0, blades: 12, spin: 0.25, color: 0xe8e2d0, gondolas: true },
+  // the catapult in the northwest pocket, declared up there, wired in here
+  { type: 'seesaw', pos: [FLING_X, FLING_HALF * Math.sin(0.5) + 0.03, FLING_Z], yaw: EAST, half: [2.2, 0.08, FLING_HALF], angle: 0.5, color: 0xd9822b },
+];
 for (const z of [-1.2, 1.2]) decor.push({ type: 'box', pos: [0, (WHEEL_R + 3) / 2, WHEEL_Z + z], half: [0.4, (WHEEL_R + 3) / 2, 0.3], color: 0x5a5f66 });
 let booth = 0;
 for (let x = -90; x <= 90; x += 15) {

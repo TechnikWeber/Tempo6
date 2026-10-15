@@ -136,6 +136,8 @@ export interface MoverDef {
   /** Propeller and drum: how many blades or slats, and how fast it turns (rad/s). */
   blades?: number;
   spin?: number;
+  /** A propeller dressed up as a big wheel: a gondola basket at the tip of every blade. */
+  gondolas?: boolean;
   /** Drum: inner radius; its half length is `half[2]`, a slat's half thickness `half[1]`. */
   radius?: number;
   /** Slider: how far it goes out either side of its middle, and where in its swing it starts (rad). */

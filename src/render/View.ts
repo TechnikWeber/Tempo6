@@ -435,6 +435,14 @@ export class View {
           arm.rotation.z = a;
           box(arm, d.half[0] * 2, d.half[1] * 2, d.half[2] * 2, d.color, 0, -d.half[1], 0);
           box(arm, d.half[0] * 2 + 0.02, 0.3, d.half[2] * 2 + 0.02, 0xf2f2f2, 0, -d.half[1] * 2 + 0.2, 0);
+          if (d.gondolas) {
+            // a basket hanging at the tip, a different colour every other one, a bench inside
+            const tip = -d.half[1] * 2 - 0.55;
+            box(arm, d.half[0] * 2 + 0.5, 1.1, d.half[2] * 2 + 0.5, k % 2 ? 0xd23b3b : 0x2f6db5, 0, tip, 0);
+            box(arm, d.half[0] * 2 + 0.3, 0.9, d.half[2] * 2 + 0.3, 0x9fc4d8, 0, tip, 0); // glazing, just inside the frame
+            box(arm, 0.08, 0.08, d.half[2] * 2 + 0.6, 0x3a3c40, d.half[0] + 0.3, tip + 0.55, 0); // the arm's hanger either side
+            box(arm, 0.08, 0.08, d.half[2] * 2 + 0.6, 0x3a3c40, -d.half[0] - 0.3, tip + 0.55, 0);
+          }
           g.add(arm);
         }
         // (the hub sticks out a little either side of the blades)
