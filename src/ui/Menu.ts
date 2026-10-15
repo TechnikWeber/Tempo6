@@ -71,6 +71,14 @@ export class Menu {
   /** What the cursor is on; may be locked. */
   private vehicle: VehicleId;
   private track: string;
+  /**
+   * On a phone (the narrow one-column layout) the ride and the track/mode are two steps, not
+   * one long scroll: the ride gets the screen to itself first, so there is room to actually
+   * look at it. Outside that layout this has no effect -- both halves always show at once.
+   */
+  private mobileStep: 'vehicle' | 'track' = 'vehicle';
+  private readonly nextStep = h('button', 'mobile-step mobile-next', L('Weiter: Strecke wählen →', 'Next: pick a track →'));
+  private readonly backStep = h('button', 'mobile-step mobile-back', L('← Zurück zum Gefährt', '← Back to the ride'));
 
   constructor(private readonly progress: Progress, private readonly handlers: MenuHandlers) {
     this.vehicle = progress.vehicle;
@@ -100,7 +108,17 @@ export class Menu {
     this.garage.addEventListener('click', () => this.openGarage());
     this.buyVehicle.addEventListener('click', () => this.unlockVehicle());
     this.buyTrack.addEventListener('click', () => this.unlockTrack());
+    this.nextStep.addEventListener('click', () => {
+      this.mobileStep = 'track';
+      this.render();
+    });
+    this.backStep.addEventListener('click', () => {
+      this.mobileStep = 'vehicle';
+      this.render();
+    });
+    left.append(this.nextStep);
     const right = h('section', 'col');
+    right.append(this.backStep);
     this.modeButton.addEventListener('click', () => {
       this.choosingMode = true;
       this.render();
@@ -242,6 +260,7 @@ export class Menu {
     this.root.hidden = false;
     this.vehicle = this.progress.vehicle;
     this.track = this.progress.track || TRACKS[0].id;
+    this.mobileStep = 'vehicle';
     this.render();
   }
 
@@ -364,6 +383,7 @@ export class Menu {
   }
 
   private render(): void {
+    this.root.dataset.step = this.mobileStep;
     this.money.textContent = formatMoney(this.progress.money);
     this.ghost.checked = this.progress.showGhost;
     this.dev.checked = this.progress.workshop;
