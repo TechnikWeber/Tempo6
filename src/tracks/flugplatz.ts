@@ -41,6 +41,12 @@ const statics: BoxDef[] = [
   // free jump area on the apron in the south
   ramp([-150, -70], Math.PI / 2, 10, 6, 0.3, RAMP),
   ramp([-110, -70], Math.PI / 2, 16, 6, 0.36, RAMP),
+  // the wide open east half of that same apron had nothing in it at all: three more jumps,
+  // all different, to go find (well clear of the perimeter road's traffic along z = -50)
+  ramp([90.5, -60], Math.PI / 2, 10, 6, 0.32, RAMP), // top lands 3.5 m short of the trainer's tail
+  ramp([160, -65], Math.PI / 2, 9, 6, 0.26, RAMP),
+  ramp([190, -74], Math.PI, 8, 5, 0.3, RAMP),
+  ramp([65, -78], Math.PI / 2, 6, 5, 0.2, RAMP),
 ];
 
 const props: PropDef[] = [];
@@ -113,6 +119,11 @@ function plane(x: number, z: number, body: number, trim: number): void {
 plane(-150, 68, 0xe8e2d0, 0xd23b3b);
 plane(-110, 72, 0xb7c9d6, 0x2f6db5);
 plane(-70, 66, 0xd9c37a, 0x4f8a3c);
+// An old trainer sat right in the line of the first of the three new jumps: launch before
+// its tail, clear the whole fuselage and the fin, land flat beyond the nose.
+plane(110, -60, 0xc9a15a, 0x7b2d8e);
+decor.push({ type: 'label', pos: [82, 0.01, -60], half: [1.0, 0, 3.5], yaw: Math.PI / 2, text: L('DRÜBER!', 'OVER IT!') });
+props.push({ type: 'cone', pos: [85, 0.26, -64] }, { type: 'cone', pos: [85, 0.26, -56] });
 
 // A cargo plane you can actually drive into: a hollow fuselage, floor and roof and two side
 // walls, with a ramp down from the open tail. Solid all round, so nothing short-cuts through
@@ -148,10 +159,12 @@ decor.push(
   person(29, 76, Math.PI, 0x2b3a5a, 'carry', true),
 );
 
-// Planes patrolling over the field, back and forth, high above the lap.
+// Planes patrolling over the field, back and forth, high above the lap, and a zeppelin
+// further up still, slower, sweeping the whole length of it.
 decor.push(
   { type: 'plane', pos: [-20, 55, -40], half: [180, 0, 0], yaw: Math.PI / 2, color: 0xe8e2d0 },
   { type: 'plane', pos: [40, 70, 100], half: [140, 0, 0], yaw: 0, color: 0xb7c9d6 },
+  { type: 'zeppelin', pos: [0, 100, -20], half: [230, 0, 0], yaw: Math.PI / 2, color: 0xd8d4c8 },
 );
 
 // The tower, the windsock and the fuel truck in the north-east corner.

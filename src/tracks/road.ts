@@ -123,3 +123,24 @@ export function terrainFor(r: Road, half: [number, number], color: number, cell 
   }
   return { half, cols, rows, heights, color };
 }
+
+/**
+ * Raises a terrain's outer rim into hills, so the lot has no need of a boundary wall: tall
+ * enough that nothing sees over or past them, the climb eased in over `margin` metres so nothing
+ * placed further in than that (a stand, a village close to the fence) is touched at all.
+ */
+export function rimHills(t: TerrainDef, margin: number, height: number): TerrainDef {
+  const heights = t.heights.slice();
+  for (let iz = 0; iz <= t.rows; iz++) {
+    for (let ix = 0; ix <= t.cols; ix++) {
+      const x = -t.half[0] + (ix / t.cols) * t.half[0] * 2;
+      const z = -t.half[1] + (iz / t.rows) * t.half[1] * 2;
+      const edge = Math.min(t.half[0] - Math.abs(x), t.half[1] - Math.abs(z));
+      if (edge >= margin) continue;
+      // eased in steeply, most of the climb in the last stretch before the edge itself
+      const share = 1 - edge / margin;
+      heights[iz * (t.cols + 1) + ix] += height * share * share * share;
+    }
+  }
+  return { ...t, heights };
+}

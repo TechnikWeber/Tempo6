@@ -1,6 +1,6 @@
 import { L } from '../i18n';
 import {
-  AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
+  AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, CapsuleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
   Float32BufferAttribute, Fog, Group,
   HemisphereLight, IcosahedronGeometry, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Quaternion, RingGeometry, Scene, Shape, ShapeGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
@@ -211,6 +211,7 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       g.userData.x0 = d.pos[0];
       g.userData.z0 = d.pos[2];
       g.userData.yaw = d.yaw ?? 0;
+      g.userData.speed = 0.1;
       break;
     }
     case 'wreck': {
@@ -222,6 +223,24 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
         rig.root.position.y = -groundY(spec);
         g.add(rig.root);
       }
+      break;
+    }
+    case 'zeppelin': {
+      // a cigar envelope along +Z (yaw 0), tail fins in a cross, a gondola slung underneath;
+      // the view patrols it back and forth exactly like a plane, just slower — see animateSky
+      const env = new Mesh(new CapsuleGeometry(2.3, 10, 4, 14), mat(d.color ?? 0xd8d4c8));
+      env.rotation.x = Math.PI / 2;
+      env.castShadow = true;
+      g.add(env);
+      for (const roll of [0, Math.PI / 2]) box(g, 0.1, 2.6, 2.2, 0x3a3c40, 0, 0, -6.6).rotation.z = roll;
+      box(g, 1.8, 0.6, 0.9, 0x2a2a2e, 0, -2.6, -1); // the gondola
+      for (const s of [-0.7, 0.7]) box(g, 0.04, 1.7, 0.04, 0x1d1d1f, s, -1.7, -1);
+      g.userData.plane = true; // same slow patrol as a plane, just built differently
+      g.userData.range = hx || 150;
+      g.userData.x0 = d.pos[0];
+      g.userData.z0 = d.pos[2];
+      g.userData.yaw = d.yaw ?? 0;
+      g.userData.speed = 0.035; // slower than a plane's patrol
       break;
     }
     case 'smoke': {
@@ -529,11 +548,13 @@ export class View {
   private animateSky(dt: number): void {
     for (const p of this.planes) {
       const yaw = p.userData.yaw as number;
-      const off = Math.sin(this.time * 0.1 + (p.userData.phase ??= Math.random() * 10)) * (p.userData.range as number);
+      const speed = (p.userData.speed as number) ?? 0.1;
+      const t = this.time * speed + (p.userData.phase ??= Math.random() * 10);
+      const off = Math.sin(t) * (p.userData.range as number);
       p.position.x = (p.userData.x0 as number) + Math.sin(yaw) * off;
       p.position.z = (p.userData.z0 as number) + Math.cos(yaw) * off;
       // nose towards where it is actually heading right now, turning at the ends of its beat
-      const turning = Math.cos(this.time * 0.1 + (p.userData.phase as number)) < 0;
+      const turning = Math.cos(t) < 0;
       p.rotation.y = yaw + (turning ? Math.PI : 0);
     }
     for (const c of this.clouds) {

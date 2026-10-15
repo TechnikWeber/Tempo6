@@ -1,11 +1,10 @@
 import { L } from '../i18n';
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
-import { road, terrainFor } from './road';
+import { rimHills, road, terrainFor } from './road';
 import { distanceTo, forest, house, stand } from './scenery';
 import { person } from './works';
 
 const GRASS = 0x55903f;
-const CONCRETE = 0x9a9a94;
 
 // Rough layout only: a long, flowing lap in the spirit of the old mountain circuits, bend
 // after bend and one long straight to finish. The shape is our own, not a copy of a real one.
@@ -25,15 +24,13 @@ const ROAD = road([
   [-132, 42, 10], [-162, 46, 9], [-172, 12, 6],
   [-150, -20, 4], [-120, -30, 3], [-126, -62, 1.5], [-108, -92, 0.3],
 ], WIDTH, 12);
-const TERRAIN = terrainFor(ROAD, [LOT_X, LOT_Z], GRASS);
+// No boundary wall: the lot's outer rim rises into hills instead, well above the highest
+// ridge the road itself climbs to, eased in over the last 10 m so the village and the
+// stands at the bends — both set back further than that — stand on their own flat ground.
+const TERRAIN = rimHills(terrainFor(ROAD, [LOT_X, LOT_Z], GRASS), 10, 35);
 
-// (no floor: the terrain is the ground; the fence is tall enough for the highest ridge)
-const statics: BoxDef[] = [
-  { pos: [0, 6, LOT_Z], half: [LOT_X, 8, 0.3], color: CONCRETE },
-  { pos: [0, 6, -LOT_Z], half: [LOT_X, 8, 0.3], color: CONCRETE },
-  { pos: [LOT_X, 6, 0], half: [0.3, 8, LOT_Z], color: CONCRETE },
-  { pos: [-LOT_X, 6, 0], half: [0.3, 8, LOT_Z], color: CONCRETE },
-];
+// (no floor: the terrain is the ground)
+const statics: BoxDef[] = [];
 
 const decor: DecorDef[] = [...ROAD.decor];
 // A village along the start straight, between the road and the wall.

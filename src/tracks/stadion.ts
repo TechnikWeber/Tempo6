@@ -1,11 +1,10 @@
 import { L } from '../i18n';
 import type { BoxDef, DecorDef, TrackDef } from '../sim/Track';
-import { road, terrainFor } from './road';
+import { rimHills, road, terrainFor } from './road';
 import { distanceTo, floodlight, forest, stand } from './scenery';
 import { person } from './works';
 
 const GRASS = 0x5c9447;
-const CONCRETE = 0x9a9a94;
 
 // Rough layout only: fast arcs out through the woods, a hairpin at the far end, and a tight,
 // twisty section in front of the grandstands. The shape is our own, not a copy of a real one.
@@ -22,14 +21,13 @@ const ROAD = road([
   [-96, 26, 1], [-106, 0, 0.5], [-90, -20, 0],
   [-70, -26, 0], [-60, -46, 0], [-76, -60, 0], [-70, -72, 0],
 ], WIDTH, 10);
-const TERRAIN = terrainFor(ROAD, [LOT_X, LOT_Z], GRASS);
+// No boundary wall: the lot's outer rim rises into hills instead, tall enough that nothing
+// is seen over or past them. Eased in over the last 10 m, so the stands and car park (both
+// well inside that) stand on the flat ground the road itself was given.
+const TERRAIN = rimHills(terrainFor(ROAD, [LOT_X, LOT_Z], GRASS), 10, 35);
 
 // (no floor: the terrain is the ground)
 const statics: BoxDef[] = [
-  { pos: [0, 2, LOT_Z], half: [LOT_X, 4, 0.3], color: CONCRETE },
-  { pos: [0, 2, -LOT_Z], half: [LOT_X, 4, 0.3], color: CONCRETE },
-  { pos: [LOT_X, 2, 0], half: [0.3, 4, LOT_Z], color: CONCRETE },
-  { pos: [-LOT_X, 2, 0], half: [0.3, 4, LOT_Z], color: CONCRETE },
   // barriers in front of the grandstands along the start straight and behind the twisty bit
   { pos: [-10, 0.6, -79.4], half: [40, 0.6, 0.2], color: 0xd8dde2 },
   { pos: [-115.6, 0.6, -20], half: [0.2, 0.6, 30], color: 0xd8dde2 },

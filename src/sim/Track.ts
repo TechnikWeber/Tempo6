@@ -42,13 +42,13 @@ export interface DecorDef {
    * filling the outline `points` at the height of `pos`, `smoke` puffs rising from `pos`
    * (an engine running, say), `clock` a wall clock telling the real time (`half[0]` its
    * radius), `oval` a flat oval sign in `color` with a white rim (`half` its half width and
-   * height), `balloon` a hot-air balloon bobbing in the air, `plane` a small aircraft flying
-   * back and forth at `pos` along `yaw`, `half[0]` metres either way, `wreck` a vehicle model
-   * standing idle, `vehicle` saying which one (its id), with nobody in the seat, `person`
-   * somebody standing about in `color` (`pose`, `worker` in a hard hat and hi-vis vest);
-   * people are solid.
+   * height), `balloon` a hot-air balloon bobbing in the air, `plane` a small aircraft and
+   * `zeppelin` an airship, both flying back and forth at `pos` along `yaw`, `half[0]` metres
+   * either way, `wreck` a vehicle model standing idle, `vehicle` saying which one (its id),
+   * with nobody in the seat, `person` somebody standing about in `color` (`pose`, `worker`
+   * in a hard hat and hi-vis vest); people are solid.
    */
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon' | 'plane' | 'wreck' | 'person';
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon' | 'plane' | 'zeppelin' | 'wreck' | 'person';
   /** `wreck`: which vehicle (a VehicleId, kept as a plain string so this file need not know the type). */
   vehicle?: string;
   pos: [number, number, number];
