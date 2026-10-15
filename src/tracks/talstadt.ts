@@ -254,9 +254,17 @@ const beside = (k: number, t: number, out: number) => across(k, t, out);
   roadworks(y, side(7), 6, 24, lane(7, false), L('BAUSTELLE', 'ROADWORKS'));
 }
 
-// Trees beyond the yard, all four sides: north and south across the full width, east and
-// west filling in what those two bands leave out at the corners.
+// The yard's own four corners, inside the wall but well clear of the building and the road
+// loop (which hugs the footprint closely): small sheds, so the lot does not feel so empty.
+// A couple of bigger halls further out again, past the wall, read as neighbours in the
+// background rather than part of the works itself.
 const [LX, LZ] = SITE.lot;
+for (const [cx, cz, yaw] of [[LX - 20, LZ - 15, 0.2], [-LX + 20, LZ - 15, -0.15], [LX - 18, -LZ + 17, 0.4], [-LX + 22, -LZ + 15, -0.3]] as const) {
+  hall(y, cx, cz, yaw, 16, 12, 6, 0xb9bcc2, 0x5a6068, 4);
+}
+hall(y, LX + 70, 30, -0.25, 40, 22, 10, 0xaab0b6, 0x474c52, 9);
+hall(y, -LX - 75, -40, 0.3, 36, 20, 9, 0xaab0b6, 0x474c52, 8);
+
 y.decor.push(
   ...forest({ x: [-LX - 40, LX + 40], z: [LZ + 8, LZ + 40], count: 40, seed: 31 }),
   ...forest({ x: [-LX - 40, LX + 40], z: [-LZ - 40, -LZ - 8], count: 40, seed: 32 }),

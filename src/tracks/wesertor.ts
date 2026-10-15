@@ -231,9 +231,17 @@ for (const [t, k, pose] of [[0.32, 0, 'wave'], [0.35, 2, 'stand'], [0.38, 7, 'po
   roadworks(y, s, s.len * 0.45, s.len * 0.45 + 20, lane, L('BAUSTELLE', 'ROADWORKS'));
 }
 
-// Trees beyond the yard: south and east are plain woods; north keeps clear of the railway
-// (it runs on past the yard in both directions); west is the railway's own corner, left open.
+// The yard's own corners on the south and east sides, inside the wall but clear of both the
+// building and the road loop: small sheds, so the lot does not feel so empty. West and the
+// north corners are left alone — too close to the railway to risk it. A couple of bigger
+// halls further out again, east past the wall, read as neighbours in the background.
 const [LX, LZ] = SITE.lot;
+for (const [cx, cz, yaw] of [[LX - 18, LZ - 16, 0.3], [LX - 16, -LZ + 18, -0.2], [-LX + 20, -LZ + 16, 0.35]] as const) {
+  hall(y, cx, cz, yaw, 15, 11, 5.5, 0xb8a48c, 0x4a4d52, 4);
+}
+hall(y, LX + 65, -25, 0.2, 38, 20, 9, 0xa8967f, 0x3e4146, 8);
+hall(y, LX + 60, 55, -0.3, 30, 18, 8, 0xa8967f, 0x3e4146, 7);
+
 y.decor.push(
   ...forest({ x: [-LX - 40, LX + 40], z: [-LZ - 40, -LZ - 8], count: 40, seed: 41 }),
   ...forest({ x: [LX + 8, LX + 40], z: [-LZ, LZ], count: 20, seed: 42 }),
