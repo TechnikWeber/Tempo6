@@ -197,6 +197,22 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       g.userData.balloon = true;
       break;
     }
+    case 'plane': {
+      // a simple low-wing aircraft, nose along +Z (yaw 0) like everything else here; the
+      // view flies it back and forth along its heading, `half[0]` metres either way
+      const body = d.color ?? 0xe8e2d0;
+      box(g, 1.3, 1.0, 7.0, body, 0, 0.5);
+      box(g, 7.5, 0.15, 1.0, body, 0, 0.75, -0.6);
+      box(g, 2.6, 0.08, 0.9, body, 0, 0.65, -2.9);
+      box(g, 0.1, 1.1, 0.9, 0x2f6db5, 0, 1.25, -2.9);
+      box(g, 1.1, 0.9, 0.9, 0x9fc4d8, 0, 1.0, 1.1); // cockpit glazing
+      g.userData.plane = true;
+      g.userData.range = hx || 150;
+      g.userData.x0 = d.pos[0];
+      g.userData.z0 = d.pos[2];
+      g.userData.yaw = d.yaw ?? 0;
+      break;
+    }
     case 'smoke': {
       // puffs that the view lets rise, swell and fade, over and over
       for (let i = 0; i < 7; i++) {
@@ -257,6 +273,8 @@ export class View {
   /** Wall clocks telling the real time, and balloons bobbing in the air. */
   private clocks: Object3D[] = [];
   private balloons: Object3D[] = [];
+  /** Small aircraft, flying back and forth over a track. */
+  private planes: Object3D[] = [];
   /** Clouds drifting across the sky, round every track. */
   private readonly clouds: Group[] = [];
   /** The opponents of the race on show, and which game they belong to. */
@@ -367,11 +385,13 @@ export class View {
     this.smokes = [];
     this.clocks = [];
     this.balloons = [];
+    this.planes = [];
     for (const d of track.decor) {
       const m = buildDecor(d, ground);
       if (m.userData.smoke) this.smokes.push(m);
       if (m.userData.clock) this.clocks.push(m);
       if (m.userData.balloon) this.balloons.push(m);
+      if (m.userData.plane) this.planes.push(m);
       level.add(m);
     }
     for (const p of track.props) {
@@ -486,8 +506,17 @@ export class View {
     });
   }
 
-  /** Clouds drift, clocks tell the time, balloons bob. */
+  /** Clouds drift, clocks tell the time, balloons bob, planes patrol back and forth. */
   private animateSky(dt: number): void {
+    for (const p of this.planes) {
+      const yaw = p.userData.yaw as number;
+      const off = Math.sin(this.time * 0.1 + (p.userData.phase ??= Math.random() * 10)) * (p.userData.range as number);
+      p.position.x = (p.userData.x0 as number) + Math.sin(yaw) * off;
+      p.position.z = (p.userData.z0 as number) + Math.cos(yaw) * off;
+      // nose towards where it is actually heading right now, turning at the ends of its beat
+      const turning = Math.cos(this.time * 0.1 + (p.userData.phase as number)) < 0;
+      p.rotation.y = yaw + (turning ? Math.PI : 0);
+    }
     for (const c of this.clouds) {
       c.position.x += (c.userData.speed as number) * dt;
       if (c.position.x > 420) c.position.x -= 840;

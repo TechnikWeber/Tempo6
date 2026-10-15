@@ -1,7 +1,7 @@
 import { L } from '../i18n';
 import { ramp, type BoxDef, type DecorDef, type PickupDef, type PropDef, type TrackDef } from '../sim/Track';
 import { forest, street } from './scenery';
-import { person } from './works';
+import { frame, person, quat } from './works';
 
 const TARMAC = 0x45484d;
 const CONCRETE = 0x9a9a94;
@@ -113,6 +113,46 @@ function plane(x: number, z: number, body: number, trim: number): void {
 plane(-150, 68, 0xe8e2d0, 0xd23b3b);
 plane(-110, 72, 0xb7c9d6, 0x2f6db5);
 plane(-70, 66, 0xd9c37a, 0x4f8a3c);
+
+// A cargo plane you can actually drive into: a hollow fuselage, floor and roof and two side
+// walls, with a ramp down from the open tail. Solid all round, so nothing short-cuts through
+// its skin; the ramp lands flush with the cargo floor.
+function cargoPlane(x: number, z: number, yaw: number): void {
+  const f = frame(x, z, yaw);
+  const q = quat(yaw);
+  const CL = 11, CW = 2.6, CH = 2.6, FLOOR_Y = 0.55;
+  const box = (lx: number, y: number, lz: number, hx: number, hy: number, hz: number, color: number): void => {
+    const [bx, bz] = f(lx, lz);
+    statics.push({ pos: [bx, y, bz], half: [hx, hy, hz], quat: q, color });
+  };
+  box(0, FLOOR_Y / 2, 2.5, CW / 2 + 0.3, FLOOR_Y / 2, CL / 2, 0x8c949c); // floor, cargo bay
+  box(0, FLOOR_Y + CH + 0.1, 2.5, CW / 2 + 0.3, 0.1, CL / 2, 0xb7bfc6); // roof
+  for (const s of [-1, 1]) box(s * (CW / 2 + 0.1), FLOOR_Y + CH / 2, 2.5, 0.1, CH / 2, CL / 2, 0xc8ccd1); // side walls
+  box(0, FLOOR_Y + CH / 2, -4.5, 1.8, CH / 2, 0.1, 0xc8ccd1); // forward bulkhead, the cockpit is not modelled
+  // cockpit nose and the tail fin, up top, so it still reads as a plane from outside
+  box(0, FLOOR_Y + CH * 0.4, -6.2, 1.6, 0.9, 1.2, 0xd9c37a);
+  box(0, FLOOR_Y + CH + 1.3, 7.8, 1.1, 1.3, 0.15, 0x4a7ab5);
+  // the ramp down from the open tail, flush with the cargo floor (yaw then pitch, as in ramp())
+  const run = 4.6, angle = Math.atan(FLOOR_Y / run);
+  const cy = Math.cos(yaw / 2), sy = Math.sin(yaw / 2), sp = Math.sin(-angle / 2), cp = Math.cos(-angle / 2);
+  const [rx, rz] = f(0, 7.9 + run / 2);
+  statics.push({ pos: [rx, FLOOR_Y / 2, rz], half: [CW / 2, 0.06, run / 2], quat: [cy * sp, sy * cp, -sy * sp, cy * cp], color: 0x6b7078 });
+  // a wing, high enough that nothing catches on it
+  const [wx, wz] = f(0, 0.5);
+  statics.push({ pos: [wx, FLOOR_Y + CH + 0.6, wz], half: [9, 0.15, 1.1], quat: q, color: 0xd9c37a });
+}
+cargoPlane(25, 64, Math.PI);
+decor.push(
+  { type: 'label', pos: [25, 0.57, 60], half: [1.0, 0, 3.5], yaw: Math.PI, text: 'CARGO' },
+  person(21, 58.5, 0.6, 0x2b3a5a, 'point', true),
+  person(29, 76, Math.PI, 0x2b3a5a, 'carry', true),
+);
+
+// Planes patrolling over the field, back and forth, high above the lap.
+decor.push(
+  { type: 'plane', pos: [-20, 55, -40], half: [180, 0, 0], yaw: Math.PI / 2, color: 0xe8e2d0 },
+  { type: 'plane', pos: [40, 70, 100], half: [140, 0, 0], yaw: 0, color: 0xb7c9d6 },
+);
 
 // The tower, the windsock and the fuel truck in the north-east corner.
 statics.push({ pos: [165, 6, 68], half: [3, 6, 3], color: 0xd8d4c8 });

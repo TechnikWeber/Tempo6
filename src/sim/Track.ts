@@ -42,10 +42,11 @@ export interface DecorDef {
    * filling the outline `points` at the height of `pos`, `smoke` puffs rising from `pos`
    * (an engine running, say), `clock` a wall clock telling the real time (`half[0]` its
    * radius), `oval` a flat oval sign in `color` with a white rim (`half` its half width and
-   * height), `balloon` a hot-air balloon bobbing in the air, `person` somebody standing
-   * about in `color` (`pose`, `worker` in a hard hat and hi-vis vest); people are solid.
+   * height), `balloon` a hot-air balloon bobbing in the air, `plane` a small aircraft flying
+   * back and forth at `pos` along `yaw`, `half[0]` metres either way, `person` somebody
+   * standing about in `color` (`pose`, `worker` in a hard hat and hi-vis vest); people are solid.
    */
-  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon' | 'person';
+  type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon' | 'plane' | 'person';
   pos: [number, number, number];
   half?: [number, number, number];
   color?: number;
