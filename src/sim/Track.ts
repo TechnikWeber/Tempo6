@@ -221,10 +221,10 @@ export const TRAFFIC_SHAPES = {
 
 /**
  * A ramp that starts at ground level at `start` and rises along heading `yaw`
- * (0 = +Z, π/2 = +X).
+ * (0 = +Z, π/2 = +X). `thick` is its half-thickness, 0.1 if not given.
  */
-export function ramp(start: [number, number], yaw: number, length: number, width: number, angle: number, color: number, base = 0): BoxDef {
-  const t = 0.1;
+export function ramp(start: [number, number], yaw: number, length: number, width: number, angle: number, color: number, base = 0, thick = 0.1): BoxDef {
+  const t = thick;
   const run = (length / 2) * Math.cos(angle);
   const sy = Math.sin(yaw / 2), cy = Math.cos(yaw / 2);
   const sp = Math.sin(-angle / 2), cp = Math.cos(-angle / 2);

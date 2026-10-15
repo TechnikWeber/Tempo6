@@ -48,7 +48,7 @@ const decor: DecorDef[] = [
 const RAMP_ANGLE = 0.22;
 const RAMP_LEN = LIFT_H / Math.sin(RAMP_ANGLE);
 const RAMP_PROJ = RAMP_LEN * Math.cos(RAMP_ANGLE);
-statics.push(ramp([0, LIFT_HALF + RAMP_PROJ], Math.PI, RAMP_LEN, LIFT_HALF * 2, RAMP_ANGLE, YELLOW));
+statics.push(ramp([0, LIFT_HALF + RAMP_PROJ], Math.PI, RAMP_LEN, LIFT_HALF * 1.1, RAMP_ANGLE, YELLOW, 0, 0.04));
 
 /** A thin diagonal beam at a fixed X, from (x, y0, z0) to (x, y1, z1): one arm of the scissor. */
 function beam(x: number, y0: number, z0: number, y1: number, z1: number, color: number): BoxDef {

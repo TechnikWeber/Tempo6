@@ -257,9 +257,9 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     colors: { body: 0x17181c, accent: 0x29b6f6, seat: 0x101114, hub: 0x29b6f6 },
   }),
 
-  // Baugleich mit dem Arrivo (gleiche Maße, Masse, Räder, Werte) bis auf eine Stelle: die
-  // Batterie sitzt vorn unterm Sitz statt im Klappgelenk, darum ist an diesem hier nichts
-  // mehr zum Zusammenklappen. Ein eigener Name, kein Markenname.
+  // The same frame as the Arrivo, not a copy of its numbers: the battery sits up front
+  // under the seat instead of in the folding hinge, so there is nothing left to fold, and
+  // the extra weight over the casters makes it a little steadier, a little less eager.
   sprite: define({
     id: 'sprite',
     label: 'Sprite',
@@ -270,27 +270,27 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     ],
     category: 'folder',
     kind: L('Elektrorollstuhl · Heckantrieb, Batterie vorn unterm Sitz', 'Power wheelchair · rear-wheel drive, battery under the seat, up front'),
-    blurb: L('Baugleich mit dem Arrivo Karton, bis auf eine Stelle: die Batterie sitzt vorn unterm Sitz statt im Klappgelenk. Darum bleibt hier auch nichts mehr zum Zusammenklappen.', 'The same chair as the Arrivo Cardboard underneath, but for one thing: the battery sits up front, under the seat, instead of in the folding hinge. So there is nothing left here to fold.'),
-    stats: { tempo: 3, antritt: 4, wendig: 4, standfest: 2 },
+    blurb: L('Der gleiche Rahmen wie beim Arrivo Karton, aber kein Nachbau: die Batterie sitzt vorn unterm Sitz statt im Klappgelenk, darum ist hier nichts mehr zum Zusammenklappen. Das Mehrgewicht vorn macht ihn etwas ruhiger, dafür etwas behäbiger.', 'The same frame as the Arrivo Cardboard, but not a copy: the battery sits up front, under the seat, instead of in the folding hinge, so there is nothing left here to fold. The extra weight up front makes it a little calmer, if a little less eager.'),
+    stats: { tempo: 3, antritt: 3, wendig: 4, standfest: 3 },
     unlockPrice: 110,
-    mass: 100,
+    mass: 108,
     half: [0.28, 0.2, 0.42],
     clearance: 0.14,
-    com: [0, -0.08, 0],
-    inertia: [13, 11, 8],
+    com: [0, -0.08, 0.03],
+    inertia: [14, 12, 9],
     wheels: [
-      ...pair(0.29, { z: -0.22, radius: 0.15, load: 0.305, drive: true, turn: true }),
-      ...pair(0.22, { z: 0.34, radius: 0.09, load: 0.195, caster: true }),
+      ...pair(0.29, { z: -0.22, radius: 0.15, load: 0.28, drive: true, turn: true }),
+      ...pair(0.22, { z: 0.34, radius: 0.09, load: 0.22, caster: true }),
     ],
     maxYawRate: 2.8,
     maxSteer: 0,
     wheelbase: 0.56,
     speedFactor: 1,
-    accelFactor: 1.15,
-    tipFactor: 1.15,
+    accelFactor: 1.08,
+    tipFactor: 1.0,
     gripFactor: 1,
     look: 'folder',
-    colors: { body: 0x1c1f24, accent: BLUE, seat: 0x15161a, hub: 0xc9ccd1 },
+    colors: { body: 0x1c1f24, accent: PURPLE, seat: 0x15161a, hub: 0xc9ccd1 },
   }),
 
   arrivo: define({
