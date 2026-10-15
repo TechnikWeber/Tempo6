@@ -5,7 +5,7 @@ import {
   HemisphereLight, IcosahedronGeometry, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Quaternion, RingGeometry, Scene, Shape, ShapeGeometry, SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
 } from 'three';
-import { HANDLING, VEHICLES, type VehicleSpec } from '../config/vehicles';
+import { groundY, HANDLING, VEHICLES, type VehicleId, type VehicleSpec } from '../config/vehicles';
 import { GHOST_RATE, type GhostLap } from '../sim/Progress';
 import type { GameCore } from '../sim/GameCore';
 import { drumSlats } from '../sim/Movers';
@@ -211,6 +211,17 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       g.userData.x0 = d.pos[0];
       g.userData.z0 = d.pos[2];
       g.userData.yaw = d.yaw ?? 0;
+      break;
+    }
+    case 'wreck': {
+      // a real vehicle model, standing idle: the seat empty, nobody at the controls
+      const spec = VEHICLES[d.vehicle as VehicleId];
+      if (spec) {
+        const rig = buildVehicle(spec);
+        rig.driver.visible = false;
+        rig.root.position.y = -groundY(spec);
+        g.add(rig.root);
+      }
       break;
     }
     case 'smoke': {
