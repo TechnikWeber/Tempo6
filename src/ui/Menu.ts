@@ -256,6 +256,11 @@ export class Menu {
     return !this.root.hidden;
   }
 
+  /** The phone's two-step picker, on its ride-only step: nothing covers the screen below it. */
+  get showingVehicleAlone(): boolean {
+    return this.mobileStep === 'vehicle';
+  }
+
   show(): void {
     this.root.hidden = false;
     this.vehicle = this.progress.vehicle;

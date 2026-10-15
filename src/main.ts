@@ -400,7 +400,7 @@ function frame(now: number): void {
   sound.setBoost(racing ? v.boost : 0);
   listen(v.body.translation());
   if (racing) hud.update(core);
-  view.render(core, acc / STEP, dt, !racing);
+  view.render(core, acc / STEP, dt, !racing, !menu.showingVehicleAlone);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

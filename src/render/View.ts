@@ -792,8 +792,11 @@ export class View {
   /**
    * @param alpha position between the last two physics steps, 0…1
    * @param showroom circle the camera around the parked vehicle (start screen)
+   * @param lift in the showroom, lift the vehicle up toward the header for a menu that still
+   * covers the lower half of a tall phone screen below it; the ride-only step of the picker
+   * has that space free instead, so there the frame is left centred
    */
-  render(core: GameCore, alpha: number, dt: number, showroom = false): void {
+  render(core: GameCore, alpha: number, dt: number, showroom = false, lift = true): void {
     const v = core.sim.vehicle;
     // The battery pack shows up on the vehicle the moment it is bought.
     // …and a repaired one is a new one.
@@ -876,7 +879,7 @@ export class View {
       m.position.y = track.pickups[i].pos[1] + Math.sin(this.time * 3 + i) * 0.08;
     });
 
-    if (showroom) this.showroomCamera(model.root.position, v.yaw);
+    if (showroom) this.showroomCamera(model.root.position, v.yaw, lift);
     else this.updateCamera(model.root.position, v.yaw, v, dt);
     this.renderer.render(this.scene, this.camera);
   }
@@ -905,20 +908,23 @@ export class View {
     model.body.rotation.x = s.pitch;
   }
 
-  private showroomCamera(pos: Vector3, yaw: number): void {
+  private showroomCamera(pos: Vector3, yaw: number, lift: boolean): void {
     // Slow orbit, starting from the front three-quarter view.
-    // On a phone held upright the frame is narrow, so stand further back, and the menu covers
-    // the lower half, so lift the vehicle into the gap above it.
+    // On a phone held upright the frame is narrow, so stand further back regardless. The extra
+    // push that crops the view up toward the header is only wanted while the menu still covers
+    // the lower half of the screen below the vehicle (the track step) -- on the ride-only step
+    // that space is free, and the same push instead ran the vehicle's head up through the title.
     const tall = this.camera.aspect < 0.8;
+    const crop = tall && lift;
     const r = tall ? Math.min(1.8, 0.8 / this.camera.aspect) : 1;
     const a = yaw + 0.7 + this.time * 0.35;
     this.camera.position.set(pos.x + Math.sin(a) * 3.4 * r, pos.y + 1.1 * r, pos.z + Math.cos(a) * 3.4 * r);
     this.camera.lookAt(pos.x, pos.y + 0.25, pos.z);
-    if (this.camera.fov !== 42 || (this.camera.view?.enabled ?? false) !== tall) {
+    if (this.camera.fov !== 42 || (this.camera.view?.enabled ?? false) !== crop) {
       this.camera.fov = 42;
       // (the sizes only count as shares, but they set the aspect, so they keep it)
       const w = this.camera.aspect * 1000;
-      if (tall) this.camera.setViewOffset(w, 1000, 0, 130, w, 1000);
+      if (crop) this.camera.setViewOffset(w, 1000, 0, 130, w, 1000);
       else this.camera.clearViewOffset();
       this.camera.updateProjectionMatrix();
     }
