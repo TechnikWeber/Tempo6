@@ -40,7 +40,7 @@ export const BOOST = {
   /** In Schrauben. */
   price: 250,
   /** Seconds a full charge lasts. */
-  duration: 2.4,
+  duration: 2.65,
   /** Charge needed before it fires again after running dry. */
   minCharge: 0.25,
   /** Extra top speed at full boost: a share of the current top speed plus a fixed bit (m/s). */

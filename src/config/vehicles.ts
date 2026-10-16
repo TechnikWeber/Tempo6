@@ -257,9 +257,9 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     colors: { body: 0x17181c, accent: 0x29b6f6, seat: 0x101114, hub: 0x29b6f6 },
   }),
 
-  // The same frame as the Arrivo, not a copy of its numbers: the battery sits up front
-  // under the seat instead of in the folding hinge, so there is nothing left to fold, and
-  // the extra weight over the casters makes it a little steadier, a little less eager.
+  // A frame like the Arrivo's, not the same one: rigid, with cross braces, so it does not
+  // fold even though the battery sits under the seat on both. A little more weight towards
+  // the casters makes it a little steadier, a little less eager.
   sprite: define({
     id: 'sprite',
     label: 'Sprite',
@@ -268,9 +268,9 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
       prof(L('Federgewicht', 'Featherweight'), L('Springt los, dreht sofort, fällt gern um.', 'Leaps off, turns at once, likes falling over.'), { accel: 1.4, turn: 1.3, sharp: 1.15, tip: 1.0, assist: 0.8, brake: 1.2 }),
       prof(L('Carbon-Renner', 'Carbon Racer'), L('Steif, schnell, klebt in der Kurve.', 'Stiff, fast, glued to the corner.'), { speed: 1.2, sharp: 1.2, grip: 1.2, tip: 0.8, turn: 0.9 }),
     ],
-    category: 'folder',
-    kind: L('Elektrorollstuhl · Heckantrieb, Batterie vorn unterm Sitz', 'Power wheelchair · rear-wheel drive, battery under the seat, up front'),
-    blurb: L('Der gleiche Rahmen wie beim Arrivo Karton, aber kein Nachbau: die Batterie sitzt vorn unterm Sitz statt im Klappgelenk, darum ist hier nichts mehr zum Zusammenklappen. Das Mehrgewicht vorn macht ihn etwas ruhiger, dafür etwas behäbiger.', 'The same frame as the Arrivo Cardboard, but not a copy: the battery sits up front, under the seat, instead of in the folding hinge, so there is nothing left here to fold. The extra weight up front makes it a little calmer, if a little less eager.'),
+    category: 'push',
+    kind: L('Elektrorollstuhl · Heckantrieb, starrer Rahmen', 'Power wheelchair · rear-wheel drive, rigid frame'),
+    blurb: L('Ähnlich gebaut wie der Arrivo Karton, aber nicht der gleiche Rahmen: starr verstrebt, und obwohl die Batterie bei beiden unterm Sitz sitzt, lässt er sich nicht zusammenklappen. Das Mehrgewicht macht ihn etwas ruhiger, dafür etwas behäbiger.', 'Built much like the Arrivo Cardboard, but not on the same frame: rigidly braced, and though the battery sits under the seat on both, it does not fold. The extra weight makes it a little calmer, if a little less eager.'),
     stats: { tempo: 3, antritt: 3, wendig: 4, standfest: 3 },
     unlockPrice: 110,
     mass: 108,
@@ -396,7 +396,7 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 
   enix: define({
     id: 'enix',
-    label: 'e-six(7)',
+    label: 'e-six Seven',
     profiles: [
       BASE,
       prof(L('Begleitperson', 'Attendant'), L('Jemand anderes lenkt von hinten. Vorsichtig. Sehr vorsichtig.', 'Someone else steers from behind. Carefully. Very carefully.'), { accel: 0.7, turn: 0.7, speed: 0.85, tip: 0.7, brake: 1.2 }),
@@ -634,8 +634,8 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
 /** Menu groups. The titles stay close to what the trade calls these things. */
 export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] }[] = [
   { id: 'power', title: L('Bordstein-Brecher', 'Kerb Crushers'), vehicles: ['trex', 'avanti', 'avantifx', 'orkan'] },
-  { id: 'folder', title: L('Falt(en)wunder', 'Fold Wonders'), vehicles: ['arrivo', 'sprite'] },
-  { id: 'push', title: 'Power Addons', vehicles: ['eskalation', 'enix', 'schubs'] },
+  { id: 'folder', title: L('Falt(en)wunder', 'Fold Wonders'), vehicles: ['arrivo'] },
+  { id: 'push', title: 'Power Addons', vehicles: ['eskalation', 'enix', 'schubs', 'sprite'] },
   { id: 'tractor', title: L('Vorderlader', 'Front Loaders'), vehicles: ['ekaptn'] },
   { id: 'scooter', title: L('Seniorenraketen', 'Silver Rockets'), vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
 ];

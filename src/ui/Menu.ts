@@ -22,6 +22,8 @@ interface MenuHandlers {
   onDevMode(on: boolean): void;
   /** Everything bought and tuned all the way, to try things out; returns what it did. */
   onUnlockAll(): string;
+  /** The whole save thrown away, to start over. */
+  onWipe(): void;
 }
 
 /** Why something cannot be had yet: what the card says, and what it costs if it can be bought. */
@@ -165,7 +167,8 @@ export class Menu {
 
   /**
    * Along the bottom: the settings behind a cog (folded away until wanted) and full screen.
-   * The settings: save to a file, load from one, the language, the ghost, dev mode and unlocking everything.
+   * The settings: save to a file, load from one, the language, the ghost, dev mode, unlocking
+   * everything and wiping the save (the workshop has that too, but there is no F2 on a phone).
    */
   private bar(): HTMLElement {
     const bar = h('div', 'menubar');
@@ -220,7 +223,26 @@ export class Menu {
     const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
     other.title = L('Switch to English', 'Auf Deutsch umstellen');
     other.addEventListener('click', () => switchLanguage(lang === 'de' ? 'en' : 'de'));
-    box.append(save, load, file, other, shadow, dev, all);
+    // wiping the save takes a second tap within a few seconds, so one slip does not cost everything
+    const wipeText = L('🗑 Spielstand löschen', '🗑 Delete progress');
+    const wipe = h('button', 'tool danger', wipeText);
+    wipe.title = L('Alles zurück auf Anfang: Schrauben, Freischaltungen, Tuning, Bestzeiten', 'Everything back to the start: Schrauben, unlocks, tuning, best times');
+    let armed = 0;
+    wipe.addEventListener('click', () => {
+      if (armed) {
+        clearTimeout(armed);
+        this.handlers.onWipe();
+        return;
+      }
+      wipe.textContent = L('🗑 Wirklich? Nochmal tippen', '🗑 Sure? Tap again');
+      wipe.classList.add('on');
+      armed = window.setTimeout(() => {
+        armed = 0;
+        wipe.textContent = wipeText;
+        wipe.classList.remove('on');
+      }, 4000);
+    });
+    box.append(save, load, file, other, shadow, dev, all, wipe);
     bar.append(panel, cog);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {

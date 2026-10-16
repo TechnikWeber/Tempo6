@@ -20,7 +20,7 @@ Ein Rennspiel mit Elektrorollstühlen und Seniorenmobilen. Jedes Gefährt starte
 - **Modi:** Zeitrennen gegen die Uhr und den eigenen Schatten, Rennen über drei Runden gegen drei Gegner, Freestyle für Stunt-Ketten, dazu experimentell ein Crashtest.
 - **Strecken:** Reha-Parcours, Baumarkt-Parkplatz, Werk Talstadt, Himmelspfad, Altwerk Porta Westafrika, Alter Flugplatz, Spielwiese, Stadionkurs, Große Schleife und das Crashtest-Gelände.
 - **Tuning:** acht Stufen bis 75 km/h, Boost-Batterie, drei Fahrprofile je Gefährt, alles auch in der Garage.
-- **Spielstand:** bleibt im Browser; über „Speichern“ und „Laden“ auch als Datei, die das Löschen der Browserdaten übersteht.
+- **Spielstand:** bleibt im Browser; über „Speichern“ und „Laden“ auch als Datei, die das Löschen der Browserdaten übersteht; „Spielstand löschen“ in den Einstellungen fängt von vorn an.
 
 ## Fahrzeuge
 
@@ -36,8 +36,9 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Garage. Solange der Dev-S
 | Strom4 | Bordstein-Brecher | Schwerer Heckantrieb, sehr standfest |
 | Arrivo Karton | Falt(en)wunder | Leichter faltbarer Elektrorollstuhl, flink |
 | e-skalation | Power Addons | Radnabenmotoren, Schub in Greifreifen-Stößen |
-| e-six(7) | Power Addons | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
+| e-six Seven | Power Addons | Radnabenmotoren mit Joystick, auf Wunsch Begleitsteuerung |
 | Arschtritt 3000 | Power Addons | Schubrad am Heck, Lenken und Bremsen von Hand |
+| Sprite | Power Addons | Elektrorollstuhl mit starrem Rahmen, nicht faltbar, ruhiger |
 | e-kapitän | Vorderlader | Zuggerät vorn, drei Räder, am schnellsten |
 | Kohlibri | Seniorenraketen | Winziges Seniorenmobil, wendig, kippelig |
 | Lion | Seniorenraketen | Kompaktes Seniorenmobil |

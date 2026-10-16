@@ -143,6 +143,11 @@ const menu = new Menu(progress, {
     core.applyStage();
     return L('Alles freigeschaltet und voll getunt.', 'Everything unlocked and fully tuned.');
   },
+  onWipe() {
+    progress.wipe();
+    // (same as loading a save: everything reads the fresh one from the start)
+    location.reload();
+  },
 });
 
 const garage = new Garage({

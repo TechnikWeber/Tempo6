@@ -440,6 +440,8 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #menu header .purse { margin-left: auto; }
 #menu .menubar { grid-area: menubar; position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
 #menu .menubar .tool.on { outline: 2px solid var(--accent); }
+#menu .menubar .tool.danger { color: #ff8a80; }
+#menu .menubar .tool.danger.on { outline-color: #ff5252; }
 #menu .settings { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(92vw, 560px); display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px; background: rgb(18 20 24 / 0.92); border-radius: 12px; }
 #menu .settings .toggle { display: flex; align-items: center; gap: 4px; }
 #menu .col:last-of-type { display: flex; flex-direction: column; }

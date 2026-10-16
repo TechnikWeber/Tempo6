@@ -20,7 +20,7 @@ A racing game with power wheelchairs and mobility scooters. Every vehicle starts
 - **Modes:** time trial against the clock and your own ghost, a three-lap race against three others, freestyle for stunt chains, and an experimental crashtest.
 - **Tracks:** Reha-Parcours, DIY-store car park, Talstadt works, the Sky Path, the old works at Porta West Africa, an old airfield, a playground of ramps, a stadium circuit, a long hill circuit and the crashtest ground.
 - **Tuning:** eight stages up to 75 km/h, a boost battery, three driving profiles per vehicle, all in the garage too.
-- **Save:** kept in the browser, and with "Speichern"/"Laden" as a file that survives clearing the browser's data.
+- **Save:** kept in the browser, and with "Speichern"/"Laden" as a file that survives clearing the browser's data; "Spielstand löschen" in the settings starts over.
 
 ## Vehicles
 
@@ -36,8 +36,9 @@ Every vehicle has three driving profiles to choose from in the garage. While the
 | Strom4 | Power wheelchairs | Heavy rear-wheel drive, very stable |
 | Arrivo Karton | One-piece folder | Light folding power chair, nimble |
 | e-skalation | Power Addons | Hub motors, thrust in push strokes |
-| e-six(7) | Power Addons | Hub motors with a joystick, optional attendant control |
+| e-six Seven | Power Addons | Hub motors with a joystick, optional attendant control |
 | Arschtritt 3000 | Power Addons | Pusher wheel at the back, steered and braked by hand |
+| Sprite | Power Addons | Power chair on a rigid frame, does not fold, calmer |
 | e-kapitän | Tractor unit | Front-mounted drive, three wheels, fastest |
 | Kohlibri | Mobility scooters | Tiny, agile, tippy |
 | Lion | Mobility scooters | Compact |

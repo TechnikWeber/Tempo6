@@ -425,7 +425,10 @@ function buildScooter(spec: VehicleSpec): VehicleModel {
   };
 }
 
-/** Slim folding power chair: carbon side frames instead of a battery base. */
+/**
+ * Slim power chair: carbon side frames instead of a battery base. The Arrivo's swoop from hub
+ * to caster folds; the Sprite gets a rigid ladder frame with cross braces in its place.
+ */
 function buildFolder(spec: VehicleSpec): VehicleModel {
   const root = new Group();
   const { body, accent, seat } = spec.colors;
@@ -437,18 +440,33 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
   box(root, 0.42, 0.46, 0.03, seat, 0, seatY + 0.27, -0.27); // (thinner than the back tubes beside it)
   box(root, 0.3, 0.08, 0.2, 0x25252a, 0, seatY - 0.08, -0.04); // battery under the seat
   box(root, 0.305, 0.02, 0.205, accent, 0, seatY - 0.045, -0.04);
+  const rigid = spec.id === 'sprite';
+  const railY = -0.115;
   for (const s of [1, -1]) {
-    // one swooping side frame from the rear hub to the front caster
-    const rear = box(root, 0.035, 0.05, 0.4, body, s * 0.22, (seatY + axleY) / 2 - 0.02, -0.12);
-    rear.rotation.x = -0.75;
-    const front = box(root, 0.035, 0.05, 0.5, body, s * 0.22, (seatY + g) / 2 + 0.06, 0.2);
-    front.rotation.x = 0.7;
+    if (rigid) {
+      // a straight bottom rail with two posts up to the seat rail, and a hanger to the footplate
+      box(root, 0.032, 0.04, 0.62, body, s * 0.22, railY, 0.06);
+      for (const z of [-0.18, 0.19]) box(root, 0.03, 0.16, 0.03, body, s * 0.22, -0.04, z);
+      const hanger = box(root, 0.03, 0.03, 0.18, body, s * 0.2, (railY + g + 0.08) / 2, 0.405);
+      hanger.rotation.x = 1.1;
+    } else {
+      // one swooping side frame from the rear hub to the front caster
+      const rear = box(root, 0.035, 0.05, 0.4, body, s * 0.22, (seatY + axleY) / 2 - 0.02, -0.12);
+      rear.rotation.x = -0.75;
+      const front = box(root, 0.035, 0.05, 0.5, body, s * 0.22, (seatY + g) / 2 + 0.06, 0.2);
+      front.rotation.x = 0.7;
+    }
     box(root, 0.035, 0.035, 0.44, body, s * 0.22, seatY - 0.02, 0); // seat rail
     box(root, 0.012, 0.02, 0.43, accent, s * 0.24, seatY - 0.02, 0); // pinstripe
     box(root, 0.035, 0.52, 0.035, body, s * 0.22, seatY + 0.28, -0.27); // back tube
     box(root, 0.045, 0.045, 0.12, 0x111111, s * 0.22, seatY + 0.54, -0.29); // push handle, thicker than the tube
     box(root, 0.05, 0.035, 0.32, seat, s * 0.25, seatY + 0.2, 0); // armrest
     box(root, 0.03, 0.2, 0.03, body, s * 0.25, seatY + 0.1, -0.14);
+  }
+  // the cross braces that keep the Sprite from folding (ends buried in the bottom rails)
+  if (rigid) {
+    for (const z of [-0.15, 0.12]) box(root, 0.41, 0.03, 0.03, accent, 0, railY, z);
+    box(root, 0.42, 0.025, 0.03, body, 0, g + 0.065, 0.44); // under the footplate, between the hangers
   }
   box(root, 0.34, 0.02, 0.16, body, 0, g + 0.08, 0.44); // one-piece footplate
   for (const w of spec.wheels) if (w.caster) box(root, 0.03, 0.12, 0.03, STEEL, w.x, g + w.radius + 0.09, w.z);
