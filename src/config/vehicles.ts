@@ -4,9 +4,10 @@ export type VehicleId =
   | 'arrivo'
   | 'eskalation' | 'enix' | 'schubs'
   | 'ekaptn'
-  | 'piepmatz' | 'tiger' | 'komet' | 'wagen';
+  | 'piepmatz' | 'tiger' | 'komet' | 'wagen'
+  | 'scala';
 
-export type CategoryId = 'power' | 'folder' | 'push' | 'tractor' | 'scooter';
+export type CategoryId = 'power' | 'folder' | 'push' | 'tractor' | 'scooter' | 'stair';
 
 /** For testing: everything selectable without paying. */
 export const UNLOCK_ALL = false;
@@ -77,7 +78,7 @@ function prof(name: string, blurb: string, o: Partial<DriveProfile>): DriveProfi
   return { ...BASE, ...o, name, blurb };
 }
 
-export type Look = 'mid' | 'rear' | 'front' | 'heavy' | 'folder' | 'manual' | 'scooter';
+export type Look = 'mid' | 'rear' | 'front' | 'heavy' | 'folder' | 'manual' | 'scooter' | 'stair';
 
 export interface VehicleSpec {
   id: VehicleId;
@@ -136,8 +137,8 @@ function define(s: SpecInput): VehicleSpec {
   const suspensionRest = 0.2;
   return {
     ...s,
-    // Add-on drives and the folder come from one maker, everything else from the other.
-    brand: s.category === 'push' || s.category === 'tractor' || s.category === 'folder' ? 'purple' : 'blue',
+    // Add-on drives, the folder and the stair climber come from one maker, everything else from the other.
+    brand: s.category === 'push' || s.category === 'tractor' || s.category === 'folder' || s.category === 'stair' ? 'purple' : 'blue',
     suspensionRest,
     wheels: s.wheels.map((w) => ({
       ...w,
@@ -629,6 +630,50 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
     look: 'scooter',
     colors: { body: 0x1f3f7a, accent: 0xff7a00, seat: 0x24262b, hub: 0xd9d9d9 },
   }),
+
+  // A stair climber with a seat (a hand truck with a chair in front), so it has no wheels of
+  // its own up front: it rolls on its two big wheels, tipped forward a little (STAIR.lean),
+  // and on the roller skates of the one who hangs on to the handlebar at the back. Driven
+  // like a front-wheel-drive chair; the skates trail behind like casters.
+  scala: define({
+    id: 'scala',
+    label: L('Skandalmobil', 'Scandalmobile'),
+    profiles: [
+      BASE,
+      prof(L('Rollerdisco', 'Roller Disco'), L('Oma tanzt durch jede Kurve, das Heck schwingt im Takt.', 'Grandma dances through every corner, the tail swings to the beat.'), { turn: 1.25, sharp: 1.2, accel: 1.1, fwdStability: 0.95, tip: 0.85 }),
+      prof(L('Wasserski', 'Water Ski'), L('Opa gibt Vollgas, Oma hängt hinten dran wie am Motorboot. Schnell, lenkt aber behäbig.', 'Grandpa floors it, Grandma hangs on behind as if towed by a speedboat. Fast, but slow to turn.'), { speed: 1.2, accel: 1.2, turn: 0.8, sharp: 0.85, tip: 0.85 }),
+    ],
+    category: 'stair',
+    kind: L('Treppensteiger mit Sitz · für Rennen umgebaut, Oma auf Rollschuhen', 'Stair climber with a seat · rebuilt for racing, Grandma on roller skates'),
+    blurb: L('Eigentlich ein ganz normaler Treppensteiger, in Manufakturarbeit für Rennen getunt. Treppen steigt er keine mehr, dafür fährt er: Opa sitzt vorn, Oma hängt auf Rollschuhen am Griff und lässt sich ziehen. Gewagtes Experiment.', 'Really just an ordinary stair climber, hand-tuned for racing in a small workshop. It no longer climbs stairs, it drives: Grandpa sits up front, Grandma hangs on to the handlebar on roller skates and gets towed along. A daring experiment.'),
+    stats: { tempo: 4, antritt: 3, wendig: 3, standfest: 2 },
+    unlockPrice: 200,
+    mass: 150,
+    half: [0.3, 0.2, 0.75],
+    clearance: 0.2,
+    com: [0, -0.13, 0.061],
+    inertia: [24, 18, 12],
+    wheels: [
+      ...pair(0.26, { z: 0.15, radius: 0.13, load: 0.42, drive: true, turn: true }),
+      // the skates: Grandma is towed, so she is light on her feet
+      ...pair(0.15, { z: -0.405, radius: 0.06, load: 0.08, caster: true }),
+    ],
+    maxYawRate: 2.4,
+    maxSteer: 0,
+    wheelbase: 0.555,
+    speedFactor: 1.05,
+    accelFactor: 1,
+    tipFactor: 0.8,
+    gripFactor: 1,
+    look: 'stair',
+    colors: { body: 0x565c66, accent: 0xd32f2f, seat: 0x17181b, hub: 0xc9ccd1 },
+  }),
+};
+
+/** Looks of the tuned stair climber, live in the workshop. */
+export const STAIR = {
+  /** How far it is tipped forward on its big wheels (rad), as if towing Grandma along. */
+  lean: 0.21,
 };
 
 /** Menu groups. The titles stay close to what the trade calls these things. */
@@ -638,6 +683,7 @@ export const CATEGORIES: { id: CategoryId; title: string; vehicles: VehicleId[] 
   { id: 'push', title: 'Power Addons', vehicles: ['eskalation', 'enix', 'schubs', 'sprite'] },
   { id: 'tractor', title: L('Vorderlader', 'Front Loaders'), vehicles: ['ekaptn'] },
   { id: 'scooter', title: L('Seniorenraketen', 'Silver Rockets'), vehicles: ['piepmatz', 'tiger', 'komet', 'wagen'] },
+  { id: 'stair', title: L('Getunte Treppensteiger', 'Tuned Stair Climbers'), vehicles: ['scala'] },
 ];
 
 export const VEHICLE_ORDER: VehicleId[] = CATEGORIES.flatMap((c) => c.vehicles);

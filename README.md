@@ -44,6 +44,7 @@ Every vehicle has three driving profiles to choose from in the garage. While the
 | Lion | Mobility scooters | Compact |
 | Covid Pro | Mobility scooters | The classic with a basket |
 | Olivion | Mobility scooters | Long, heavy, fast, huge turning circle |
+| Scandalmobile | Tuned stair climbers | Stair climber with a seat, rebuilt for racing: Grandpa sits up front, Grandma gets towed on roller skates |
 
 Vehicles and tracks are unlocked with Schrauben. To try everything: add `?demo` to the address for a show round with everything open that saves nothing.
 

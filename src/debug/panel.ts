@@ -1,11 +1,14 @@
 import GUI from 'lil-gui';
 import { BOOST, DAMAGE, STAGES } from '../config/tuning';
-import { HANDLING, HANDLING_DEFAULTS, VEHICLE_ORDER } from '../config/vehicles';
+import { HANDLING, HANDLING_DEFAULTS, STAIR, VEHICLE_ORDER } from '../config/vehicles';
 import { TRACKS } from '../tracks';
 import type { GameCore } from '../sim/GameCore';
 
-/** The "Werkstatt": live tuning of the handling and cheats for testing. Toggle with F2. */
-export function createDebugPanel(game: () => GameCore, onProfile: () => void = () => {}): GUI {
+/**
+ * The "Werkstatt": live tuning of the handling and cheats for testing. Toggle with F2.
+ * @param onLook a setting changed that only the vehicle model shows: build it afresh
+ */
+export function createDebugPanel(game: () => GameCore, onProfile: () => void = () => {}, onLook: () => void = () => {}): GUI {
   const gui = new GUI({ title: 'Werkstatt (F2)' });
   const progress = game().progress;
   const state = { stufe: progress.stageIndex };
@@ -116,6 +119,14 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   b.add(BOOST, 'rampUp', 0.05, 2, 0.05).name('Einblenden (s)');
   b.add(BOOST, 'rampDown', 0.05, 3, 0.05).name('Ausblenden (s)');
   b.close();
+
+  const st = gui.addFolder('Treppensteiger');
+  const tilt = { grad: Math.round((STAIR.lean * 180) / Math.PI) };
+  st.add(tilt, 'grad', 0, 20, 1).name('Neigung nach vorn (°)').onChange((deg: number) => {
+    STAIR.lean = (deg * Math.PI) / 180;
+    onLook();
+  });
+  st.close();
 
   const d = gui.addFolder('Schaden');
   const wear = { schaden: 0 };

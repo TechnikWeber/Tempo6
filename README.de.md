@@ -44,6 +44,7 @@ Jedes Fahrzeug hat drei Fahrprofile zur Auswahl in der Garage. Solange der Dev-S
 | Lion | Seniorenraketen | Kompaktes Seniorenmobil |
 | Covid Pro | Seniorenraketen | Der Klassiker mit Korb |
 | Olivion | Seniorenraketen | Lang, schwer, schnell, riesiger Wendekreis |
+| Skandalmobil | Getunte Treppensteiger | Treppensteiger mit Sitz, für Rennen umgebaut: Opa sitzt vorn, Oma lässt sich auf Rollschuhen ziehen |
 
 Fahrzeuge und Strecken werden mit Schrauben freigeschaltet. Zum Ausprobieren: `?demo` an die Adresse hängen öffnet eine Vorführrunde mit allem freigeschaltet, die nichts speichert.
 

@@ -69,7 +69,7 @@ const gui = createDebugPanel(() => core, () => {
   const p = core.sim.vehicle.profile;
   hud.toast(`${L('Fahrprofil', 'Driving profile')}: ${p.name}`, p.blurb, 2.5);
   reportProfiles();
-});
+}, () => view.setVehicle(core.sim.vehicle.spec, progress.hasBoost));
 gui.hide();
 const hudRoot = document.getElementById('hud')!;
 const touchRoot = document.getElementById('touch')!;

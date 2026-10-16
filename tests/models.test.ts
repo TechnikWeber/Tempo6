@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Box3, BoxGeometry, Mesh, type MeshStandardMaterial, type Object3D, Vector3 } from 'three';
-import { VEHICLE_ORDER, VEHICLES } from '../src/config/vehicles';
+import { STAIR, VEHICLE_ORDER, VEHICLES } from '../src/config/vehicles';
 import { buildPerson, buildVehicle } from '../src/render/models';
 
 interface Face {
@@ -51,6 +51,17 @@ function flickering(root: Object3D): string[] {
 describe('vehicle models', () => {
   it.each(VEHICLE_ORDER)('%s has no two faces in the same plane (they would flicker)', (id) => {
     expect(flickering(buildVehicle(VEHICLES[id], true).root)).toEqual([]);
+  });
+
+  // (tipped forward its parts are off the axes, where the check above does not look)
+  it('the stair climber has none either when it stands upright', () => {
+    const lean = STAIR.lean;
+    STAIR.lean = 0;
+    try {
+      expect(flickering(buildVehicle(VEHICLES.scala, true).root)).toEqual([]);
+    } finally {
+      STAIR.lean = lean;
+    }
   });
 });
 

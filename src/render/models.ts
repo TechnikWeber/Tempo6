@@ -1,6 +1,6 @@
 import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
 import { PROP_SHAPES, TRAFFIC_SHAPES, type PersonPose, type PickupType, type PropType, type TrafficDef } from '../sim/Track';
-import { BRAND_COLORS, groundY, type VehicleSpec, type WheelSpec } from '../config/vehicles';
+import { BRAND_COLORS, groundY, STAIR, type VehicleSpec, type WheelSpec } from '../config/vehicles';
 
 const materials = new Map<number, MeshStandardMaterial>();
 
@@ -36,6 +36,8 @@ export interface WheelModel {
   pivot: Group;
   /** Rolls around the axle. */
   spin: Group;
+  /** Never swivels, caster or not: a roller skate keeps pointing ahead under its foot. */
+  fixed?: boolean;
 }
 
 export interface VehicleModel {
@@ -190,6 +192,8 @@ const DRIVERS: Record<VehicleSpec['id'], DriverStyle> = {
   piepmatz: { shirt: 0xf7c8d8, trousers: 0x6a6f80, hair: 0xe9e9e9, arms: 'forward', hat: 0xffd23f },
   tiger: { shirt: 0x7a5a3a, trousers: 0x4a4a52, hair: 0xdadada, arms: 'forward', hat: 0x1a1a1a },
   wagen: { shirt: 0x24457a, trousers: 0x3a3a40, hair: 0xb0b0b0, arms: 'forward', hat: 0x1f3f7a, beard: 0xd0d0d0 },
+  // Grandpa in the stair climber's chair; Grandma, behind him, is built by grandma()
+  scala: { shirt: 0x7a8a5a, trousers: 0x5a5048, hair: 0xe6e6e6, arms: 'rest', hat: 0x6b5a45, beard: 0xe6e6e6 },
 };
 
 /** Power chair: battery base, shroud in the model's colour, captain's seat. */
@@ -486,7 +490,180 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
   };
 }
 
+const BOOT = 0xf4f1ea;
+
+/**
+ * One of Grandma's roller skates, in place of a caster: a high white boot on a plate, two
+ * pairs of wheels and a stopper at the toe, the way they were in the seventies. It all sits in
+ * the wheel's pivot, so it stays on the ground whatever the springs do.
+ */
+function skate(w: WheelSpec): WheelModel {
+  const pivot = new Group();
+  const spin = new Group();
+  pivot.add(spin);
+  const floor = -w.radius;
+  const left = w.x > 0;
+  const tint = left ? 0xff4f9a : 0x26c6c0;
+  box(pivot, 0.07, 0.016, 0.2, STEEL, 0, floor + 0.062, 0); // plate
+  for (const z of [0.065, -0.065]) {
+    box(pivot, 0.07, 0.014, 0.014, STEEL, 0, floor + 0.032, z); // axle
+    for (const s of [1, -1]) {
+      cyl(pivot, 0.032, 0.034, tint, s * 0.052, floor + 0.032, z, 10).rotation.z = Math.PI / 2;
+      cyl(pivot, 0.015, 0.036, 0xf4f4f4, s * 0.052, floor + 0.032, z, 6).rotation.z = Math.PI / 2;
+    }
+  }
+  box(pivot, 0.1, 0.075, 0.22, BOOT, 0, floor + 0.1075, 0.015); // boot
+  box(pivot, 0.104, 0.02, 0.18, left ? 0x26c6c0 : 0xff4f9a, 0, floor + 0.11, 0.015); // stripe round it, a touch wider
+  box(pivot, 0.095, 0.12, 0.11, BOOT, 0, floor + 0.205, -0.035); // the high top round the ankle
+  box(pivot, 0.05, 0.045, 0.045, 0xe8542e, 0, floor + 0.05, 0.125); // toe stopper
+  return { pivot, spin, fixed: true };
+}
+
+const GRAN = { dress: 0x1fa99a, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, socks: 0xf4f1ea, stripes: [0xe8542e, 0xf2c230] };
+
+/**
+ * Grandma, hanging on behind on her roller skates: knees bent, leaning back on straight arms
+ * like a water skier behind the boat. Built in place: feet in the skates' boots, hands on the
+ * grips, and she leans back just as far as it takes for straight arms to reach them.
+ * @param ankles left then right, where the shins go into the boots
+ * @param hands left then right, on the grips
+ */
+function grandma(ankles: Vector3[], hands: Vector3[]): Group {
+  const g = new Group();
+  const knees = ankles.map((a) => a.clone().add(new Vector3(-Math.sign(a.x) * 0.02, 0.4 * Math.cos(0.32), 0.4 * Math.sin(0.32))));
+  const hips = knees.map((k) => k.clone().add(new Vector3(-Math.sign(k.x) * 0.03, 0.4 * Math.cos(0.55), -0.4 * Math.sin(0.55))));
+  const pelvis = hips[0].clone().add(hips[1]).multiplyScalar(0.5);
+  const grip = hands[0].clone().add(hands[1]).multiplyScalar(0.5);
+  const shoulderUp = 0.44, reach = 0.7;
+  let lean = 0, miss = Infinity;
+  for (let a = 0; a <= 0.8; a += 0.01) {
+    const d = Math.abs(Math.hypot(grip.y - pelvis.y - shoulderUp * Math.cos(a), grip.z - pelvis.z + shoulderUp * Math.sin(a)) - reach);
+    if (d < miss) [lean, miss] = [a, d];
+  }
+  const along = (h: number) => pelvis.clone().add(new Vector3(0, h * Math.cos(lean), -h * Math.sin(lean)));
+  const lerp = (a: Vector3, b: Vector3, t: number) => a.clone().lerp(b, t);
+  ankles.forEach((a, i) => {
+    const k = knees[i];
+    // knee socks with two stripes, bare knees, the skirt down over the thighs
+    rod(g, a, k, 0.105, GRAN.socks);
+    rod(g, lerp(a, k, 0.66), lerp(a, k, 0.72), 0.113, GRAN.stripes[0]);
+    rod(g, lerp(a, k, 0.76), lerp(a, k, 0.82), 0.113, GRAN.stripes[1]);
+    box(g, 0.115, 0.115, 0.115, GRAN.skin, k.x, k.y, k.z);
+    rod(g, k, hips[i], 0.135, GRAN.dress);
+  });
+  for (const [h, size] of [[0.02, [0.38, 0.24, 0.28]], [0.27, [0.36, 0.42, 0.22]]] as const) {
+    const p = along(h);
+    box(g, size[0], size[1], size[2], GRAN.dress, p.x, p.y, p.z).rotation.x = -lean;
+  }
+  // the head stays nearer upright than the back: she looks where she is being towed
+  const head = new Group();
+  head.position.copy(along(0.6));
+  head.rotation.x = -lean * 0.4;
+  box(head, 0.22, 0.22, 0.22, GRAN.skin);
+  box(head, 0.24, 0.08, 0.23, GRAN.hair, 0, 0.13, -0.015);
+  box(head, 0.11, 0.11, 0.1, GRAN.hair, 0, 0.1, -0.15); // bun
+  box(head, 0.236, 0.035, 0.236, GRAN.band, 0, 0.06, -0.005); // headband
+  box(head, 0.23, 0.055, 0.06, 0x111111, 0, 0, 0.1); // sunglasses
+  box(head, 0.06, 0.04, 0.03, 0xb85c4a, 0, -0.07, 0.117); // grin
+  for (const s of [1, -1]) box(head, 0.025, 0.025, 0.025, 0xf2c230, s * 0.115, -0.04, 0); // earrings
+  g.add(head);
+  // straight arms, short sleeves
+  for (const hand of hands) {
+    const shoulder = along(shoulderUp).add(new Vector3(Math.sign(hand.x) * 0.22, 0, 0));
+    rod(g, shoulder, lerp(shoulder, hand, 0.28), 0.11, GRAN.dress);
+    rod(g, lerp(shoulder, hand, 0.26), hand, 0.088, GRAN.skin);
+    box(g, 0.09, 0.09, 0.09, GRAN.skin, hand.x, hand.y, hand.z);
+  }
+  return g;
+}
+
+/**
+ * The tuned stair climber: a hand truck with a chair on the front (drive unit with the big
+ * wheels and the little climbing wheels, two tubes up to the handlebar), Grandpa in the chair,
+ * Grandma behind on roller skates, hanging on to the handlebar. The climber is drawn upright
+ * around the axle of its big wheels and then tipped forward on it by STAIR.lean as a whole;
+ * Grandma's pose follows from where that puts the grips.
+ */
+function buildStair(spec: VehicleSpec): VehicleModel {
+  const root = new Group();
+  const { body, accent, seat } = spec.colors;
+  const g = groundY(spec);
+  const drive = spec.wheels.find((w) => w.drive)!;
+  const HOUSING = 0x1e1f23;
+  // climber space: origin on the axle of the big wheels, emptied into the root at the end
+  const s = new Group();
+  // drive unit: the black housing between the big wheels, grey side plates
+  const wx = Math.abs(drive.x);
+  box(s, 0.37, 0.38, 0.3, HOUSING, 0, 0.11, 0.05);
+  for (const x of [1, -1]) {
+    box(s, 0.018, 0.4, 0.32, body, x * 0.194, 0.11, 0.05);
+    // the little climbing wheel behind each big one, on its arm
+    cyl(s, 0.045, 0.05, TYRE, x * wx, -0.085, -0.2, 10).rotation.z = Math.PI / 2;
+    cyl(s, 0.022, 0.056, spec.colors.hub, x * wx, -0.085, -0.2, 6).rotation.z = Math.PI / 2;
+    rod(s, new Vector3(x * (wx - 0.035), -0.085, -0.2), new Vector3(x * 0.21, -0.05, -0.1), 0.026, body);
+  }
+  // racing stripes and the maker's plate on the back, where Grandma has them in view
+  for (const x of [1, -1]) box(s, 0.05, 0.37, 0.012, accent, x * 0.085, 0.11, -0.105);
+  badge(s, spec, 0, 0.2, -0.112);
+  // a little rear wing on two struts, the workshop's pride
+  for (const x of [1, -1]) {
+    box(s, 0.02, 0.12, 0.02, HOUSING, x * 0.15, 0.35, -0.095);
+    box(s, 0.012, 0.07, 0.11, accent, x * 0.206, 0.405, -0.12);
+  }
+  box(s, 0.4, 0.018, 0.1, accent, 0, 0.415, -0.12);
+  // the two tubes up to the handlebar, with its control box
+  for (const x of [1, -1]) box(s, 0.04, 0.78, 0.04, body, x * 0.12, 0.69, -0.06);
+  box(s, 0.46, 0.05, 0.05, body, 0, 1.08, -0.06);
+  box(s, 0.16, 0.07, 0.12, HOUSING, 0, 1.135, -0.07);
+  box(s, 0.03, 0.015, 0.03, accent, 0.04, 1.1775, -0.09);
+  for (const x of [1, -1]) {
+    // the grips, stretched back by the workshop so Grandma can hang off them
+    box(s, 0.045, 0.045, 0.4, 0x111111, x * 0.21, 1.08, -0.26);
+    box(s, 0.05, 0.09, 0.05, 0x111111, x * 0.21, 1.115, -0.46);
+    box(s, 0.055, 0.055, 0.03, accent, x * 0.21, 1.08, -0.11); // red rings
+  }
+  // the chair on the front: backrest against the tubes, seat on a frame over the drive unit
+  box(s, 0.4, 0.5, 0.07, seat, 0, 0.755, -0.005);
+  box(s, 0.3, 0.13, 0.3, body, 0, 0.365, 0.12);
+  box(s, 0.42, 0.07, 0.44, seat, 0, 0.465, 0.25);
+  for (const x of [1, -1]) {
+    for (const z of [0.02, 0.32]) box(s, 0.03, 0.13, 0.03, body, x * 0.235, 0.565, z);
+    box(s, 0.05, 0.035, 0.34, seat, x * 0.24, 0.6475, 0.17); // armrest
+    rod(s, new Vector3(x * 0.15, 0.44, 0.42), new Vector3(x * 0.15, 0.11, 0.52), 0.03, body); // footrest hanger
+  }
+  box(s, 0.34, 0.025, 0.22, HOUSING, 0, 0.1125, 0.6); // footplate, right under Grandpa's shoes
+
+  s.position.set(0, g + drive.radius, drive.z);
+  s.rotation.x = STAIR.lean;
+  s.updateMatrix();
+  const at = (x: number, y: number, z: number) => new Vector3(x, y, z).applyMatrix4(s.matrix);
+  for (const m of [...s.children]) {
+    m.applyMatrix4(s.matrix);
+    root.add(m);
+  }
+
+  const d = driver(DRIVERS[spec.id]);
+  d.group.position.copy(at(0, 0.52, 0.18));
+  d.group.rotation.x = STAIR.lean;
+  root.add(d.group);
+  // (left then right, as the skates come in the spec)
+  const skates = spec.wheels.filter((w) => w.caster);
+  root.add(grandma(
+    skates.map((w) => new Vector3(w.x, g + 0.24, w.z - 0.035)),
+    skates.map((w) => at(Math.sign(w.x) * 0.21, 1.08, -0.4)),
+  ));
+  const wheels = spec.wheels.map((w) => {
+    const m = w.caster ? skate(w) : wheel(w, spec);
+    m.pivot.position.set(w.x, w.y - spec.suspensionRest, w.z);
+    root.add(m.pivot);
+    return m;
+  });
+  const battery = at(0, 0.26, 0.2);
+  return { root, wheels, driver: d.group, arms: d.arms, battery: [battery.x, battery.y, battery.z] };
+}
+
 function buildModel(spec: VehicleSpec): VehicleModel {
+  if (spec.look === 'stair') return buildStair(spec);
   if (spec.look === 'scooter') return buildScooter(spec);
   if (spec.look === 'folder') return buildFolder(spec);
   if (spec.look === 'manual') return buildManual(spec);
@@ -532,9 +709,9 @@ function lapBattery(driver: Group, to: Vector3): Vector3 {
 /** @param boost put the boost battery on the driver's lap */
 export function buildVehicle(spec: VehicleSpec, boost = false): VehicleRig {
   const m = buildModel(spec);
-  const seat = m.driver.position.clone();
-  // (the driver sits unrotated in the model, so its space is just shifted)
-  const terminals = boost ? lapBattery(m.driver, new Vector3(...m.battery).sub(seat)).add(seat) : null;
+  // (through the driver's own space: on the stair climber the driver sits tipped forward)
+  m.root.updateMatrixWorld(true);
+  const terminals = boost ? m.driver.localToWorld(lapBattery(m.driver, m.driver.worldToLocal(new Vector3(...m.battery)))) : null;
   // Everything except the wheels goes into one group that pivots near axle height.
   const body = new Group();
   const pivotY = groundY(spec) + 0.15;
