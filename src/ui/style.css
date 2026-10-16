@@ -392,6 +392,7 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
   #menu[data-step='track'] .col:first-of-type { display: none; }
   #menu .mobile-step { display: block; font: inherit; border: 0; border-radius: 10px; cursor: pointer; }
   #menu .mobile-next { width: 100%; margin-top: 14px; padding: 12px; font-size: 16px; font-weight: 700; color: #1a1300; background: var(--accent); }
+  #menu .mobile-next:disabled { color: #2a2c30; background: #6b6e74; cursor: default; }
   #menu .mobile-back { align-self: flex-start; margin-bottom: 10px; padding: 6px 12px; font-size: 14px; color: var(--ink); background: rgb(255 255 255 / 0.1); }
 }
 
@@ -454,10 +455,9 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
    just the gap between the side panels), so a fixed, centred badge lands on it without having
    to track the model in 3D. A touch above the exact middle, where the camera's own look-at
    point sits a little low on the model (around the seat, not the silhouette as a whole).
-   Desktop only: on the narrow one-column phone layout the ride panel itself already runs
-   most of the way down the screen (more so still with the unlock row a locked ride adds),
-   leaving no clear patch of model for a second badge to land on without just sitting on top
-   of that panel -- the lock there is already said plainly by the name and the price button. */
+   On the narrow one-column layout the panels cover the model, so there it only comes back on
+   a phone held upright, on the ride-only step: that leaves the ride a clear band between the
+   header and the panel, with the camera centred on the full screen (see the end of the file). */
 #menu .locked-badge {
   position: absolute;
   left: 50%;
@@ -495,4 +495,7 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
   #menu { background: none; }
   #menu header, #menu .col { background: rgb(10 12 16 / 0.62); border-radius: 14px; padding: 10px; }
   #menu .col:first-of-type { margin-top: 38svh; }
+  /* (fixed and under the panels, so it stays on the ride and the menu scrolls up over both) */
+  #menu header, #menu .col { position: relative; z-index: 1; }
+  #menu[data-step='vehicle'] .locked-badge:not([hidden]) { display: block; position: fixed; z-index: 0; white-space: nowrap; font-size: 15px; padding: 7px 16px; }
 }

@@ -112,7 +112,9 @@ export class Menu {
     this.garage.addEventListener('click', () => this.openGarage());
     this.buyVehicle.addEventListener('click', () => this.unlockVehicle());
     this.buyTrack.addEventListener('click', () => this.unlockTrack());
+    // (disabled while the ride is locked: it has to be bought first, see render())
     this.nextStep.addEventListener('click', () => {
+      if (this.vehicleLock(this.vehicle)) return;
       this.mobileStep = 'track';
       this.render();
     });
@@ -445,6 +447,10 @@ export class Menu {
     const top = stageSpeedKmh(stage, v.speedFactor * profile.speed);
     this.unlockButton(this.buyVehicle, v.label, lockV);
     this.garage.disabled = !!lockV;
+    this.nextStep.disabled = !!lockV;
+    this.nextStep.textContent = lockV
+      ? L('🔒 Erst freischalten', '🔒 Unlock it first')
+      : L('Weiter: Strecke wählen →', 'Next: pick a track →');
     const actions = h('div', 'actions');
     actions.append(this.garage, this.buyVehicle);
     this.detail.replaceChildren(
