@@ -491,8 +491,11 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
 }
 
 const BOOT = 0xf4f1ea;
-/** Grandma's colours, and her size against a driver, skates and all. */
-const GRAN = { dress: 0x1fa99a, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, socks: 0xf4f1ea, stripes: [0xe8542e, 0xf2c230], size: 0.9 };
+/**
+ * Grandma's colours (her top in the maker's purple, mustard shorts, the complement of it), and
+ * her size against a driver, skates and all.
+ */
+const GRAN = { top: BRAND_COLORS.purple, shorts: 0xe0a526, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, socks: 0xf4f1ea, stripes: [0xe8542e, 0xf2c230], size: 0.9 };
 
 /**
  * One of Grandma's roller skates, in place of a caster: a high white boot on a plate, two
@@ -552,16 +555,16 @@ function grandma(ankles: Vector3[], hands: Vector3[]): Group {
   const lerp = (a: Vector3, b: Vector3, t: number) => a.clone().lerp(b, t);
   ankles.forEach((a, i) => {
     const n = knees[i];
-    // knee socks with two stripes, bare knees, the skirt down over the thighs
+    // knee socks with two stripes, bare knees, shorts down over the thighs
     rod(g, a, n, 0.105 * k, GRAN.socks);
     rod(g, lerp(a, n, 0.66), lerp(a, n, 0.72), 0.113 * k, GRAN.stripes[0]);
     rod(g, lerp(a, n, 0.76), lerp(a, n, 0.82), 0.113 * k, GRAN.stripes[1]);
     box(g, 0.115 * k, 0.115 * k, 0.115 * k, GRAN.skin, n.x, n.y, n.z);
-    rod(g, n, hips[i], 0.135 * k, GRAN.dress);
+    rod(g, n, hips[i], 0.135 * k, GRAN.shorts);
   });
-  for (const [h, size] of [[0.02, [0.38, 0.24, 0.28]], [0.27, [0.36, 0.42, 0.22]]] as const) {
+  for (const [h, size, color] of [[0.02, [0.38, 0.24, 0.28], GRAN.shorts], [0.27, [0.36, 0.42, 0.22], GRAN.top]] as const) {
     const p = along(h);
-    box(g, size[0] * k, size[1] * k, size[2] * k, GRAN.dress, p.x, p.y, p.z).rotation.x = -lean;
+    box(g, size[0] * k, size[1] * k, size[2] * k, color, p.x, p.y, p.z).rotation.x = -lean;
   }
   // the head stays nearer upright than the back: she looks where she is being towed
   const head = new Group();
@@ -579,7 +582,7 @@ function grandma(ankles: Vector3[], hands: Vector3[]): Group {
   // straight arms, short sleeves
   for (const hand of hands) {
     const shoulder = along(0.44).add(new Vector3(Math.sign(hand.x) * 0.22 * k, 0, 0));
-    rod(g, shoulder, lerp(shoulder, hand, 0.28), 0.11 * k, GRAN.dress);
+    rod(g, shoulder, lerp(shoulder, hand, 0.28), 0.11 * k, GRAN.top);
     rod(g, lerp(shoulder, hand, 0.26), hand, 0.088 * k, GRAN.skin);
     box(g, 0.09 * k, 0.09 * k, 0.09 * k, GRAN.skin, hand.x, hand.y, hand.z);
   }
