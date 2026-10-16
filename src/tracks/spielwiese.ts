@@ -1,5 +1,5 @@
 import { L } from '../i18n';
-import { looping, ramp, type BoxDef, type DecorDef, type MoverDef, type PropDef, type TrackDef } from '../sim/Track';
+import { looping, ramp, type BoxDef, type DecorDef, type MoverDef, type PropDef, type SpinnerDef, type TrackDef } from '../sim/Track';
 import { forest, house, street } from './scenery';
 import { person } from './works';
 
@@ -25,6 +25,23 @@ const statics: BoxDef[] = [
 const props: PropDef[] = [];
 const decor: DecorDef[] = [];
 const board = (text: string, x: number, z: number) => decor.push({ type: 'board', pos: [x, 2.6, z], half: [4.5, 0.55, 0.06], yaw: WEST, text });
+
+/**
+ * Smooth humps along +X, a wave for every `length` metres: each wave cut into short tilted
+ * slabs whose tops follow the curve, filled down below the ground so no gap shows underneath.
+ */
+function waveTrack(x0: number, z: number, waves: number, length: number, height: number, width: number, color: number): BoxDef[] {
+  const out: BoxDef[] = [];
+  const steps = 8;
+  const y = (x: number) => (height / 2) * (1 - Math.cos((2 * Math.PI * x) / length));
+  for (let i = 0; i < waves * steps; i++) {
+    const a = (i * length) / steps, b = ((i + 1) * length) / steps;
+    const ya = y(a), yb = y(b);
+    // (a hair longer than the chord, so neighbours overlap instead of leaving a seam)
+    out.push(ramp([x0 + a, z], EAST, Math.hypot(b - a, yb - ya) + 0.02, width, Math.atan2(yb - ya, b - a), color, ya, (ya + yb) / 4 + 0.3));
+  }
+  return out;
+}
 
 /** A wall of cartons across the lane. */
 function cartons(x: number, z: number, rows: number, cols: number): void {
@@ -58,6 +75,22 @@ statics.push(
   ramp([TABLE_X + 2 * run + 12, BUMP_Z], WEST, 10, 7, 0.3, RAMP),
 );
 
+// Between the south lane and the wall: the big loop, with the whole width for a run-up. Only
+// the quick ones make it over the top.
+const XXL_Z = -68;
+board(L('LOOPING XXL', 'LOOP XXL'), -112, XXL_Z + 9);
+statics.push(...looping([-10, XXL_Z], 8, 5, 6, 0xd23b3b, 64));
+for (let x = -140; x <= -20; x += 10) decor.push({ type: 'box', pos: [x, 0.005, XXL_Z], half: [2.5, 0.005, 0.12], color: 0xe6c94a });
+
+// Between the north lane and the wall: a long, smooth wave track to rock along, then a loop a
+// size up from the south lane's.
+const NORTH_Z = 66;
+board(L('WELLENBAHN', 'WAVE TRACK'), -112, NORTH_Z + 9);
+statics.push(...waveTrack(-95, NORTH_Z, 6, 15, 1.4, 6, RAMP));
+board(L('LOOPING XL', 'LOOP XL'), 20, NORTH_Z + 9);
+statics.push(...looping([60, NORTH_Z], 6.5, 5, 6, STEEL, 56));
+for (let x = 0; x <= 50; x += 10) decor.push({ type: 'box', pos: [x, 0.005, NORTH_Z], half: [2.5, 0.005, 0.12], color: 0xe6c94a });
+
 // The monsters, one along each long wall.
 board(L('MONSTER', 'MONSTER'), -70, 92);
 statics.push(ramp([-50, 84], EAST, 45, 10, 0.5, RAMP), ramp([60, -84], WEST, 32, 10, 0.62, RAMP));
@@ -66,10 +99,15 @@ cartons(60, 84, 6, 15);
 statics.push(ramp([130, 0], EAST, 14, 60, 0.9, STEEL));
 // Turntables between the lanes: a big lazy one and a small one that throws you off.
 board(L('KREISEL', 'SPINNERS'), 44, -12);
-const spinners = [
-  { pos: [62, 0.1, -24] as [number, number, number], radius: 7, speed: 0.9, color: STEEL },
-  { pos: [96, 0.1, -24] as [number, number, number], radius: 4.5, speed: -2.2, color: RAMP },
+const spinners: SpinnerDef[] = [
+  { pos: [62, 0.1, -24], radius: 7, speed: 0.9, color: STEEL },
+  { pos: [96, 0.1, -24], radius: 4.5, speed: -2.2, color: RAMP },
 ];
+// …and a row of them further west, each its own speed: the red ones are not for the faint of heart.
+board(L('DREHTELLER', 'TURNTABLES'), -100, -15);
+for (const [x, radius, speed] of [[-84, 4, 1.5], [-70, 3, -4], [-56, 4.5, 2.5], [-42, 3, 8], [-28, 3.5, -6]] as const) {
+  spinners.push({ pos: [x, 0.1, -24], radius, speed, color: Math.abs(speed) > 5 ? 0xd23b3b : Math.abs(speed) > 3 ? 0xe8833a : STEEL });
+}
 // Slalom between the lanes.
 for (let i = 0; i < 10; i++) props.push({ type: 'cone', pos: [-100 + i * 9, 0.26, 22 + (i % 2 ? 2 : -2)] });
 
@@ -133,7 +171,7 @@ decor.push(
 export const SPIELWIESE: TrackDef = {
   id: 'spielwiese',
   name: L('Spielwiese', 'Playground'),
-  blurb: L('Looping, Wellenbahn, Riesenschanzen, Riesenrad: alles, was Unsinn ist.', 'A loop, a wave track, giant jumps, a big wheel: everything that is nonsense.'),
+  blurb: L('Drei Loopings, Wellenbahnen, Drehteller, Riesenschanzen, Riesenrad: alles, was Unsinn ist.', 'Three loops, wave tracks, turntables, giant jumps, a big wheel: everything that is nonsense.'),
   unlockPrice: 200,
   lapPay: 20,
   spawn: { pos: [-135, 0.6, 0], yaw: EAST },

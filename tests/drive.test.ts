@@ -1278,6 +1278,8 @@ describe('traffic', () => {
     const boxes = track.statics.filter((b) => b.pos[1] + b.half[1] > 0.05);
     // (cars sharing a road share its path: each path once)
     const paths = [...new Map((track.traffic ?? []).map((t) => [JSON.stringify(t.path), t.path])).values()];
+    // (collected and checked once: an expect per point and box is too slow on a busy track)
+    const hits: string[] = [];
     for (const path of paths) {
       path.forEach(([x, z], i) => {
         const [nx, nz] = path[(i + 1) % path.length];
@@ -1291,11 +1293,12 @@ describe('traffic', () => {
             const ox = px - b.pos[0], oz = pz - b.pos[2];
             const lx = ox * Math.cos(yaw) - oz * Math.sin(yaw), lz = ox * Math.sin(yaw) + oz * Math.cos(yaw);
             const dx = Math.max(0, Math.abs(lx) - b.half[0]), dz = Math.max(0, Math.abs(lz) - b.half[2]);
-            expect(Math.hypot(dx, dz) > 1.3, `traffic at ${px},${pz} hits the box at ${b.pos}`).toBe(true);
+            if (Math.hypot(dx, dz) <= 1.3) hits.push(`traffic at ${px},${pz} hits the box at ${b.pos}`);
           }
         }
       });
     }
+    expect(hits).toEqual([]);
   });
 });
 
