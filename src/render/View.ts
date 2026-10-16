@@ -1,6 +1,6 @@
 import { L } from '../i18n';
 import {
-  AmbientLight, Box3, BoxGeometry, BufferGeometry, CanvasTexture, CapsuleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
+  AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, CapsuleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
   Float32BufferAttribute, Fog, Group,
   HemisphereLight, IcosahedronGeometry, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Points, PointsMaterial,
@@ -320,8 +320,6 @@ export class View {
   private level: Group | null = null;
   private track: TrackDef | null = null;
   private model: VehicleRig | null = null;
-  /** Height of the vehicle model's top above its chassis centre. */
-  private modelTop = 0;
   private readonly skids: SkidMarks;
   /** Visual body sway on the springs: angle and angular velocity for roll and pitch. */
   private sway = { roll: 0, rollV: 0, pitch: 0, pitchV: 0, lastSpeed: 0, accel: 0 };
@@ -796,8 +794,6 @@ export class View {
     if (this.model) this.scene.remove(this.model.root);
     this.wreckage?.dispose();
     this.model = buildVehicle(spec, boost);
-    this.model.root.updateMatrixWorld(true);
-    this.modelTop = new Box3().setFromObject(this.model.root).max.y;
     this.wreckage = new Wreckage(this.scene, this.model, (x, z) => heightAt(this.track?.terrain, x, z));
     this.shownDamage = 0;
     this.fitted = boost;
@@ -940,9 +936,7 @@ export class View {
     const r = tall ? Math.min(1.8, 0.8 / this.camera.aspect) : 1;
     const a = yaw + 0.7 + this.time * 0.35;
     this.camera.position.set(pos.x + Math.sin(a) * 3.4 * r, pos.y + 1.1 * r, pos.z + Math.cos(a) * 3.4 * r);
-    // (a ride taller than any seated driver, with Grandma standing at the back of the stair
-    // climber, is looked at from a little higher up, so her head stays in the picture)
-    this.camera.lookAt(pos.x, pos.y + 0.25 + Math.max(0, this.modelTop - 1.2) * 1.5, pos.z);
+    this.camera.lookAt(pos.x, pos.y + 0.25, pos.z);
     if (this.camera.fov !== 42 || (this.camera.view?.enabled ?? false) !== crop) {
       this.camera.fov = 42;
       // (the sizes only count as shares, but they set the aspect, so they keep it)
@@ -990,12 +984,9 @@ export class View {
     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
     this.camYaw += diff * (1 - Math.exp(-dt * 3.5));
 
-    // Under boost the camera falls back a little, as if left behind. Behind a ride taller
-    // than any seated driver (Grandma standing at the back of the stair climber) it rides
-    // higher and a touch further back, to look over her head at the road.
-    const tall = Math.max(0, this.modelTop - 1.2);
-    const dist = 3.0 + Math.min(speed, 22) * 0.06 + v.boost * 0.3 + tall * 2;
-    const height = 1.7 + Math.min(speed, 22) * 0.02 + tall * 3.5;
+    // Under boost the camera falls back a little, as if left behind.
+    const dist = 3.0 + Math.min(speed, 22) * 0.06 + v.boost * 0.3;
+    const height = 1.7 + Math.min(speed, 22) * 0.02;
     const sx = Math.sin(this.camYaw), cz = Math.cos(this.camYaw);
     // A little life: a bob that grows with speed, a jolt after landings.
     this.shake = Math.max(0, this.shake - dt * 2.2);

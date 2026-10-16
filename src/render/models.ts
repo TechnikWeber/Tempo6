@@ -491,6 +491,8 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
 }
 
 const BOOT = 0xf4f1ea;
+/** Grandma's colours, and her size against a driver (her skates a little less shrunk). */
+const GRAN = { dress: 0x1fa99a, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, socks: 0xf4f1ea, stripes: [0xe8542e, 0xf2c230], size: 0.75, skate: 0.85 };
 
 /**
  * One of Grandma's roller skates, in place of a caster: a high white boot on a plate, two
@@ -501,25 +503,30 @@ function skate(w: WheelSpec): WheelModel {
   const pivot = new Group();
   const spin = new Group();
   pivot.add(spin);
-  const floor = -w.radius;
+  // (built standing on the ground, then shrunk to Grandma's feet)
+  const s = new Group();
+  s.position.y = -w.radius;
+  s.scale.setScalar(GRAN.skate);
+  pivot.add(s);
   const left = w.x > 0;
   const tint = left ? 0xff4f9a : 0x26c6c0;
-  box(pivot, 0.07, 0.016, 0.2, STEEL, 0, floor + 0.062, 0); // plate
+  box(s, 0.07, 0.016, 0.2, STEEL, 0, 0.062, 0); // plate
   for (const z of [0.065, -0.065]) {
-    box(pivot, 0.07, 0.014, 0.014, STEEL, 0, floor + 0.032, z); // axle
-    for (const s of [1, -1]) {
-      cyl(pivot, 0.032, 0.034, tint, s * 0.052, floor + 0.032, z, 10).rotation.z = Math.PI / 2;
-      cyl(pivot, 0.015, 0.036, 0xf4f4f4, s * 0.052, floor + 0.032, z, 6).rotation.z = Math.PI / 2;
+    box(s, 0.07, 0.014, 0.014, STEEL, 0, 0.032, z); // axle
+    for (const x of [1, -1]) {
+      cyl(s, 0.032, 0.034, tint, x * 0.052, 0.032, z, 10).rotation.z = Math.PI / 2;
+      cyl(s, 0.015, 0.036, 0xf4f4f4, x * 0.052, 0.032, z, 6).rotation.z = Math.PI / 2;
     }
   }
-  box(pivot, 0.1, 0.075, 0.22, BOOT, 0, floor + 0.1075, 0.015); // boot
-  box(pivot, 0.104, 0.02, 0.18, left ? 0x26c6c0 : 0xff4f9a, 0, floor + 0.11, 0.015); // stripe round it, a touch wider
-  box(pivot, 0.095, 0.12, 0.11, BOOT, 0, floor + 0.205, -0.035); // the high top round the ankle
-  box(pivot, 0.05, 0.045, 0.045, 0xe8542e, 0, floor + 0.05, 0.125); // toe stopper
+  box(s, 0.1, 0.075, 0.22, BOOT, 0, 0.1075, 0.015); // boot
+  box(s, 0.104, 0.02, 0.18, left ? 0x26c6c0 : 0xff4f9a, 0, 0.11, 0.015); // stripe round it, a touch wider
+  box(s, 0.095, 0.12, 0.11, BOOT, 0, 0.205, -0.035); // the high top round the ankle
+  box(s, 0.05, 0.045, 0.045, 0xe8542e, 0, 0.05, 0.125); // toe stopper
   return { pivot, spin, fixed: true };
 }
 
-const GRAN = { dress: 0x1fa99a, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, socks: 0xf4f1ea, stripes: [0xe8542e, 0xf2c230] };
+/** Where on a skate, from the ground under its wheel, Grandma's shin goes into the boot. */
+const ANKLE = { y: 0.245 * GRAN.skate, z: -0.035 * GRAN.skate };
 
 /**
  * Grandma, hanging on behind on her roller skates: knees bent, leaning back on straight arms
@@ -530,35 +537,37 @@ const GRAN = { dress: 0x1fa99a, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, 
  */
 function grandma(ankles: Vector3[], hands: Vector3[]): Group {
   const g = new Group();
-  const knees = ankles.map((a) => a.clone().add(new Vector3(-Math.sign(a.x) * 0.02, 0.4 * Math.cos(0.32), 0.4 * Math.sin(0.32))));
-  const hips = knees.map((k) => k.clone().add(new Vector3(-Math.sign(k.x) * 0.03, 0.4 * Math.cos(0.55), -0.4 * Math.sin(0.55))));
+  const k = GRAN.size;
+  const knees = ankles.map((a) => a.clone().add(new Vector3(-Math.sign(a.x) * 0.02 * k, 0.4 * k * Math.cos(0.32), 0.4 * k * Math.sin(0.32))));
+  const hips = knees.map((n) => new Vector3(Math.sign(n.x) * 0.1 * k, n.y + 0.4 * k * Math.cos(0.55), n.z - 0.4 * k * Math.sin(0.55)));
   const pelvis = hips[0].clone().add(hips[1]).multiplyScalar(0.5);
   const grip = hands[0].clone().add(hands[1]).multiplyScalar(0.5);
-  const shoulderUp = 0.44, reach = 0.7;
+  const shoulderUp = 0.44 * k, reach = 0.7 * k;
   let lean = 0, miss = Infinity;
   for (let a = 0; a <= 0.8; a += 0.01) {
     const d = Math.abs(Math.hypot(grip.y - pelvis.y - shoulderUp * Math.cos(a), grip.z - pelvis.z + shoulderUp * Math.sin(a)) - reach);
     if (d < miss) [lean, miss] = [a, d];
   }
-  const along = (h: number) => pelvis.clone().add(new Vector3(0, h * Math.cos(lean), -h * Math.sin(lean)));
+  const along = (h: number) => pelvis.clone().add(new Vector3(0, h * k * Math.cos(lean), -h * k * Math.sin(lean)));
   const lerp = (a: Vector3, b: Vector3, t: number) => a.clone().lerp(b, t);
   ankles.forEach((a, i) => {
-    const k = knees[i];
+    const n = knees[i];
     // knee socks with two stripes, bare knees, the skirt down over the thighs
-    rod(g, a, k, 0.105, GRAN.socks);
-    rod(g, lerp(a, k, 0.66), lerp(a, k, 0.72), 0.113, GRAN.stripes[0]);
-    rod(g, lerp(a, k, 0.76), lerp(a, k, 0.82), 0.113, GRAN.stripes[1]);
-    box(g, 0.115, 0.115, 0.115, GRAN.skin, k.x, k.y, k.z);
-    rod(g, k, hips[i], 0.135, GRAN.dress);
+    rod(g, a, n, 0.105 * k, GRAN.socks);
+    rod(g, lerp(a, n, 0.66), lerp(a, n, 0.72), 0.113 * k, GRAN.stripes[0]);
+    rod(g, lerp(a, n, 0.76), lerp(a, n, 0.82), 0.113 * k, GRAN.stripes[1]);
+    box(g, 0.115 * k, 0.115 * k, 0.115 * k, GRAN.skin, n.x, n.y, n.z);
+    rod(g, n, hips[i], 0.135 * k, GRAN.dress);
   });
   for (const [h, size] of [[0.02, [0.38, 0.24, 0.28]], [0.27, [0.36, 0.42, 0.22]]] as const) {
     const p = along(h);
-    box(g, size[0], size[1], size[2], GRAN.dress, p.x, p.y, p.z).rotation.x = -lean;
+    box(g, size[0] * k, size[1] * k, size[2] * k, GRAN.dress, p.x, p.y, p.z).rotation.x = -lean;
   }
   // the head stays nearer upright than the back: she looks where she is being towed
   const head = new Group();
   head.position.copy(along(0.6));
   head.rotation.x = -lean * 0.4;
+  head.scale.setScalar(k);
   box(head, 0.22, 0.22, 0.22, GRAN.skin);
   box(head, 0.24, 0.08, 0.23, GRAN.hair, 0, 0.13, -0.015);
   box(head, 0.11, 0.11, 0.1, GRAN.hair, 0, 0.1, -0.15); // bun
@@ -569,10 +578,10 @@ function grandma(ankles: Vector3[], hands: Vector3[]): Group {
   g.add(head);
   // straight arms, short sleeves
   for (const hand of hands) {
-    const shoulder = along(shoulderUp).add(new Vector3(Math.sign(hand.x) * 0.22, 0, 0));
-    rod(g, shoulder, lerp(shoulder, hand, 0.28), 0.11, GRAN.dress);
-    rod(g, lerp(shoulder, hand, 0.26), hand, 0.088, GRAN.skin);
-    box(g, 0.09, 0.09, 0.09, GRAN.skin, hand.x, hand.y, hand.z);
+    const shoulder = along(0.44).add(new Vector3(Math.sign(hand.x) * 0.22 * k, 0, 0));
+    rod(g, shoulder, lerp(shoulder, hand, 0.28), 0.11 * k, GRAN.dress);
+    rod(g, lerp(shoulder, hand, 0.26), hand, 0.088 * k, GRAN.skin);
+    box(g, 0.09 * k, 0.09 * k, 0.09 * k, GRAN.skin, hand.x, hand.y, hand.z);
   }
   return g;
 }
@@ -585,6 +594,8 @@ function grandma(ankles: Vector3[], hands: Vector3[]): Group {
  * Grandma's pose follows from where that puts the grips.
  */
 function buildStair(spec: VehicleSpec): VehicleModel {
+  /** Where Grandma's hands hold the grips, in climber space (see below). */
+  const GRIP = { y: 0.8, z: -0.4175 };
   const root = new Group();
   const { body, accent, seat } = spec.colors;
   const g = groundY(spec);
@@ -617,9 +628,10 @@ function buildStair(spec: VehicleSpec): VehicleModel {
   box(s, 0.16, 0.07, 0.12, HOUSING, 0, 1.135, -0.07);
   box(s, 0.03, 0.015, 0.03, accent, 0.04, 1.1775, -0.09);
   for (const x of [1, -1]) {
-    // the grips, stretched back by the workshop so Grandma can hang off them
-    box(s, 0.045, 0.045, 0.4, 0x111111, x * 0.21, 1.08, -0.26);
-    box(s, 0.05, 0.09, 0.05, 0x111111, x * 0.21, 1.115, -0.46);
+    // the grips, stretched back by the workshop and bent down at the end, so that Grandma,
+    // who is not very tall, can hang off them (her hands at GRIP)
+    box(s, 0.045, 0.045, 0.38, 0x111111, x * 0.21, 1.08, -0.25);
+    box(s, 0.045, 0.36, 0.045, 0x111111, x * 0.21, GRIP.y + 0.1225, GRIP.z);
     box(s, 0.055, 0.055, 0.03, accent, x * 0.21, 1.08, -0.11); // red rings
   }
   // the chair on the front: backrest against the tubes, seat on a frame over the drive unit
@@ -649,8 +661,8 @@ function buildStair(spec: VehicleSpec): VehicleModel {
   // (left then right, as the skates come in the spec)
   const skates = spec.wheels.filter((w) => w.caster);
   root.add(grandma(
-    skates.map((w) => new Vector3(w.x, g + 0.24, w.z - 0.035)),
-    skates.map((w) => at(Math.sign(w.x) * 0.21, 1.08, -0.4)),
+    skates.map((w) => new Vector3(w.x, g + ANKLE.y, w.z + ANKLE.z)),
+    skates.map((w) => at(Math.sign(w.x) * 0.21, GRIP.y, GRIP.z)),
   ));
   const wheels = spec.wheels.map((w) => {
     const m = w.caster ? skate(w) : wheel(w, spec);
