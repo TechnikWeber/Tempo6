@@ -491,8 +491,8 @@ function buildFolder(spec: VehicleSpec): VehicleModel {
 }
 
 const BOOT = 0xf4f1ea;
-/** Grandma's colours, and her size against a driver (her skates a little less shrunk). */
-const GRAN = { dress: 0x1fa99a, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, socks: 0xf4f1ea, stripes: [0xe8542e, 0xf2c230], size: 0.75, skate: 0.85 };
+/** Grandma's colours, and her size against a driver, skates and all. */
+const GRAN = { dress: 0x1fa99a, skin: 0xf0c4a0, hair: 0xe9e6df, band: 0xf08a24, socks: 0xf4f1ea, stripes: [0xe8542e, 0xf2c230], size: 0.9 };
 
 /**
  * One of Grandma's roller skates, in place of a caster: a high white boot on a plate, two
@@ -506,7 +506,7 @@ function skate(w: WheelSpec): WheelModel {
   // (built standing on the ground, then shrunk to Grandma's feet)
   const s = new Group();
   s.position.y = -w.radius;
-  s.scale.setScalar(GRAN.skate);
+  s.scale.setScalar(GRAN.size);
   pivot.add(s);
   const left = w.x > 0;
   const tint = left ? 0xff4f9a : 0x26c6c0;
@@ -526,7 +526,7 @@ function skate(w: WheelSpec): WheelModel {
 }
 
 /** Where on a skate, from the ground under its wheel, Grandma's shin goes into the boot. */
-const ANKLE = { y: 0.245 * GRAN.skate, z: -0.035 * GRAN.skate };
+const ANKLE = { y: 0.245 * GRAN.size, z: -0.035 * GRAN.size };
 
 /**
  * Grandma, hanging on behind on her roller skates: knees bent, leaning back on straight arms
@@ -595,7 +595,7 @@ function grandma(ankles: Vector3[], hands: Vector3[]): Group {
  */
 function buildStair(spec: VehicleSpec): VehicleModel {
   /** Where Grandma's hands hold the grips, in climber space (see below). */
-  const GRIP = { y: 0.8, z: -0.4175 };
+  const GRIP = { y: 0.98, z: -0.4175 };
   const root = new Group();
   const { body, accent, seat } = spec.colors;
   const g = groundY(spec);
@@ -631,7 +631,7 @@ function buildStair(spec: VehicleSpec): VehicleModel {
     // the grips, stretched back by the workshop and bent down at the end, so that Grandma,
     // who is not very tall, can hang off them (her hands at GRIP)
     box(s, 0.045, 0.045, 0.38, 0x111111, x * 0.21, 1.08, -0.25);
-    box(s, 0.045, 0.36, 0.045, 0x111111, x * 0.21, GRIP.y + 0.1225, GRIP.z);
+    box(s, 0.045, 1.1625 - GRIP.y, 0.045, 0x111111, x * 0.21, (1.0425 + GRIP.y) / 2, GRIP.z);
     box(s, 0.055, 0.055, 0.03, accent, x * 0.21, 1.08, -0.11); // red rings
   }
   // the chair on the front: backrest against the tubes, seat on a frame over the drive unit
