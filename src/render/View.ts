@@ -513,6 +513,17 @@ export class View {
         level.add(g);
         return g;
       }
+      if (d.type === 'catapult') {
+        // the board reaching back from its hinge, black and yellow at the end that snaps up,
+        // and the hinge itself, a fat steel tube across the front
+        const [hx, hy, hz] = d.half;
+        box(g, hx * 2, hy * 2, hz * 2, d.color, 0, -hy, -hz).receiveShadow = true;
+        for (let k = 0; k < 6; k++) box(g, (hx * 2) / 6 - 0.01, 0.012, 0.5, k % 2 ? 0x1d1d1f : 0xf2c230, -hx + (hx * 2 * (k + 0.5)) / 6, 0.006, -hz * 2 + 0.3).castShadow = false;
+        const hinge = cyl(g, 0.12, hx * 2 + 0.2, 0x5a5f66, 0, -hy, 0, 10);
+        hinge.rotation.z = Math.PI / 2;
+        level.add(g);
+        return g;
+      }
       // (the body sits at the middle of the top surface)
       box(g, d.half[0] * 2, d.half[1] * 2, d.half[2] * 2, d.color, 0, -d.half[1], 0).receiveShadow = true;
       // yellow edges, so one can see where the plank ends

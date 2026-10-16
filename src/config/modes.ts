@@ -39,7 +39,7 @@ export const MODES: ModeDef[] = [
   {
     id: 'open',
     name: L('Freie Fahrt', 'Open World'),
-    blurb: L('Ohne Zeit, ohne Runden, kein Limit: fahr, wie du willst. Flaschen und Stunts zahlen trotzdem.', 'No time, no laps, no limit: drive however you like. Bottles and stunts still pay.'),
+    blurb: L('Ohne Zeit, ohne Runden, kein Limit: fahr, wie du willst. Stunts zahlen trotzdem.', 'No time, no laps, no limit: drive however you like. Stunts still pay.'),
     tracks: ['parkplatz', 'flugplatz', 'spielwiese'],
   },
   {

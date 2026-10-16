@@ -154,7 +154,14 @@ export class Sim {
     for (const o of this.others) o.vehicle.update(o.input, STEP);
     const at = this.vehicle.body.translation();
     this.traffic.update(STEP, at.x, at.z);
-    for (const m of this.movers) m.update(STEP, at, this.vehicle.wheelsOnGround > 0 && m.holds(at, 1));
+    for (const m of this.movers) {
+      // (a catapult goes off with any wheel on it, wherever the middle of the vehicle is)
+      const on = m.def.type === 'catapult' ? this.vehicle.standsOn(m.tracked.body) : this.vehicle.wheelsOnGround > 0 && m.holds(at, 1);
+      m.update(STEP, at, on);
+      // a catapult letting go throws whatever stands on it (before the knock is measured below)
+      if (m.fling && on) this.vehicle.body.setLinvel(m.fling, true);
+      m.fling = null;
+    }
     // What the step does to the speed beyond gravity is something it ran into (or landed on):
     // tyres, springs and motors have all had their say in `update` already.
     const before = this.vehicle.body.linvel();

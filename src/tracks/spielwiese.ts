@@ -75,6 +75,14 @@ statics.push(
   ramp([TABLE_X + 2 * run + 12, BUMP_Z], WEST, 10, 7, 0.3, RAMP),
 );
 
+// On along the south lane, in line behind the little loop: the giant one, 24 m tall, with a
+// wall of cartons before the east wall to stop in. Over the top only flat out, best with a boost.
+const GIANT_X = 100, GIANT_Z = LOOP_Z - 5;
+board(L('RIESENLOOPING', 'GIANT LOOP'), 60, GIANT_Z + 9);
+statics.push(...looping([GIANT_X, GIANT_Z], 12, 6, 7, 0x2f6db5, 84));
+for (let x = 15; x <= 85; x += 10) decor.push({ type: 'box', pos: [x, 0.005, GIANT_Z], half: [2.5, 0.005, 0.12], color: 0xe6c94a });
+cartons(150, GIANT_Z - 7, 4, 11);
+
 // Between the south lane and the wall: the big loop, with the whole width for a run-up. Only
 // the quick ones make it over the top.
 const XXL_Z = -68;
@@ -111,12 +119,12 @@ for (const [x, radius, speed] of [[-84, 4, 1.5], [-70, 3, -4], [-56, 4.5, 2.5], 
 // Slalom between the lanes.
 for (let i = 0; i < 10; i++) props.push({ type: 'cone', pos: [-100 + i * 9, 0.26, 22 + (i % 2 ? 2 : -2)] });
 
-// Northwest pocket: a catapult. A short run-up onto a steep tipper that slams over and flings
-// whatever is on it, same trick as the Tutorial's "Kippe" but bigger and meaner.
+// Northwest pocket: the catapult. A board flat on the ground, hinged at its east end: drive on,
+// stop, and a moment later its back end snaps up and throws you east over the open ground.
 board(L('SCHLEUDER', 'CATAPULT'), -150, 73);
-const FLING_X = -138, FLING_Z = 75, FLING_HALF = 3;
-// the trestle it turns on, same as the Tutorial's Kippe
-decor.push({ type: 'box', pos: [FLING_X, (FLING_HALF * Math.sin(0.5)) / 2, FLING_Z], half: [2.3, (FLING_HALF * Math.sin(0.5)) / 2, 0.15], color: STEEL });
+const FLING_X = -128, FLING_Z = 75;
+// a frame round the board, so it reads as a machine and not a plank someone left there
+for (const s of [-1, 1]) decor.push({ type: 'box', pos: [FLING_X - 2, 0.06, FLING_Z + s * 1.75], half: [2.2, 0.06, 0.15], color: 0x5a5f66 });
 
 // Southeast pocket: a lookout platform, ramped up from the track side, a steeper slide down
 // the far side. Both ramps' ground ends are worked out so their tops land flush on the deck.
@@ -139,7 +147,7 @@ const WHEEL_R = 18;
 const movers: MoverDef[] = [
   { type: 'propeller', pos: [0, WHEEL_R + 3, WHEEL_Z], yaw: 0, half: [0.3, WHEEL_R / 2, 0.3], angle: 0, blades: 12, spin: 0.25, color: 0xe8e2d0, gondolas: true },
   // the catapult in the northwest pocket, declared up there, wired in here
-  { type: 'seesaw', pos: [FLING_X, FLING_HALF * Math.sin(0.5) + 0.03, FLING_Z], yaw: EAST, half: [2.2, 0.08, FLING_HALF], angle: 0.5, color: 0xd9822b },
+  { type: 'catapult', pos: [FLING_X, 0.04, FLING_Z], yaw: EAST, half: [1.5, 0.1, 2], angle: 1, spin: 7.5, color: 0xd9822b },
 ];
 for (const z of [-1.2, 1.2]) decor.push({ type: 'box', pos: [0, (WHEEL_R + 3) / 2, WHEEL_Z + z], half: [0.4, (WHEEL_R + 3) / 2, 0.3], color: 0x5a5f66 });
 let booth = 0;
@@ -171,7 +179,7 @@ decor.push(
 export const SPIELWIESE: TrackDef = {
   id: 'spielwiese',
   name: L('Spielwiese', 'Playground'),
-  blurb: L('Drei Loopings, Wellenbahnen, Drehteller, Riesenschanzen, Riesenrad: alles, was Unsinn ist.', 'Three loops, wave tracks, turntables, giant jumps, a big wheel: everything that is nonsense.'),
+  blurb: L('Vier Loopings, eine Schleuder, Wellenbahnen, Drehteller, Riesenschanzen, Riesenrad: alles, was Unsinn ist.', 'Four loops, a catapult, wave tracks, turntables, giant jumps, a big wheel: everything that is nonsense.'),
   unlockPrice: 200,
   lapPay: 20,
   spawn: { pos: [-135, 0.6, 0], yaw: EAST },

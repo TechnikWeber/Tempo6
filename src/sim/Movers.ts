@@ -11,6 +11,8 @@ const TIP_DAMPING = 5;
  * loaded it only goes over once the vehicle is a little past the middle.
  */
 const COUNTERWEIGHT = 0.6;
+/** Catapult: seconds something has to stand on it before it lets go, it stays up, and the rate it comes back down at (rad/s). */
+const CATAPULT = { load: 0.5, hold: 1.2, back: 0.8 };
 
 /**
  * A moving plank. It is a kinematic body driven by velocity, like the turning disc, so the
@@ -24,6 +26,13 @@ export class Mover {
   offset = 0;
   private rate = 0;
   private time = 0;
+  /** Where a catapult is in its throw. */
+  private stage: 'armed' | 'snap' | 'hold' | 'back' = 'armed';
+  /**
+   * The velocity a catapult gives whatever stands on it, in the step it lets go; null in every
+   * other step. (Its springs would swallow most of the blow if the board had to deliver it.)
+   */
+  fling: { x: number; y: number; z: number } | null = null;
   /** The axis it turns about, in the world. */
   private readonly axis: { x: number; y: number; z: number };
 
@@ -55,19 +64,28 @@ export class Mover {
         );
       }
     } else {
-      world.createCollider(RAPIER.ColliderDesc.cuboid(...def.half).setTranslation(0, -def.half[1], 0).setFriction(0.9), body);
+      // (a catapult's body sits on its hinge, the board reaching back from there)
+      const back = def.type === 'catapult' ? -def.half[2] : 0;
+      world.createCollider(RAPIER.ColliderDesc.cuboid(...def.half).setTranslation(0, -def.half[1], back).setFriction(0.9), body);
     }
     this.tracked = new Tracked(body);
     const s = Math.sin(def.yaw), c = Math.cos(def.yaw);
-    // a seesaw pitches about its own X axis, a rocker and a propeller turn about their own Z axis
-    this.axis = def.type === 'seesaw' ? { x: c, y: 0, z: -s } : { x: s, y: 0, z: c };
+    // a seesaw and a catapult pitch about their own X axis, a rocker and a propeller turn about their own Z axis
+    this.axis = this.pitches ? { x: c, y: 0, z: -s } : { x: s, y: 0, z: c };
     this.reset();
+  }
+
+  /** Whether it tips about its own X axis (along its length) rather than rolling about Z. */
+  private get pitches(): boolean {
+    return this.def.type === 'seesaw' || this.def.type === 'catapult';
   }
 
   reset(): void {
     this.angle = this.def.type === 'seesaw' ? -this.def.angle : 0;
     this.rate = 0;
     this.time = 0;
+    this.stage = 'armed';
+    this.fling = null;
     this.offset = this.slide(0);
     const b = this.tracked.body;
     const [x, y, z] = this.at(this.offset);
@@ -98,7 +116,30 @@ export class Mover {
       return;
     }
     let next: number;
-    if (d.type === 'seesaw') {
+    if (d.type === 'catapult') {
+      // Loaded: it waits for a moment with something standing on it, then lets go all at once,
+      // stays up a moment and comes back down for the next one.
+      next = this.angle;
+      if (this.stage === 'armed') {
+        this.time = onIt ? this.time + dt : 0;
+        if (this.time >= CATAPULT.load) {
+          [this.stage, this.time] = ['snap', 0];
+          // the board's speed at its middle, out along the board as it comes up: the same throw
+          // wherever on it one stands (from the very end it would go into orbit)
+          const speed = (d.spin ?? 6) * d.half[2];
+          const a = d.angle * 0.8;
+          this.fling = { x: Math.sin(d.yaw) * Math.sin(a) * speed, y: Math.cos(a) * speed, z: Math.cos(d.yaw) * Math.sin(a) * speed };
+        }
+      } else if (this.stage === 'snap') {
+        next = Math.min(d.angle, this.angle + (d.spin ?? 6) * dt);
+        if (next >= d.angle) this.stage = 'hold';
+      } else if (this.stage === 'hold') {
+        if ((this.time += dt) >= CATAPULT.hold) this.stage = 'back';
+      } else {
+        next = Math.max(0, this.angle - CATAPULT.back * dt);
+        if (next <= 0) [this.stage, this.time] = ['armed', 0];
+      }
+    } else if (d.type === 'seesaw') {
       // Weight past the middle tips it; the further out, the harder.
       const s = (at.x - d.pos[0]) * Math.sin(d.yaw) + (at.z - d.pos[2]) * Math.cos(d.yaw);
       const push = (onIt ? (TIP * s) / d.half[2] : 0) - COUNTERWEIGHT;
@@ -125,8 +166,9 @@ export class Mover {
     const dx = at.x - c.x, dz = at.z - c.z;
     const s = dx * Math.sin(d.yaw) + dz * Math.cos(d.yaw);
     const l = dx * Math.cos(d.yaw) - dz * Math.sin(d.yaw);
-    if (Math.abs(s) > d.half[2] || Math.abs(l) > d.half[0] + 0.2) return false;
-    const top = d.type === 'seesaw' ? d.pos[1] - s * Math.sin(this.angle) : d.pos[1] + l * Math.sin(this.angle);
+    // (a catapult's board reaches back from its hinge, the others' either way from the middle)
+    if ((d.type === 'catapult' ? s > 0.2 || s < -2 * d.half[2] : Math.abs(s) > d.half[2]) || Math.abs(l) > d.half[0] + 0.2) return false;
+    const top = this.pitches ? d.pos[1] - s * Math.sin(this.angle) : d.pos[1] + l * Math.sin(this.angle);
     return at.y > top - 0.2 && at.y < top + reach;
   }
 
@@ -151,14 +193,14 @@ export class Mover {
     const x = cy * r.x - sy * r.z;
     const z = cy * r.z + sy * r.x;
     const w = cy * r.w + sy * r.y;
-    return 2 * Math.atan2(this.def.type === 'seesaw' ? x : z, w);
+    return 2 * Math.atan2(this.pitches ? x : z, w);
   }
 
   private rotation(angle: number): { x: number; y: number; z: number; w: number } {
     const sy = Math.sin(this.def.yaw / 2), cy = Math.cos(this.def.yaw / 2);
     const sa = Math.sin(angle / 2), ca = Math.cos(angle / 2);
-    // heading about Y, then the tilt about the local X (seesaw) or Z (rocker) axis
-    return this.def.type === 'seesaw' ? { x: cy * sa, y: sy * ca, z: -sy * sa, w: cy * ca } : { x: sy * sa, y: sy * ca, z: cy * sa, w: cy * ca };
+    // heading about Y, then the tilt about the local X (seesaw, catapult) or Z (rocker) axis
+    return this.pitches ? { x: cy * sa, y: sy * ca, z: -sy * sa, w: cy * ca } : { x: sy * sa, y: sy * ca, z: cy * sa, w: cy * ca };
   }
 }
 

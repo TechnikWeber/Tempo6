@@ -130,17 +130,19 @@ export interface SpinnerDef {
  * is on; a `rocker` rolls slowly from side to side by itself, for balancing across; a
  * `propeller` spins its blades across the way, about an axle pointing along it. A `drum` is a
  * big tube turning about its axle along the way, to be driven through on its inside; a
- * `slider` is a plank sliding from side to side across the way by itself.
+ * `slider` is a plank sliding from side to side across the way by itself. A `catapult` is a
+ * board lying flat, hinged at its front end: stand on it for a moment and its back end snaps
+ * up, flinging whatever is on it forward and up.
  */
 export interface MoverDef {
-  type: 'seesaw' | 'rocker' | 'propeller' | 'drum' | 'slider';
-  /** Centre of its top surface when level; a propeller's or a drum's hub. */
+  type: 'seesaw' | 'rocker' | 'propeller' | 'drum' | 'slider' | 'catapult';
+  /** Centre of its top surface when level; a propeller's or a drum's hub; a catapult's hinge, on its top surface. */
   pos: [number, number, number];
   /** Heading of its length, 0 = along Z; a propeller's axle. */
   yaw: number;
   /** Half width, half thickness and half length; a propeller blade's half width, half length and half thickness. */
   half: [number, number, number];
-  /** Propeller and drum: how many blades or slats, and how fast it turns (rad/s). */
+  /** Propeller and drum: how many blades or slats, and how fast it turns (rad/s); a catapult: how fast it snaps up. */
   blades?: number;
   spin?: number;
   /** A propeller dressed up as a big wheel: a gondola basket at the tip of every blade. */
@@ -150,7 +152,7 @@ export interface MoverDef {
   /** Slider: how far it goes out either side of its middle, and where in its swing it starts (rad). */
   travel?: number;
   phase?: number;
-  /** Greatest tilt either way, in rad. A seesaw starts tipped back, towards -Z of its heading. */
+  /** Greatest tilt either way, in rad. A seesaw starts tipped back, towards -Z of its heading; a catapult snaps up this far. */
   angle: number;
   /** Seconds for a rocker to roll over and back, or a slider to go across and back. */
   period?: number;

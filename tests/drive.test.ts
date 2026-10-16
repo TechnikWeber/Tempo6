@@ -13,6 +13,7 @@ import { dice, distanceTo } from '../src/tracks/scenery';
 import { PARKPLATZ } from '../src/tracks/parkplatz';
 import { REHA } from '../src/tracks/reha';
 import { SKY } from '../src/tracks/sky';
+import { SPIELWIESE } from '../src/tracks/spielwiese';
 import { Autopilot } from './autopilot';
 
 const FLAT: TrackDef = {
@@ -927,6 +928,23 @@ describe('turning disc', () => {
     drive(sim, 3, 0);
     expect(Math.abs(sim.vehicle.yaw)).toBeLessThan(0.02);
     expect(Math.abs(sim.vehicle.speed)).toBeLessThan(0.05);
+    sim.world.free();
+  });
+});
+
+describe('catapult', () => {
+  it.each(ALL)('%s standing on the playground catapult is thrown forward and lands on its wheels', (_id, spec) => {
+    const sim = new Sim({ ...SPIELWIESE, spawn: { pos: [-130, 0.7, 75], yaw: Math.PI / 2 } }, spec);
+    let top = 0;
+    drive(sim, 0.3, 0);
+    for (let i = 0; i < 60 * 5; i++) {
+      sim.step({ throttle: 0, steer: 0, handbrake: false });
+      top = Math.max(top, sim.vehicle.body.translation().y);
+    }
+    expect(top).toBeGreaterThan(3);
+    expect(sim.vehicle.body.translation().x).toBeGreaterThan(-115);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.9);
+    expect(sim.vehicle.wrecked).toBe(false);
     sim.world.free();
   });
 });

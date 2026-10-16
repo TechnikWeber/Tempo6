@@ -180,6 +180,11 @@ export class Vehicle {
     this.accel = accel;
   }
 
+  /** Whether any of its wheels stands on the given body (a moving plank, say). */
+  standsOn(body: RAPIER.RigidBody): boolean {
+    return this.spec.wheels.some((_, i) => this.ctrl.wheelIsInContact(i) && this.ctrl.wheelGroundObject(i)?.parent()?.handle === body.handle);
+  }
+
   get wrecked(): boolean {
     return this.damage >= 1;
   }
