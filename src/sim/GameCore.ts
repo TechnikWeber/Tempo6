@@ -235,6 +235,8 @@ export class GameCore {
     const spec = v.spec;
     v.profile = spec.profiles[this.profileIndex] ?? spec.profiles[0];
     v.boostFitted = this.progress.hasBoost;
+    // (only where nothing is timed does the battery charge back up from the driving)
+    v.boostRecharge = this.mode === 'open' || this.mode === 'freestyle';
     v.setMotor(stageSpeedKmh(s, spec.speedFactor * v.profile.speed) / 3.6, s.accel * spec.accelFactor * v.profile.accel);
     // the crashtest is driven flat out, the boost battery on the lap, whatever has been bought
     if (this.mode === 'crash') {

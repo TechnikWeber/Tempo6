@@ -112,6 +112,8 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   b.add({ f: () => { Object.assign(BOOST, BOOST_DEFAULTS); b.controllersRecursive().forEach((c) => c.updateDisplay()); } }, 'f')
     .name('Einstellungen zurücksetzen');
   b.add(BOOST, 'duration', 0.5, 8, 0.1).name('Dauer (s)');
+  b.add(BOOST, 'recharge', 2, 40, 1).name('Nachladen leer→voll (s, Freie Fahrt/Freestyle)');
+  b.add(BOOST, 'recuperation', 1, 5, 0.1).name('…beim Bremsen schneller (×)');
   b.add(BOOST, 'minCharge', 0, 1, 0.05).name('Mindestladung zum Zünden');
   b.add(BOOST, 'speed', 0, 1, 0.05).name('Mehr Tempo (Anteil)');
   b.add(BOOST, 'extraSpeed', 0, 5, 0.1).name('…plus fest (m/s)');

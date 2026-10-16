@@ -544,6 +544,23 @@ describe('boost battery', () => {
     expect(sim.vehicle.boosting).toBe(true);
   });
 
+  it('charges back up from the driving in the open world and the freestyle, and only there', () => {
+    for (const mode of ['open', 'freestyle', 'time', 'race'] as const) {
+      const progress = new Progress();
+      progress.unlockEverything([]);
+      progress.earn(BOOST.price);
+      const core = new GameCore(PARKPLATZ, progress, mode);
+      core.step({ ...idle, buyBoost: true });
+      const v = core.sim.vehicle;
+      v.boostCharge = 0;
+      for (let i = 0; i < 60 * 3; i++) core.step({ ...idle, throttle: 1 });
+      // three seconds of driving: about a third of a charge where it charges, nothing elsewhere
+      if (mode === 'open' || mode === 'freestyle') expect(v.boostCharge).toBeGreaterThan(0.2);
+      else expect(v.boostCharge).toBe(0);
+      core.dispose();
+    }
+  });
+
   it('tops the battery back up every lap in a time trial, but keeps it shared across a race', () => {
     for (const mode of ['time', 'race'] as const) {
       const core = new GameCore(PARKPLATZ, new Progress(), mode);
