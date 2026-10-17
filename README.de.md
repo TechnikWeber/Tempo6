@@ -61,18 +61,20 @@ Jeder Push auf `main` testet, baut und veröffentlicht das Spiel über GitHub Pa
 
 ## Steuerung
 
-| Aktion | Tastatur | Gamepad |
-| --- | --- | --- |
-| Fahren / lenken | WASD oder Pfeiltasten | Trigger / linker Stick |
-| In der Luft: drehen und versetzen / Nase kippen, Sprung strecken | Lenken / Gas und Bremse | linker Stick / Trigger |
-| Handbremse | Leertaste | A |
-| Boost (Autobatterie auf dem Schoß) | Umschalt oder B | B / RB |
-| Aufrichten | R | Y |
-| Level neu starten | Rücktaste | Back |
-| Zurück zum Startbildschirm | Esc | Start |
-| Ton an/aus | M | |
-| Garage (im Startbildschirm) | T | |
-| Werkstatt (Fahrverhalten live einstellen; mit Dev-Mode in den Einstellungen) | F2 | |
+| Aktion | Tastatur | Controller: Switch-Layout (8BitDo) | Xbox | PlayStation |
+| --- | --- | --- | --- | --- |
+| Fahren / lenken | WASD oder Pfeiltasten | ZR / ZL, linker Stick oder Steuerkreuz | RT / LT, linker Stick oder Steuerkreuz | R2 / L2, linker Stick oder Steuerkreuz |
+| In der Luft: drehen und versetzen / Nase kippen, Sprung strecken | Lenken / Gas und Bremse | linker Stick / ZR, ZL | linker Stick / RT, LT | linker Stick / R2, L2 |
+| Handbremse | Leertaste | B | A | ✕ |
+| Boost (Autobatterie auf dem Schoß) | Umschalt oder B | A oder R | B oder RB | ○ oder R1 |
+| Aufrichten | R | X | Y | △ |
+| Level neu starten | Rücktaste | − | View | Share |
+| Zurück zum Startbildschirm | Esc | + | Menu | Options |
+| Ton an/aus | M | | | |
+| Garage (im Startbildschirm) | T | X | Y | △ |
+| Werkstatt (Fahrverhalten live einstellen; mit Dev-Mode in den Einstellungen) | F2 | | | |
+
+Im Startbildschirm macht der Controller, was die Tasten machen: links und rechts wählen das Gefährt, hoch und runter die Strecke, die Schultertasten den Modus, A (Xbox A, ✕) startet, Y (Xbox X, □) schaltet frei, was gerade gewählt ist, und − (View, Share) öffnet die Einstellungen. In der Garage und den Einstellungen wandert mit dem Steuerkreuz eine Markierung, A drückt, B geht zurück. Das Bild nennt die Tasten von dem, was zuletzt benutzt wurde: die Tastatur oder den Controller mit seiner eigenen Beschriftung. Controller erkennt das Spiel am Hersteller: Ein 8BitDo im eigenen Modus ist der Standard, und alles Unbekannte wird dafür gehalten; Switch Pro, Xbox und PlayStation bekommen ihre eigenen Tastennamen. Liegt es daneben, wählt „🎮 Controller“ in den Einstellungen von Hand. Den Ton lassen Browser erst nach einem Klick oder Tastendruck an, nicht nach einer Controller-Taste: also einmal ins Spiel klicken.
 
 Auf dem Handy, quer gehalten: links unten die Lenkleiste mit „aufrichten“ und „neu“ darüber, rechts unten Gas (groß), Rückwärts, Handbremse und Boost, oben links das Menü. Im Startbildschirm schaltet „Vollbild“ die Leisten des Browsers weg.
 
@@ -80,6 +82,6 @@ Auf dem Handy, quer gehalten: links unten die Lenkleiste mit „aufrichten“ un
 
 - `src/sim/`: Physik und Spielregeln ([Rapier](https://rapier.rs)-Raycast-Fahrzeug, fester 60-Hz-Schritt). Kein Rendering, kein DOM, läuft deshalb in den Tests ohne Browser.
 - `src/render/`: [three.js](https://threejs.org)-Szene; alle Modelle entstehen im Code aus Grundformen.
-- `src/input/`: Tastatur, Gamepad und Touch werden zu einer Fahrabsicht zusammengeführt.
+- `src/input/`: Tastatur, Controller und Touch werden zu einer Fahrabsicht zusammengeführt; `pads.ts` enthält die Controller-Profile.
 - `src/config/`: Tuning-Stufen, Fahrzeugdaten und Fahrverhalten.
 - `src/tracks/`: Strecken als reine Daten, genutzt von Physik und Darstellung.

@@ -1,6 +1,7 @@
 import GUI from 'lil-gui';
 import { BOOST, DAMAGE, STAGES } from '../config/tuning';
 import { HANDLING, HANDLING_DEFAULTS, STAIR, VEHICLE_ORDER } from '../config/vehicles';
+import { PAD, PAD_DEFAULTS } from '../input/pads';
 import { TRACKS } from '../tracks';
 import type { GameCore } from '../sim/GameCore';
 
@@ -143,6 +144,14 @@ export function createDebugPanel(game: () => GameCore, onProfile: () => void = (
   d.add(DAMAGE, 'slow', 0, 0.9, 0.05).name('Tempoverlust am Ende (Anteil)');
   d.add(DAMAGE, 'grace', 0, 2, 0.05).name('Schonzeit nach Stoß (s)');
   d.close();
+
+  const pad = gui.addFolder('Controller');
+  pad.add({ f: () => { Object.assign(PAD, PAD_DEFAULTS); pad.controllersRecursive().forEach((c) => c.updateDisplay()); } }, 'f')
+    .name('Einstellungen zurücksetzen');
+  pad.add(PAD, 'deadzone', 0, 0.5, 0.01).name('Stick: tote Zone');
+  pad.add(PAD, 'steerCurve', 1, 3, 0.05).name('Stick: Lenkkurve (1 = gerade)');
+  pad.add(PAD, 'triggerDeadzone', 0, 0.3, 0.01).name('Trigger: tote Zone');
+  pad.close();
 
   // Keep the slider in step when the stage changes through normal play.
   setInterval(() => {

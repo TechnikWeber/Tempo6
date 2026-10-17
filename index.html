@@ -18,7 +18,7 @@
         <div class="bar"><i id="speed-bar"></i></div>
         <div class="dim">max. <b id="top">6</b> km/h · <span id="vehicle"></span></div>
         <div id="damage-row" hidden><span>🔧</span><div class="bar"><i id="damage-bar"></i></div><small id="damage-text"></small></div>
-        <div id="boost-row" hidden><span>⚡</span><div class="bar"><i id="boost-bar"></i></div><kbd>⇧</kbd></div>
+        <div id="boost-row" hidden><span>⚡</span><div class="bar"><i id="boost-bar"></i></div><kbd class="keys-only">⇧</kbd><span class="pad-only" data-pad-hint="boost"></span></div>
       </div>
 
       <div class="panel" id="laps">
@@ -36,14 +36,16 @@
       <div id="banner"></div>
       <div id="stunt"></div>
       <div id="lights" hidden><i></i><i></i><i></i></div>
-      <div id="flipped" hidden data-de="Umgekippt! &lt;span class=&quot;keys-only&quot;&gt;&lt;kbd&gt;R&lt;/kbd&gt; zum Aufrichten&lt;/span&gt;&lt;span class=&quot;tap-only&quot;&gt;Tippen zum Aufrichten&lt;/span&gt;">Tipped over! <span class="keys-only"><kbd>R</kbd> to get back up</span><span class="tap-only">Tap to get back up</span></div>
-      <div id="wrecked" hidden data-de="Totalschaden! &lt;span class=&quot;keys-only&quot;&gt;&lt;kbd&gt;⌫&lt;/kbd&gt; Level neu&lt;/span&gt;&lt;span class=&quot;tap-only&quot;&gt;Tippen: Level neu&lt;/span&gt;">Written off! <span class="keys-only"><kbd>⌫</kbd> restart</span><span class="tap-only">Tap to restart</span></div>
+      <div id="flipped" hidden data-de="Umgekippt! &lt;span class=&quot;keys-only&quot;&gt;&lt;kbd&gt;R&lt;/kbd&gt; zum Aufrichten&lt;/span&gt;&lt;span class=&quot;tap-only&quot;&gt;Tippen zum Aufrichten&lt;/span&gt;&lt;span class=&quot;pad-only&quot; data-pad-hint=&quot;flipped&quot;&gt;&lt;/span&gt;">Tipped over! <span class="keys-only"><kbd>R</kbd> to get back up</span><span class="tap-only">Tap to get back up</span><span class="pad-only" data-pad-hint="flipped"></span></div>
+      <div id="wrecked" hidden data-de="Totalschaden! &lt;span class=&quot;keys-only&quot;&gt;&lt;kbd&gt;⌫&lt;/kbd&gt; Level neu&lt;/span&gt;&lt;span class=&quot;tap-only&quot;&gt;Tippen: Level neu&lt;/span&gt;&lt;span class=&quot;pad-only&quot; data-pad-hint=&quot;wrecked&quot;&gt;&lt;/span&gt;">Written off! <span class="keys-only"><kbd>⌫</kbd> restart</span><span class="tap-only">Tap to restart</span><span class="pad-only" data-pad-hint="wrecked"></span></div>
       <div id="rotate" data-de="Am besten quer halten ↻">Best held sideways ↻</div>
 
-      <div class="panel dim" id="help" data-de="&lt;kbd&gt;W&lt;/kbd&gt;&lt;kbd&gt;A&lt;/kbd&gt;&lt;kbd&gt;S&lt;/kbd&gt;&lt;kbd&gt;D&lt;/kbd&gt; fahren · &lt;kbd&gt;Leertaste&lt;/kbd&gt; Handbremse · &lt;kbd&gt;⇧ Umschalt&lt;/kbd&gt; Boost · &lt;kbd&gt;R&lt;/kbd&gt; aufrichten · &lt;kbd&gt;⌫&lt;/kbd&gt; Level neu · &lt;kbd&gt;Esc&lt;/kbd&gt; Menü · &lt;kbd&gt;G&lt;/kbd&gt; Schatten · &lt;kbd&gt;M&lt;/kbd&gt; Ton · &lt;kbd&gt;F2&lt;/kbd&gt; Werkstatt">
+      <div class="panel dim" id="help" data-de="&lt;span class=&quot;keys-only&quot;&gt;&lt;kbd&gt;W&lt;/kbd&gt;&lt;kbd&gt;A&lt;/kbd&gt;&lt;kbd&gt;S&lt;/kbd&gt;&lt;kbd&gt;D&lt;/kbd&gt; fahren · &lt;kbd&gt;Leertaste&lt;/kbd&gt; Handbremse · &lt;kbd&gt;⇧ Umschalt&lt;/kbd&gt; Boost · &lt;kbd&gt;R&lt;/kbd&gt; aufrichten · &lt;kbd&gt;⌫&lt;/kbd&gt; Level neu · &lt;kbd&gt;Esc&lt;/kbd&gt; Menü · &lt;kbd&gt;G&lt;/kbd&gt; Schatten · &lt;kbd&gt;M&lt;/kbd&gt; Ton · &lt;kbd&gt;F2&lt;/kbd&gt; Werkstatt&lt;/span&gt;&lt;span class=&quot;pad-only&quot; data-pad-hint=&quot;drive&quot;&gt;&lt;/span&gt;">
+        <span class="keys-only">
         <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive · <kbd>Space</kbd> handbrake · <kbd>⇧ Shift</kbd> boost ·
         <kbd>R</kbd> get up · <kbd>⌫</kbd> restart · <kbd>Esc</kbd> menu ·
         <kbd>G</kbd> ghost · <kbd>M</kbd> sound · <kbd>F2</kbd> workshop
+        </span><span class="pad-only" data-pad-hint="drive"></span>
       </div>
     </div>
 

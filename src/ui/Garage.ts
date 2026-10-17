@@ -1,6 +1,9 @@
 import { L, num } from '../i18n';
 import { BOOST, formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
+import type { PadPress } from '../input/pads';
 import type { GameCore } from '../sim/GameCore';
+import { PadFocus } from './PadFocus';
+import { fillPadHints, keyName } from './prompts';
 
 interface GarageHandlers {
   /** The game in the garage, with the vehicle standing in it. */
@@ -20,6 +23,8 @@ export class Garage {
   private readonly root = document.getElementById('garage')!;
   /** What the last purchase did. */
   private said = '';
+  /** The controller's highlight: one thing at a time, ok takes it. */
+  private readonly focus = new PadFocus(() => this.root);
 
   constructor(private readonly handlers: GarageHandlers) {
     window.addEventListener('keydown', (e) => {
@@ -39,11 +44,18 @@ export class Garage {
   show(): void {
     this.said = '';
     this.root.hidden = false;
+    this.focus.clear();
     this.render();
   }
 
   hide(): void {
     this.root.hidden = true;
+  }
+
+  /** A press on the controller: the d-pad goes through what can be had, ok takes it, back leaves. */
+  pad(p: PadPress): void {
+    if (p === 'back' || p === 'north') this.handlers.back();
+    else this.focus.handle(p);
   }
 
   private tune(): void {
@@ -64,7 +76,7 @@ export class Garage {
       if (e.type === 'tuned') this.said = `${e.stage.name}! ${e.stage.blurb}`;
       if (e.type === 'broke') this.said = L(`Es fehlen noch ${formatMoney(e.missing)}.`, `${formatMoney(e.missing)} short.`);
       if (e.type === 'untrained') this.said = L('Erst einmal durchs Tutorial, dann geht die Drossel raus.', 'Get through the tutorial first, then the limiter comes out.');
-      if (e.type === 'boostBought') this.said = L('Autobatterie auf dem Schoß! Umschalt halten für den Boost.', 'Car battery on the lap! Hold Shift to boost.');
+      if (e.type === 'boostBought') this.said = L(`Autobatterie auf dem Schoß! ${keyName('boost')} halten für den Boost.`, `Car battery on the lap! Hold ${keyName('boost')} to boost.`);
     }
     core.events.length = 0;
     this.render();
@@ -90,6 +102,7 @@ export class Garage {
       if (i <= max && i !== now) {
         row.title = L('Zurück auf diese Stufe wechseln, ohne nochmal zu kaufen', 'Switch back to this stage, without buying it again');
         row.style.cursor = 'pointer';
+        row.dataset.pad = `stage-${i}`;
         row.addEventListener('click', () => {
           core.setStage(i);
           this.render();
@@ -100,6 +113,7 @@ export class Garage {
 
     const next = progress.nextStage;
     const buy = h('button', 'buy');
+    buy.dataset.pad = 'buy';
     if (!next) {
       buy.textContent = L('Ausgetunt. Mehr geht nicht. Noch nicht.', 'Fully tuned. That is all there is. For now.');
       buy.disabled = true;
@@ -114,6 +128,7 @@ export class Garage {
 
     // owned already: a plain on/off switch, nothing more to pay; not yet owned: buy it
     const boost = h('button', 'buy boost');
+    boost.dataset.pad = 'boost';
     if (progress.boostOwned) {
       boost.textContent = progress.hasBoost
         ? L('⚡ Boost-Batterie an (abklemmen)', '⚡ Boost battery on (unfit it)')
@@ -133,6 +148,7 @@ export class Garage {
     const profiles = h('div', 'profiles');
     v.spec.profiles.forEach((p, i) => {
       const b = h('button', `profile${i === core.profileIndex ? ' on' : ''}`);
+      b.dataset.pad = `profile-${i}`;
       b.append(h('strong', '', p.name), h('span', '', p.blurb));
       b.addEventListener('click', () => {
         core.setProfile(i);
@@ -142,7 +158,10 @@ export class Garage {
     });
 
     const back = h('button', 'back', L('← Zurück', '← Back'));
+    back.dataset.pad = 'back';
     back.addEventListener('click', () => this.handlers.back());
+    const padHint = h('p', 'pad-only pad-hint');
+    padHint.dataset.padHint = 'garage';
 
     const panel = h('div', 'panel');
     panel.append(
@@ -155,7 +174,11 @@ export class Garage {
       profiles,
       h('p', 'said', this.said),
       back,
+      padHint,
     );
     this.root.replaceChildren(panel);
+    fillPadHints(this.root);
+    // (back on what it was on, or on buying the next stage the first time round)
+    this.focus.sync('buy');
   }
 }

@@ -16,9 +16,15 @@ export class Sound {
   private noiseBuffer: AudioBuffer | null = null;
   muted = false;
 
-  /** Browsers only allow audio after a user gesture. */
+  /**
+   * Browsers only allow audio after a user gesture. A controller does not count as one, so a
+   * start from the controller leaves it waiting: the next key or click wakes it up.
+   */
   unlock(): void {
-    if (this.ctx) return;
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') void this.ctx.resume().catch(() => {});
+      return;
+    }
     const ctx = new AudioContext();
     this.ctx = ctx;
     this.master = ctx.createGain();
@@ -140,6 +146,11 @@ export class Sound {
   toggleMute(): void {
     this.muted = !this.muted;
     if (this.master) this.master.gain.value = this.muted ? 0 : 0.5;
+  }
+
+  /** Still silent because the browser has not let it start yet. */
+  get waiting(): boolean {
+    return this.ctx?.state !== 'running';
   }
 
   /** @param speed m/s, @param load 0…1 how hard the motor is working */

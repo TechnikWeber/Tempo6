@@ -1,10 +1,12 @@
 import { L, lang, num, switchLanguage } from '../i18n';
 import { MODES, modeById, type ModeId } from '../config/modes';
+import type { PadPress } from '../input/pads';
 import { formatMoney, stageSpeedKmh, STAGES } from '../config/tuning';
 import { BRAND_COLORS, CATEGORIES, VEHICLE_ORDER, VEHICLES, type VehicleId } from '../config/vehicles';
 import type { Progress } from '../sim/Progress';
 import { trackOpen, TRACKS, TRAINING } from '../tracks';
 import { formatTime } from './Hud';
+import { PadFocus } from './PadFocus';
 
 interface MenuHandlers {
   /** Highlighted vehicle changed; it is shown even while it is still locked. */
@@ -24,6 +26,10 @@ interface MenuHandlers {
   onUnlockAll(): string;
   /** The whole save thrown away, to start over. */
   onWipe(): void;
+  /** What the controller button in the settings says: the profile in use, picked or found. */
+  padProfile(): string;
+  /** The next controller profile (or back to going by the controller). */
+  onPadProfile(): void;
 }
 
 /** Why something cannot be had yet: what the card says, and what it costs if it can be bought. */
@@ -83,6 +89,12 @@ export class Menu {
   private readonly backStep = h('button', 'mobile-step mobile-back', L('← Zurück zum Gefährt', '← Back to the ride'));
   /** Right over the ride itself, whenever the highlighted one is still locked. */
   private readonly lockedBadge = h('div', 'locked-badge', L('🔒 Nicht freigeschaltet', '🔒 Not unlocked'));
+  /** The settings, folded away behind the cog until wanted. */
+  private readonly settings = h('div', 'settings');
+  private readonly cog = h('button', 'tool', L('⚙ Einstellungen', '⚙ Settings'));
+  private readonly padButton = h('button', 'tool');
+  /** The controller's highlight in the settings, which need more than one press per job. */
+  private readonly settingsFocus = new PadFocus(() => this.settings);
 
   constructor(private readonly progress: Progress, private readonly handlers: MenuHandlers) {
     this.vehicle = progress.vehicle;
@@ -136,9 +148,11 @@ export class Menu {
     down.addEventListener('click', () => this.pickTrack(this.stepIn(this.tracksOfMode(), this.track, 1)));
     this.trackHead.append(up, down);
     right.append(h('h2', '', L('Modus', 'Mode')), this.modeButton, this.modeList, this.modeBlurb, this.trackHead, this.trackList, this.buyTrack, this.start);
-    const hint = h('p', 'keys');
+    const hint = h('p', 'keys keys-only');
     hint.innerHTML = L('<kbd>A</kbd><kbd>D</kbd> Gefährt · <kbd>T</kbd> Garage · <kbd>Q</kbd><kbd>E</kbd> Modus · <kbd>W</kbd><kbd>S</kbd> Strecke · <kbd>Enter</kbd> Los', '<kbd>A</kbd><kbd>D</kbd> ride · <kbd>T</kbd> garage · <kbd>Q</kbd><kbd>E</kbd> mode · <kbd>W</kbd><kbd>S</kbd> track · <kbd>Enter</kbd> go');
-    right.append(hint);
+    const padHint = h('p', 'keys pad-only');
+    padHint.dataset.padHint = 'menu';
+    right.append(hint, padHint);
     this.root.append(head, left, right, this.bar(), bigPrev, bigNext, this.lockedBadge, h('p', 'version', `Version ${__VERSION__}`));
 
     this.start.addEventListener('click', () => this.go());
@@ -174,13 +188,10 @@ export class Menu {
    */
   private bar(): HTMLElement {
     const bar = h('div', 'menubar');
-    const panel = h('div', 'settings');
+    const panel = this.settings;
     panel.hidden = true;
-    const cog = h('button', 'tool', L('⚙ Einstellungen', '⚙ Settings'));
-    cog.addEventListener('click', () => {
-      panel.hidden = !panel.hidden;
-      cog.classList.toggle('on', !panel.hidden);
-    });
+    const cog = this.cog;
+    cog.addEventListener('click', () => this.toggleSettings());
     const box = panel;
     const save = h('button', 'tool', L('💾 Speichern', '💾 Save'));
     save.title = L('Spielstand als Datei herunterladen. Bleibt, auch wenn der Browser seine Daten löscht.', 'Download your progress as a file. It stays even if the browser clears its data.');
@@ -197,6 +208,8 @@ export class Menu {
     const load = h('button', 'tool', L('📂 Laden', '📂 Load'));
     load.title = L('Einen gespeicherten Spielstand laden', 'Load a saved game');
     load.addEventListener('click', () => file.click());
+    // (the browser only opens a file picker for a click or a key, not for a controller)
+    load.dataset.pad = 'off';
     // dev mode: the workshop (F2) to tune the handling live
     const dev = h('label', 'tool toggle');
     this.dev.type = 'checkbox';
@@ -244,12 +257,22 @@ export class Menu {
         wipe.classList.remove('on');
       }, 4000);
     });
-    box.append(save, load, file, other, shadow, dev, all, wipe);
+    // which controller this is taken for: found by itself, or picked here when it guessed wrong
+    this.padButton.title = L('Welche Tasten der Controller hat: von selbst erkannt oder hier gewählt', 'Which buttons the controller has: found by itself, or picked here');
+    this.padButton.addEventListener('click', () => {
+      this.handlers.onPadProfile();
+      this.refreshPad();
+    });
+    const padHint = h('small', 'pad-only settings-hint');
+    padHint.dataset.padHint = 'settings';
+    box.append(save, load, file, other, shadow, this.padButton, dev, all, wipe, padHint);
     bar.append(panel, cog);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {
       const full = h('button', 'tool', L('⛶ Vollbild', '⛶ Full screen'));
       full.title = L('Vollbild an oder aus', 'Full screen on or off');
+      // (full screen too needs a click or a key)
+      full.dataset.pad = 'off';
       full.addEventListener('click', async () => {
         if (document.fullscreenElement) return void document.exitFullscreen();
         await document.documentElement.requestFullscreen().catch(() => {});
@@ -259,6 +282,54 @@ export class Menu {
     }
     bar.append(this.note);
     return bar;
+  }
+
+  private toggleSettings(): void {
+    this.settings.hidden = !this.settings.hidden;
+    this.cog.classList.toggle('on', !this.settings.hidden);
+    if (this.settings.hidden) this.settingsFocus.clear();
+    else this.settingsFocus.sync();
+  }
+
+  /** The controller button in the settings says what the controller is taken for now. */
+  refreshPad(): void {
+    this.padButton.textContent = this.handlers.padProfile();
+  }
+
+  /**
+   * A press on the controller, the same jobs as the keys: left and right the ride, up and down
+   * the track, the shoulders the mode, ok to go. The settings take the d-pad for themselves
+   * while they are open.
+   */
+  pad(p: PadPress): void {
+    if (!this.settings.hidden) {
+      if (p === 'back' || p === 'select') this.toggleSettings();
+      else this.settingsFocus.handle(p);
+      return;
+    }
+    const modes = MODES.map((m) => m.id);
+    switch (p) {
+      case 'left': this.stepVehicle(-1); break;
+      case 'right': this.stepVehicle(1); break;
+      case 'up': this.pickTrack(this.stepIn(this.tracksOfMode(), this.track, -1)); break;
+      case 'down': this.pickTrack(this.stepIn(this.tracksOfMode(), this.track, 1)); break;
+      case 'l1': this.pickMode(this.stepIn(modes, this.mode.id, -1) as ModeId); break;
+      case 'r1': this.pickMode(this.stepIn(modes, this.mode.id, 1) as ModeId); break;
+      case 'ok': case 'start': this.go(); break;
+      case 'north': this.openGarage(); break;
+      // what is highlighted and still locked: the ride first, then the track
+      case 'west':
+        if (this.vehicleLock(this.vehicle)) this.unlockVehicle();
+        else if (this.trackLock(this.track)?.price !== undefined) this.unlockTrack();
+        else this.nope(this.start);
+        break;
+      case 'select': this.toggleSettings(); break;
+      case 'back':
+        if (this.choosingMode) this.choosingMode = false;
+        else if (this.mobileStep === 'track') this.mobileStep = 'vehicle';
+        this.render();
+        break;
+    }
   }
 
   /** A short message in the header, e.g. what the last setting or the tutorial did. */
@@ -297,6 +368,8 @@ export class Menu {
 
   hide(): void {
     this.root.hidden = true;
+    // (the settings stay folded away for next time)
+    if (!this.settings.hidden) this.toggleSettings();
   }
 
   private vehicleOpen(id: VehicleId): boolean {
@@ -418,6 +491,7 @@ export class Menu {
     this.money.textContent = formatMoney(this.progress.money);
     this.ghost.checked = this.progress.showGhost;
     this.dev.checked = this.progress.workshop;
+    this.refreshPad();
     const mode = this.mode;
 
     const v = VEHICLES[this.vehicle];

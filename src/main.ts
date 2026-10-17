@@ -5,6 +5,7 @@ import { formatMoney, STAGES } from './config/tuning';
 import { VEHICLE_ORDER, VEHICLES } from './config/vehicles';
 import { createDebugPanel } from './debug/panel';
 import { Input } from './input/Input';
+import { PROFILES, profileById } from './input/pads';
 import { installTouchControls } from './input/touch';
 import { View } from './render/View';
 import { GameCore, type GameInput } from './sim/GameCore';
@@ -16,6 +17,7 @@ import type { TrackDef } from './sim/Track';
 import { Garage } from './ui/Garage';
 import { formatTime, Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
+import { keyName, showPad } from './ui/prompts';
 
 translatePage();
 await initPhysics();
@@ -61,7 +63,7 @@ loadTrack(trackOpen(progress, progress.track) ? progress.track : progress.tutori
 
 const input = new Input();
 const sound = new Sound();
-input.onFirstGesture = () => sound.unlock();
+input.onGesture = () => sound.unlock();
 installTouchControls(input);
 // (tuning is done in the garage only, so the HUD has no shop)
 const hud = new Hud();
@@ -148,6 +150,15 @@ const menu = new Menu(progress, {
     // (same as loading a save: everything reads the fresh one from the start)
     location.reload();
   },
+  padProfile() {
+    if (input.padChoice) return `🎮 Controller: ${profileById(input.padChoice).name}`;
+    return `🎮 Controller: ${L('automatisch', 'automatic')}${input.padName ? ` (${input.padProfile.name})` : ''}`;
+  },
+  onPadProfile() {
+    // automatic, then each profile in turn, then automatic again
+    const ids = [null, ...PROFILES.map((p) => p.id)];
+    input.choosePad(ids[(ids.indexOf(input.padChoice) + 1) % ids.length]);
+  },
 });
 
 const garage = new Garage({
@@ -158,6 +169,21 @@ const garage = new Garage({
     menu.show();
   },
 });
+
+// The buttons on the screen are named after whatever was used last, the keyboard or the
+// controller (with what is printed on that one).
+showPad(input.usingPad, input.padProfile.family);
+input.onDevice = () => {
+  showPad(input.usingPad, input.padProfile.family);
+  menu.refreshPad();
+};
+input.onPad = (name, profile) => {
+  // (a controller does not count as a gesture for the audio, so it may still be waiting for one)
+  const sub = `${L('Tasten', 'Buttons')}: ${profile.name}${sound.waiting ? L(' · Für Ton einmal klicken', ' · Click once for sound') : ''}`;
+  if (racing) hud.toast(`🎮 ${name}`, sub, 3);
+  else menu.say(`🎮 ${name} · ${sub}`, 6);
+  menu.refreshPad();
+};
 
 function setRacing(on: boolean): void {
   racing = on;
@@ -210,6 +236,7 @@ function handleEvents(): void {
       case 'land':
         view.bump(e.speed);
         sound.thud(e.speed);
+        input.rumble(0.2 + e.speed * 0.08, 120);
         break;
       case 'honk':
         sound.honk();
@@ -239,17 +266,18 @@ function handleEvents(): void {
       case 'crash':
         view.bump(e.impact * 0.6);
         sound.thud(e.impact * 0.6);
+        input.rumble(0.3 + e.impact * 0.08, 200);
         break;
       case 'wreck':
         sound.nope();
-        hud.toast(L('Totalschaden!', 'Written off!'), L('Was nicht im Ziel war, ist weg. Rücktaste: Level neu starten.', 'Whatever was not over the line is gone. Backspace: restart.'), 4);
+        hud.toast(L('Totalschaden!', 'Written off!'), L(`Was nicht im Ziel war, ist weg. ${keyName('respawn')}: Level neu starten.`, `Whatever was not over the line is gone. ${keyName('respawn')}: restart.`), 4);
         break;
       case 'boost':
         sound.zap();
         break;
       case 'boostBought':
         sound.tuned();
-        hud.toast(L('Autobatterie auf dem Schoß!', 'Car battery on the lap!'), L('Umschalt halten für den Boost. Lädt beim Bremsen schneller.', 'Hold Shift to boost. Charges faster when braking.'), 4);
+        hud.toast(L('Autobatterie auf dem Schoß!', 'Car battery on the lap!'), L(`${keyName('boost')} halten für den Boost. Lädt beim Bremsen schneller.`, `Hold ${keyName('boost')} to boost. Charges faster when braking.`), 4);
         break;
       case 'raceOver': {
         sound.lap();
@@ -283,7 +311,7 @@ function handleEvents(): void {
       case 'crashOver':
         sound.crate();
         if (e.record) sound.cheer();
-        hud.toast(`${e.score} ${L('Punkte', 'points')}${e.record ? L(' · Rekord!', ' · Record!') : ''}`, `+${formatMoney(e.pay)} · ${L('Rücktaste: nochmal', 'Backspace: again')}`, 6);
+        hud.toast(`${e.score} ${L('Punkte', 'points')}${e.record ? L(' · Rekord!', ' · Record!') : ''}`, `+${formatMoney(e.pay)} · ${keyName('respawn')}: ${L('nochmal', 'again')}`, 6);
         break;
       case 'missed':
         sound.nope();
@@ -368,6 +396,19 @@ function frame(now: number): void {
   acc += dt;
 
   let cmd = input.poll(dt);
+  // The controller's presses go to whatever is up: in the race the few that are not driving,
+  // else the garage or the start screen.
+  for (const p of input.padPresses.splice(0)) {
+    if (racing) {
+      if (p === 'start') input.trigger('menu');
+      else if (p === 'select') input.trigger('respawn');
+      else if (p === 'north') input.trigger('upright');
+    } else if (garage.visible) {
+      garage.pad(p);
+    } else if (menu.visible) {
+      menu.pad(p);
+    }
+  }
   if (input.take('mute')) sound.toggleMute();
   // (the ghost key only counts while driving; in the menu the switch is in the settings)
   if (input.take('ghost') && racing) {

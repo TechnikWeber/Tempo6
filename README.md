@@ -61,18 +61,20 @@ Every push to `main` tests, builds and publishes the game with GitHub Pages (`.g
 
 ## Controls
 
-| Action | Keyboard | Gamepad |
-| --- | --- | --- |
-| Drive / steer | WASD or arrow keys | Triggers / left stick |
-| In the air: turn and shift / tip the nose, stretch the jump | Steer / throttle and brake | left stick / triggers |
-| Handbrake | Space | A |
-| Boost (car battery on the lap) | Shift or B | B / RB |
-| Back on the wheels | R | Y |
-| Restart the level | Backspace | Back |
-| Back to the start screen | Esc | Start |
-| Sound on/off | M | |
-| Garage (on the start screen) | T | |
-| Workshop (live handling tuning; with dev mode on in the settings) | F2 | |
+| Action | Keyboard | Controller: Switch layout (8BitDo) | Xbox | PlayStation |
+| --- | --- | --- | --- | --- |
+| Drive / steer | WASD or arrow keys | ZR / ZL, left stick or d-pad | RT / LT, left stick or d-pad | R2 / L2, left stick or d-pad |
+| In the air: turn and shift / tip the nose, stretch the jump | Steer / throttle and brake | left stick / ZR, ZL | left stick / RT, LT | left stick / R2, L2 |
+| Handbrake | Space | B | A | ✕ |
+| Boost (car battery on the lap) | Shift or B | A or R | B or RB | ○ or R1 |
+| Back on the wheels | R | X | Y | △ |
+| Restart the level | Backspace | − | View | Share |
+| Back to the start screen | Esc | + | Menu | Options |
+| Sound on/off | M | | | |
+| Garage (on the start screen) | T | X | Y | △ |
+| Workshop (live handling tuning; with dev mode on in the settings) | F2 | | | |
+
+On the start screen a controller does what the keys do: left and right pick the ride, up and down the track, the shoulder buttons the mode, A (Xbox A, ✕) goes, Y (Xbox X, □) unlocks what is highlighted and − (View, Share) opens the settings. In the garage and the settings the d-pad moves a highlight, A presses it and B goes back. The screen names the buttons of whatever was used last, the keys or the controller's own labels. The game tells controllers apart by their make: an 8BitDo in its own mode is the default and anything unknown is taken for one, Switch Pro, Xbox and PlayStation controllers get their own names; "🎮 Controller" in the settings picks by hand if it guesses wrong. Browsers only let the sound start after a click or a key, not a controller button, so click into the game once for sound.
 
 On a phone held sideways: steering strip bottom left with "aufrichten" (upright) and "neu" (restart) above it, throttle (big), reverse, handbrake and boost bottom right, menu top left. "Vollbild" on the start screen goes full screen.
 
@@ -80,6 +82,6 @@ On a phone held sideways: steering strip bottom left with "aufrichten" (upright)
 
 - `src/sim/`: physics and game rules ([Rapier](https://rapier.rs) raycast vehicle, fixed 60 Hz step). No rendering or DOM, so it runs headless in the tests.
 - `src/render/`: [three.js](https://threejs.org) scene; all models are built from primitives in code.
-- `src/input/`: keyboard, gamepad and touch merged into one driving intent.
+- `src/input/`: keyboard, controller and touch merged into one driving intent; `pads.ts` holds the controller profiles.
 - `src/config/`: tuning stages, vehicle specs and handling parameters.
 - `src/tracks/`: tracks as plain data, used by both physics and rendering.

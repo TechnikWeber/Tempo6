@@ -198,6 +198,24 @@ body.touch .keys-only { display: none; }
 body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer; }
 #rotate { display: none; }
 
+/* With the controller last in hand the screen names its buttons instead of the keys (or the taps). */
+.pad-only { display: none; }
+body.pad .pad-only { display: inline; }
+body.pad p.pad-only, body.pad small.pad-only { display: block; }
+body.pad .keys-only, body.pad .tap-only { display: none; }
+kbd.pad { min-width: 1.1em; text-align: center; font-weight: 700; }
+kbd.pad.south, kbd.pad.east, kbd.pad.west, kbd.pad.north { border-radius: 999px; padding: 0 4px; }
+kbd.pad.xbox.south { color: #8fe07f; }
+kbd.pad.xbox.east { color: #ff7f6e; }
+kbd.pad.xbox.west { color: #82b9ff; }
+kbd.pad.xbox.north { color: #ffd23f; }
+kbd.pad.playstation.south { color: #a3c4ff; }
+kbd.pad.playstation.east { color: #ff8f8f; }
+kbd.pad.playstation.west { color: #f5a8df; }
+kbd.pad.playstation.north { color: #6be6c3; }
+/* what the d-pad is on, where a screen needs more than one press per job */
+body.pad .pad-focus { outline: 3px solid #fff !important; outline-offset: 2px; }
+
 @media (pointer: coarse) {
   #help { display: none; }
   html, body { overscroll-behavior: none; }
@@ -426,6 +444,7 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #garage .profile.on { outline: 2px solid var(--accent); }
 #garage .said { margin: 0; min-height: 1.3em; font-size: 14px; color: var(--accent); }
 #garage .back { align-self: flex-start; }
+#garage .pad-hint { margin: 0; font-size: 12px; opacity: 0.8; }
 @media (max-width: 700px) {
   #garage { align-items: flex-end; padding: 10px; overflow-x: hidden; }
   #garage .panel { max-height: 60vh; }
@@ -445,6 +464,7 @@ body.touch #flipped, body.touch #wrecked { pointer-events: auto; cursor: pointer
 #menu .menubar .tool.danger.on { outline-color: #ff5252; }
 #menu .settings { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(92vw, 560px); display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px; background: rgb(18 20 24 / 0.92); border-radius: 12px; }
 #menu .settings .toggle { display: flex; align-items: center; gap: 4px; }
+#menu .settings .settings-hint { flex-basis: 100%; text-align: center; font-size: 12px; opacity: 0.8; }
 #menu .col:last-of-type { display: flex; flex-direction: column; }
 #menu .col:last-of-type .cards.tracks { flex: 1 1 auto; }
 #menu .track-head { display: flex; align-items: center; gap: 6px; }
