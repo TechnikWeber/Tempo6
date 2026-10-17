@@ -74,6 +74,8 @@ export class Progress {
   boostActive = true;
   /** Whether the best lap drives along as a shadow. */
   showGhost = true;
+  /** Whether the start screen plays its tune. */
+  music = true;
   /** Best laps per track id, fastest first. Kept on this device, to beat your own times. */
   readonly boards: Record<string, BoardEntry[]> = {};
 
@@ -101,6 +103,7 @@ export class Progress {
       this.workshop = d.workshop === true;
       if (typeof d.boostActive === 'boolean') this.boostActive = d.boostActive;
       if (typeof d.showGhost === 'boolean') this.showGhost = d.showGhost;
+      if (typeof d.music === 'boolean') this.music = d.music;
       for (const [k, list] of Object.entries(d.boards ?? {})) {
         if (Array.isArray(list)) this.boards[k] = list.filter((e) => typeof e?.time === 'number' && e.vehicle in VEHICLES).slice(0, BOARD_SIZE);
       }
@@ -298,6 +301,7 @@ export class Progress {
         workshop: this.workshop,
         boostActive: this.boostActive,
         showGhost: this.showGhost,
+        music: this.music,
         boards: this.boards,
       }),
     );

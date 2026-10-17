@@ -69,6 +69,7 @@ export class Menu {
   private readonly trackList = h('div', 'cards tracks');
   private readonly start = h('button', 'start', L('Los!', 'Go!'));
   private readonly ghost = h('input');
+  private readonly music = h('input');
   private readonly dev = h('input');
   private readonly garage = h('button', 'garage-btn', '🔧 Garage');
   private readonly buyVehicle = h('button', 'unlock');
@@ -234,6 +235,15 @@ export class Menu {
     });
     shadow.append(this.ghost, L(' Schatten der Bestzeit', ' Best-lap ghost'));
     shadow.title = L('Im Zeitrennen fährt die Bestzeit als Schatten mit (beim Fahren auch Taste G)', 'In the time trial your best lap drives along as a ghost (key G while driving)');
+    // the chiptune on the start screen and in the garage
+    const tune = h('label', 'tool toggle');
+    this.music.type = 'checkbox';
+    this.music.addEventListener('change', () => {
+      this.progress.music = this.music.checked;
+      this.progress.save();
+    });
+    tune.append(this.music, L(' 🎵 Musik', ' 🎵 Music'));
+    tune.title = L('Chiptune im Startbildschirm und in der Garage (M schaltet allen Ton aus)', 'Chiptune on the start screen and in the garage (M turns all sound off)');
     // the other language, one tap away
     const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
     other.title = L('Switch to English', 'Auf Deutsch umstellen');
@@ -265,7 +275,7 @@ export class Menu {
     });
     const padHint = h('small', 'pad-only settings-hint');
     padHint.dataset.padHint = 'settings';
-    box.append(save, load, file, other, shadow, this.padButton, dev, all, wipe, padHint);
+    box.append(save, load, file, other, shadow, tune, this.padButton, dev, all, wipe, padHint);
     bar.append(panel, cog);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {
@@ -490,6 +500,7 @@ export class Menu {
     this.root.dataset.step = this.mobileStep;
     this.money.textContent = formatMoney(this.progress.money);
     this.ghost.checked = this.progress.showGhost;
+    this.music.checked = this.progress.music;
     this.dev.checked = this.progress.workshop;
     this.refreshPad();
     const mode = this.mode;

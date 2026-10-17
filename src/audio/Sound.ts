@@ -1,3 +1,8 @@
+import { Music } from './Music';
+
+/** How loud the start screen's tune is against everything else. */
+const MUSIC_VOLUME = 0.5;
+
 /** Synthesised sounds, no audio files: an electric motor whine and a few blips. */
 export class Sound {
   private ctx: AudioContext | null = null;
@@ -14,6 +19,8 @@ export class Sound {
   /** A propeller's blades going by. */
   private whooshGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
+  /** The start screen's chiptune. */
+  private music: Music | null = null;
   muted = false;
 
   /**
@@ -89,6 +96,15 @@ export class Sound {
     noise.connect(whoosh).connect(this.whooshGain).connect(this.master);
     this.noiseBuffer = buf;
     noise.start();
+    const music = ctx.createGain();
+    music.gain.value = MUSIC_VOLUME;
+    music.connect(this.master);
+    this.music = new Music(ctx, music, buf);
+  }
+
+  /** The start screen's tune: plays while `on`, fades out otherwise. Call every frame. */
+  setMusic(on: boolean): void {
+    this.music?.update(on);
   }
 
   /** @param level 0…1 how close the train is */
