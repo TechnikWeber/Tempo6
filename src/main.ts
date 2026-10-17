@@ -159,6 +159,10 @@ const menu = new Menu(progress, {
     const ids = [null, ...PROFILES.map((p) => p.id)];
     input.choosePad(ids[(ids.indexOf(input.padChoice) + 1) % ids.length]);
   },
+  kidMode: () => input.kidMode,
+  onKidMode(on) {
+    input.setKidMode(on);
+  },
 });
 
 const garage = new Garage({

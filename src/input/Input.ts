@@ -25,6 +25,20 @@ function storedChoice(): ProfileId | null {
   }
 }
 
+/** Where the kids' mode is kept (on unless turned off here). */
+const KID_KEY = 'tempo6.kid';
+/** Kids' mode: the stick steers at most this far, and gets there no faster than this (per second). */
+const KID_MAX = 0.35;
+const KID_RATE = 1.5;
+
+function storedKid(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(KID_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
 /** A controller the browser has handed over, and how it is read. */
 interface Pad {
   id: string;
@@ -42,6 +56,10 @@ export class Input {
   private readonly held = new Set<string>();
   private readonly actions = new Set<Action>();
   private keySteer = 0;
+  /** The stick's steering in kids' mode, eased toward where the stick is. */
+  private kidSteer = 0;
+  /** Kids' mode: the stick only steers a little and slowly, so wild wiggling does not throw the car about. */
+  kidMode = storedKid();
   /** Set by the touch controls. */
   readonly touch = { steer: 0, throttle: 0, handbrake: false, boost: false };
   /** Called on every key press and tap, e.g. to let the audio start (a controller does not count for that). */
@@ -142,6 +160,17 @@ export class Input {
     this.onDevice?.();
   }
 
+  /** Kids' mode on or off; kept on this device. */
+  setKidMode(on: boolean): void {
+    this.kidMode = on;
+    this.kidSteer = 0;
+    try {
+      globalThis.localStorage?.setItem(KID_KEY, on ? '1' : '0');
+    } catch {
+      // no storage: it holds until the page is left
+    }
+  }
+
   /** A short buzz on a controller that can (the strength 0 … 1). */
   rumble(strength: number, ms: number): void {
     if (!this.usingPad || strength <= 0) return;
@@ -196,7 +225,12 @@ export class Input {
     let steer = this.keySteer;
 
     if (pad) {
-      const s = stickSteer(pad.x);
+      let s = stickSteer(pad.x);
+      if (this.kidMode) {
+        const r = KID_RATE * dt;
+        this.kidSteer += Math.max(-r, Math.min(r, s * KID_MAX - this.kidSteer));
+        s = Math.abs(this.kidSteer) < 1e-3 ? 0 : this.kidSteer;
+      }
       if (s !== 0) steer = s;
       // the triggers are the pedals; the d-pad up and down will do as well
       const gas = trigger(pad.r2) - trigger(pad.l2);

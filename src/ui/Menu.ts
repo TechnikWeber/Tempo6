@@ -30,6 +30,9 @@ interface MenuHandlers {
   padProfile(): string;
   /** The next controller profile (or back to going by the controller). */
   onPadProfile(): void;
+  /** Whether the stick steers gently (kids' mode). */
+  kidMode(): boolean;
+  onKidMode(on: boolean): void;
 }
 
 /** Why something cannot be had yet: what the card says, and what it costs if it can be bought. */
@@ -70,6 +73,7 @@ export class Menu {
   private readonly start = h('button', 'start', L('Los!', 'Go!'));
   private readonly ghost = h('input');
   private readonly music = h('input');
+  private readonly kid = h('input');
   private readonly dev = h('input');
   private readonly garage = h('button', 'garage-btn', '🔧 Garage');
   private readonly buyVehicle = h('button', 'unlock');
@@ -273,9 +277,15 @@ export class Menu {
       this.handlers.onPadProfile();
       this.refreshPad();
     });
+    // kids' mode: the stick only steers a little, for small hands that wiggle it end to end
+    const kid = h('label', 'tool toggle');
+    this.kid.type = 'checkbox';
+    this.kid.addEventListener('change', () => this.handlers.onKidMode(this.kid.checked));
+    kid.append(this.kid, L(' 🧒 Kindermodus', ' 🧒 Kids\' mode'));
+    kid.title = L('Der Stick lenkt nur wenig und sanft, auch wenn er wild hin und her geht', 'The stick only steers a little and gently, even when it is wiggled wildly');
     const padHint = h('small', 'pad-only settings-hint');
     padHint.dataset.padHint = 'settings';
-    box.append(save, load, file, other, shadow, tune, this.padButton, dev, all, wipe, padHint);
+    box.append(save, load, file, other, shadow, tune, this.padButton, kid, dev, all, wipe, padHint);
     bar.append(panel, cog);
     // full screen, held sideways where the phone allows it
     if (document.fullscreenEnabled) {
@@ -501,6 +511,7 @@ export class Menu {
     this.money.textContent = formatMoney(this.progress.money);
     this.ghost.checked = this.progress.showGhost;
     this.music.checked = this.progress.music;
+    this.kid.checked = this.handlers.kidMode();
     this.dev.checked = this.progress.workshop;
     this.refreshPad();
     const mode = this.mode;
