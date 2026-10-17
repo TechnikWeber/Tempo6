@@ -41,7 +41,7 @@ export const BOOST = {
   price: 250,
   /** Seconds a full charge lasts. */
   duration: 2.65,
-  /** Seconds from empty to full while just driving along, where it charges at all (open world and freestyle). */
+  /** Seconds from empty to full while just driving along, in every mode. */
   recharge: 10,
   /** Charging is this much faster while slowing down. */
   recuperation: 2.5,

@@ -235,8 +235,6 @@ export class GameCore {
     const spec = v.spec;
     v.profile = spec.profiles[this.profileIndex] ?? spec.profiles[0];
     v.boostFitted = this.progress.hasBoost;
-    // (only where nothing is timed does the battery charge back up from the driving)
-    v.boostRecharge = this.mode === 'open' || this.mode === 'freestyle';
     v.setMotor(stageSpeedKmh(s, spec.speedFactor * v.profile.speed) / 3.6, s.accel * spec.accelFactor * v.profile.accel);
     // the crashtest is driven flat out, the boost battery on the lap, whatever has been bought
     if (this.mode === 'crash') {
@@ -470,9 +468,9 @@ export class GameCore {
         const place = progress.addTime(this.track.id, { time: race.lastLap!, name: progress.name, vehicle: v.spec.id, stage: progress.stageIndex, date: Date.now() });
         if (place > 0) this.events.push({ type: 'ranked', place });
       }
-      // Zeitrennen: every lap is its own fresh attempt, so the boost battery tops back up at
-      // the line, same as a full restart would. A race is one continuous run over every lap
-      // of it, so there the battery stays shared across all of them -- it does not reset here.
+      // Zeitrennen: every lap is its own fresh attempt, so the boost battery is full again at
+      // the line, same as a full restart would have it, whatever the last lap left. A race is
+      // one continuous run over every lap of it: there it just goes on charging from the driving.
       // (a course track resets it anyway, in full, when it sends the vehicle back to the start)
       if (this.mode === 'time' && !this.track.course) v.boostCharge = 1;
       if (best) {

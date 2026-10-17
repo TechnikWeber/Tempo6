@@ -523,30 +523,27 @@ describe('boost battery', () => {
     expect(sim.vehicle.speed).toBeLessThan(top * 1.03);
   });
 
-  it('does not recharge while driving or slowing down -- only starting the course over tops it back up', () => {
+  it('recharges while driving, faster while slowing down, and waits for some charge before firing again', () => {
     const sim = fitted(VEHICLES.trex, 40, 7.4);
     drive(sim, 6, 1);
     boost(sim, 3);
     expect(sim.vehicle.boostCharge).toBe(0);
     drive(sim, 1, 1);
-    expect(sim.vehicle.boostCharge).toBe(0);
-    // slowing down used to recharge it faster; now it does nothing either
-    drive(sim, 1, 0);
-    expect(sim.vehicle.boostCharge).toBe(0);
-    boost(sim, 0.5);
+    const cruising = sim.vehicle.boostCharge;
+    expect(cruising).toBeCloseTo(1 / BOOST.recharge, 2);
+    // not enough yet
+    boost(sim, 0.2);
     expect(sim.vehicle.boosting).toBe(false);
-    // driven dry for as long as a full recharge used to take: still nothing
-    drive(sim, 10, 1);
-    expect(sim.vehicle.boostCharge).toBe(0);
-    // back to the start: a fresh battery, same as a new course run
-    sim.respawn();
+    drive(sim, 1, 0);
+    expect(sim.vehicle.boostCharge - cruising).toBeGreaterThan((1 / BOOST.recharge) * 2);
+    drive(sim, BOOST.recharge, 1);
     expect(sim.vehicle.boostCharge).toBe(1);
     boost(sim, 0.5);
     expect(sim.vehicle.boosting).toBe(true);
   });
 
-  it('charges back up from the driving in the open world and the freestyle, and only there', () => {
-    for (const mode of ['open', 'freestyle', 'time', 'race'] as const) {
+  it('charges back up from the driving in every mode', () => {
+    for (const mode of MODES.map((m) => m.id)) {
       const progress = new Progress();
       progress.unlockEverything([]);
       progress.earn(BOOST.price);
@@ -555,9 +552,8 @@ describe('boost battery', () => {
       const v = core.sim.vehicle;
       v.boostCharge = 0;
       for (let i = 0; i < 60 * 3; i++) core.step({ ...idle, throttle: 1 });
-      // three seconds of driving: about a third of a charge where it charges, nothing elsewhere
-      if (mode === 'open' || mode === 'freestyle') expect(v.boostCharge).toBeGreaterThan(0.2);
-      else expect(v.boostCharge).toBe(0);
+      // three seconds of driving: about a third of a charge
+      expect(v.boostCharge).toBeGreaterThan(0.2);
       core.dispose();
     }
   });
@@ -568,10 +564,11 @@ describe('boost battery', () => {
       core.sim.vehicle.boostFitted = true;
       core.sim.vehicle.setMotor(12 / 3.6, 4);
       const ap = new Autopilot(PARKPLATZ.line!, 2).from(PARKPLATZ.spawn.pos[0], PARKPLATZ.spawn.pos[2]);
-      // run the battery dry right away
+      // run the battery dry right away, and keep the button down all lap: held, it does not
+      // charge, so only the line can fill it
       for (let i = 0; i < 60 * 3; i++) core.step({ ...ap.input(core), boost: true });
       expect(core.sim.vehicle.boostCharge).toBe(0);
-      for (let i = 0; i < 60 * 200 && core.race.laps === 0; i++) core.step(ap.input(core));
+      for (let i = 0; i < 60 * 200 && core.race.laps === 0; i++) core.step({ ...ap.input(core), boost: true });
       expect(core.race.laps).toBe(1);
       expect(core.sim.vehicle.boostCharge).toBe(mode === 'time' ? 1 : 0);
       core.dispose();

@@ -76,7 +76,7 @@ export class Garage {
       if (e.type === 'tuned') this.said = `${e.stage.name}! ${e.stage.blurb}`;
       if (e.type === 'broke') this.said = L(`Es fehlen noch ${formatMoney(e.missing)}.`, `${formatMoney(e.missing)} short.`);
       if (e.type === 'untrained') this.said = L('Erst einmal durchs Tutorial, dann geht die Drossel raus.', 'Get through the tutorial first, then the limiter comes out.');
-      if (e.type === 'boostBought') this.said = L(`Autobatterie auf dem Schoß! ${keyName('boost')} halten für den Boost.`, `Car battery on the lap! Hold ${keyName('boost')} to boost.`);
+      if (e.type === 'boostBought') this.said = L(`Autobatterie auf dem Schoß! ${keyName('boost')} halten für den Boost. Lädt beim Fahren nach, beim Bremsen schneller.`, `Car battery on the lap! Hold ${keyName('boost')} to boost. It charges as you drive, faster when braking.`);
     }
     core.events.length = 0;
     this.render();
