@@ -1,6 +1,6 @@
 import type { BoxDef, DecorDef, PersonPose, PropDef } from '../sim/Track';
-import { WALL_HALF } from './site';
-import { distanceTo } from './scenery';
+import { ROOF_LIFT, WALL_HALF } from './site';
+import { dice, distanceTo } from './scenery';
 
 // Building blocks for the works sites: what sits on a building's walls (windows, gates, doors,
 // glass fronts, canopies) and what stands about the yard (lorries, a Unimog, cars, containers,
@@ -99,8 +99,9 @@ export function door(s: Side, mid: number, color = 0x5a6f80, w = 1.1, h = 2.3): 
 /** A glass front over a stretch of wall, mullions on it. */
 export function glassFront(s: Side, from: number, to: number, y0: number, y1: number): DecorDef[] {
   const out = [panel(s, from, to, y0, y1, GLASS, 0.05)];
-  for (let m = from; m <= to + 0.01; m += 1.5) out.push(panel(s, m - 0.05, m + 0.05, y0, y1, FRAME, 0.08));
-  out.push(panel(s, from, to, y0 + (y1 - y0) / 2 - 0.05, y0 + (y1 - y0) / 2 + 0.05, FRAME, 0.08));
+  // (the frame a touch taller and longer than the glass, so their ends never share a plane)
+  for (let m = from; m <= to + 0.01; m += 1.5) out.push(panel(s, m - 0.05, m + 0.05, y0, y1 + 0.03, FRAME, 0.08));
+  out.push(panel(s, from - 0.03, to + 0.03, y0 + (y1 - y0) / 2 - 0.05, y0 + (y1 - y0) / 2 + 0.05, FRAME, 0.08));
   return out;
 }
 
@@ -191,7 +192,8 @@ export function unimog(y: Yard, x: number, z: number, yaw: number, color: number
     part(f, yaw, 0, 1.15, 2.7, 1.0, 0.35, 0.3, color), // bonnet
     part(f, yaw, 0, 1.3, -1.2, 1.1, 0.12, 1.9, 0x5a5f66), // bed
     part(f, yaw, 0, 0.8, 0.3, 0.6, 0.25, 2.6, 0x2a2a2e),
-    ...wheels(f, yaw, 1.0, [1.9, -1.9], 0.6, 0.25),
+    // (the front wheels a little behind the cab's nose, not flush with it)
+    ...wheels(f, yaw, 1.0, [1.85, -1.9], 0.6, 0.25),
   );
 }
 
@@ -405,7 +407,7 @@ export function snackStand(y: Yard, x: number, z: number, yaw: number, shirts: n
   y.decor.push(
     part(f, yaw, 0, 1.12, 0.85, 1.55, 0.02, 0.25, 0x8a5a32), // the counter top
     part(f, yaw, 0, 2.45, 0.1, 1.65, 0.05, 1.2, 0xd23b3b), // roof
-    part(f, yaw, 0, 2.38, 1.31, 1.65, 0.1, 0.02, 0xf2f2f2), // white edge to the roof
+    part(f, yaw, 0, 2.38, 1.31, 1.67, 0.1, 0.02, 0xf2f2f2), // white edge to the roof, a hair wider than it
     part(f, yaw, 0.85, 1.2, 0.85, 0.3, 0.06, 0.18, 0x3a3c40), // the grill
   );
   const [gx, gz] = f(0.85, 0.85);
@@ -416,4 +418,63 @@ export function snackStand(y: Yard, x: number, z: number, yaw: number, shirts: n
   }
   // somebody already eating, off to the side
   y.decor.push(person(...f(2.6, 2), yaw + 2.4, shirts[(queue + 1) % shirts.length], 'phone'));
+}
+
+/** Whether a point lies inside an outline. */
+export function insideOutline(outline: [number, number][], x: number, z: number): boolean {
+  let c = false;
+  for (let i = 0, n = outline.length; i < n; i++) {
+    const [px, pz] = outline[i], [qx, qz] = outline[(i + 1) % n];
+    if (pz > z !== qz > z && x < ((qx - px) * (z - pz)) / (qz - pz) + px) c = !c;
+  }
+  return c;
+}
+
+/**
+ * What stands on a flat roof of the given height: air-handling units with their fans on top,
+ * vent stacks (some of them smoking), strips of skylights and rows of solar panels, scattered
+ * over the footprint, clear of its edges and of each other.
+ */
+export function roofTop(y: Yard, outline: [number, number][], height: number, seed: number, count: number): void {
+  const roll = dice(seed);
+  const top = height + ROOF_LIFT;
+  const xs = outline.map((p) => p[0]), zs = outline.map((p) => p[1]);
+  const [x0, x1, z0, z1] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
+  /** How far each kind reaches from its middle. */
+  const REACH = [2.4, 0.5, 6.5, 4.5];
+  const placed: [number, number, number][] = [];
+  for (let tries = 0; tries < count * 60 && placed.length < count; tries++) {
+    const x = x0 + roll() * (x1 - x0), z = z0 + roll() * (z1 - z0);
+    const kind = Math.floor(roll() * 4);
+    const r = REACH[kind];
+    if (!insideOutline(outline, x, z) || distanceTo(outline, x, z) < r + 1.5) continue;
+    if (placed.some(([px, pz, pr]) => Math.hypot(px - x, pz - z) < pr + r + 1)) continue;
+    placed.push([x, z, r]);
+    const yaw = roll() * Math.PI;
+    const f = frame(x, z, yaw);
+    if (kind === 0) {
+      // an air-handling unit, two fans on its top
+      y.decor.push(part(f, yaw, 0, top + 0.6, 0, 1.2, 0.6, 1.8, 0xc8ccd1));
+      for (const lz of [-0.85, 0.85]) y.decor.push(part(f, yaw, 0, top + 1.23, lz, 0.5, 0.03, 0.5, 0x3a3c40));
+    } else if (kind === 1) {
+      // a vent stack with a cap, and every other one breathing out
+      y.decor.push(part(f, yaw, 0, top + 0.9, 0, 0.18, 0.9, 0.18, 0x8c949c), part(f, yaw, 0, top + 1.86, 0, 0.28, 0.06, 0.28, 0x6b7078));
+      if (roll() < 0.5) y.decor.push(smoke(x, top + 2, z));
+    } else if (kind === 2) {
+      // three strips of skylights
+      for (const lx of [-2.5, 0, 2.5]) y.decor.push(part(f, yaw, lx, top + 0.18, 0, 0.7, 0.18, 5, 0x9fc4d8));
+    } else {
+      // solar panels in two rows of three, each on a low block
+      for (const lx of [-2.2, 0, 2.2]) {
+        for (const lz of [-1.1, 1.1]) y.decor.push(part(f, yaw, lx, top + 0.5, lz, 1.0, 0.04, 0.8, 0x1f3557), part(f, yaw, lx, top + 0.23, lz, 0.9, 0.23, 0.1, 0x8c949c));
+      }
+    }
+  }
+}
+
+/** A tall brick chimney standing at a spot: bands up its height and smoke out of the top. Solid. */
+export function chimney(y: Yard, x: number, z: number, height: number): void {
+  y.statics.push({ pos: [x, height / 2, z], half: [1.4, height / 2, 1.4], color: 0x9a5a42 });
+  for (let h = 6; h < height - 1; h += 6) y.decor.push({ type: 'box', pos: [x, h, z], half: [1.5, 0.25, 1.5], color: 0x7a4632 });
+  y.decor.push({ type: 'box', pos: [x, height + 0.3, z], half: [1.55, 0.3, 1.55], color: 0x3a3c40 }, smoke(x, height + 0.8, z), smoke(x + 0.4, height + 1.4, z - 0.3));
 }

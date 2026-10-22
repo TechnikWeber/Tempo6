@@ -3,6 +3,7 @@ import { PROP_SHAPES, TRAFFIC_SHAPES, type PersonPose, type PickupType, type Pro
 import { BRAND_COLORS, groundY, STAIR, type VehicleSpec, type WheelSpec } from '../config/vehicles';
 
 const materials = new Map<number, MeshStandardMaterial>();
+const shared = new WeakSet<object>();
 
 /** Shared flat-shaded material per colour: the blocky look is the art style. */
 export function mat(color: number): MeshStandardMaterial {
@@ -10,8 +11,14 @@ export function mat(color: number): MeshStandardMaterial {
   if (!m) {
     m = new MeshStandardMaterial({ color, flatShading: true, roughness: 0.85, metalness: 0.05 });
     materials.set(color, m);
+    shared.add(m);
   }
   return m;
+}
+
+/** Whether a material is one of the shared plain ones from `mat`, the same for everything of its colour. */
+export function isShared(material: unknown): boolean {
+  return typeof material === 'object' && material !== null && shared.has(material);
 }
 
 export function box(parent: Object3D, w: number, h: number, d: number, color: number, x = 0, y = 0, z = 0): Mesh {

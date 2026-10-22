@@ -5,7 +5,7 @@ import { distanceTo, forest } from './scenery';
 import { site } from './site';
 import {
   armyTruck, at, baler, barrels, bikeShed, breakTable, canopy, car, container, door, frame, gate, glassFront, hall, lorry, pallets, panel, person,
-  roadSpan, roadworks, shelter, sidesOf, smoke, tractor, tyres, unimog, windows, wingDoors, type Yard,
+  roadSpan, roadworks, roofTop, shelter, sidesOf, smoke, snackStand, tractor, tyres, unimog, windows, wingDoors, type Yard,
 } from './works';
 
 // The works in Talstadt: one big two-storey building (high halls, about 6 m a floor) with a
@@ -102,7 +102,7 @@ y.decor.push(...windows(side(7), 1, 32, 1.6, 2.2), ...windows(side(9), 1, 29.5, 
   y.statics.push({ pos: [dx, 0.6, dz], half: [1.5, 0.6, s.len / 2 - 0.5], quat: [0, Math.sin(s.yaw / 2), 0, Math.cos(s.yaw / 2)], color: 0x8c949c });
   for (const m of [3.2, 8.3]) {
     y.decor.push(...gate(s, m, 3, 3.6, 0x7d8a96));
-    y.decor.push(panel(s, m - 1.7, m + 1.7, 3.7, 4.5, 0x2a2a2e, 0.25)); // dock shelter
+    y.decor.push(panel(s, m - 1.75, m + 1.75, 3.7, 4.5, 0x2a2a2e, 0.25)); // dock shelter, a little wider than the gate's frame
     // backed up to the dock, cab out
     const [lx, lz] = at(s, m, 3.5 + 8.2);
     lorry(y, lx, lz, outward(8), m < 5 ? 0xd23b3b : 0xf2f2f2, 0xd8dde2);
@@ -252,6 +252,24 @@ const beside = (k: number, t: number, out: number) => across(k, t, out);
   };
   roadworks(y, side(13), 8, 30, lane(13, true), L('BAUSTELLE', 'ROADWORKS'));
   roadworks(y, side(7), 6, 24, lane(7, false), L('BAUSTELLE', 'ROADWORKS'));
+}
+
+// On the roof: air handling, vent stacks breathing out, skylights, solar panels.
+roofTop(y, SITE.outline, 12, 71, 30);
+// Workers walking along the walls of 4, 5 and 12, between the windows and the road.
+for (const [k, o] of [[4, 0], [5, 6], [12, 12]] as const) {
+  const s = side(k);
+  walkers.push({ type: 'walker', color: k === 12 ? SHIRTS[0] : 0x2b3a5a, speed: 1.1, worker: k !== 12, offset: o, path: [at(s, 2, 3), at(s, s.len - 2, 3), at(s, s.len - 2, 3.6), at(s, 2, 3.6)] });
+}
+// A sausage stand across from the canteen, for those who would rather eat outside: its back
+// to the road, so the queue stands out in the yard and not on the tarmac.
+snackStand(y, ...across(11, 0.88, 3), outward(11), SHIRTS, 3);
+// Flags by the main entrance, in the maker's colours.
+for (const [along, c] of [[1, BRAND_COLORS.purple], [3, 0xf4f4f4], [5, BRAND_COLORS.purple]] as const) {
+  const s = side(14);
+  const [fx, fz] = across(14, along / s.len, 1.5);
+  // (each flag flying off its pole along the wall, clear of the next pole)
+  y.decor.push({ type: 'box', pos: [fx, 4.5, fz], half: [0.06, 4.5, 0.06], color: 0xd8dde2 }, { type: 'box', pos: [fx + s.u[0] * 0.66, 8.3, fz + s.u[1] * 0.66], half: [0.02, 0.5, 0.6], yaw: s.yaw, color: c });
 }
 
 // The yard's own four corners, inside the wall but well clear of the building and the road

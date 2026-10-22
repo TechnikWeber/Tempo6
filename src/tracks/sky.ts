@@ -10,6 +10,8 @@ const T = 0.15;
 const WOOD = 0xc9a15a;
 const PLATFORM = 0xe8eef5;
 const EDGE = 0xf2c230;
+/** How far a plank's top sits under a platform's. */
+const PLANK_DROP = 0.01;
 
 const statics: BoxDef[] = [];
 const decor: DecorDef[] = [];
@@ -28,13 +30,17 @@ function platform(x: number, z: number, half: number): void {
   }
 }
 
-/** A plank from one point to another, top at the path's height. */
+/**
+ * A plank from one point to another, its top a centimetre under the path's height: where its
+ * ends reach onto a platform the platform's top covers them, instead of the two sharing a plane
+ * and flickering. (A wheel does not notice a centimetre.)
+ */
 function plank(from: [number, number], to: [number, number], width: number): void {
   const dx = to[0] - from[0], dz = to[1] - from[1];
   const len = Math.hypot(dx, dz);
   const yaw = Math.atan2(dx, dz);
   statics.push({
-    pos: [(from[0] + to[0]) / 2, Y - T, (from[1] + to[1]) / 2],
+    pos: [(from[0] + to[0]) / 2, Y - T - PLANK_DROP, (from[1] + to[1]) / 2],
     half: [width / 2, T, len / 2],
     quat: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
     color: WOOD,
@@ -155,6 +161,82 @@ decor.push(
   { type: 'box', pos: [10, Y + 3.35, LAND + 1], half: [4.65, 0.15, 0.2], color: 0xf2f2f2 },
   { type: 'finish', pos: [10, Y + 0.012, LAND + 1], half: [0.6, 0, 4.3], yaw: Math.PI / 2 },
   { type: 'label', pos: [0, Y + 0.014, -7.5], half: [0.6, 0, 2.6], yaw: Math.PI, text: L('HIMMELSPFAD', 'SKY PATH') },
+);
+
+// Pennants on the corners of the start and the finish, blowing in the wind up here.
+for (const [x, z, half] of [[0, -5, 4], [10, LAND, 4.5]] as const) {
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const px = x + sx * (half - 0.25), pz = z + sz * (half - 0.25);
+    decor.push({ type: 'box', pos: [px, Y + 1.5, pz], half: [0.05, 1.5, 0.05], color: 0xd8dde2 }, { type: 'box', pos: [px + sx * 0.5, Y + 2.7, pz], half: [0.45, 0.3, 0.02], color: sz > 0 ? 0xd23b3b : 0xf2c230 });
+  }
+}
+
+// Islands floating about the path: grass on top, earth and rock tapering away underneath,
+// trees, a few sheep, on one a hut and a waterfall pouring off its edge into nothing.
+function island(x: number, y: number, z: number, r: number, seed: number, extras: { hut?: boolean; fall?: boolean; sheep?: number } = {}): void {
+  const yaw = seed * 0.7;
+  decor.push({ type: 'box', pos: [x, y - 0.4, z], half: [r, 0.4, r * 0.8], yaw, color: 0x5c9447 });
+  for (let k = 1; k <= 4; k++) {
+    const s = 1 - k * 0.2;
+    decor.push({ type: 'box', pos: [x, y - 0.8 - (k - 0.5) * 1.3, z], half: [r * s, 0.65, r * 0.8 * s], yaw: yaw + k * 0.35, color: k % 2 ? 0x7a5a3a : 0x6b6258 });
+  }
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  /** A spot on top, in the island's own frame. */
+  const on = (lx: number, lz: number): [number, number] => [x + lx * c + lz * s, z - lx * s + lz * c];
+  for (const [lx, lz] of [[-0.5, -0.4], [0.45, 0.3], [-0.1, 0.5], [0.55, -0.45]].slice(0, Math.max(1, Math.round(r / 4)))) {
+    const [tx, tz] = on(lx * r, lz * r * 0.8);
+    decor.push({ type: 'tree', pos: [tx, y, tz] });
+  }
+  for (let k = 0; k < (extras.sheep ?? 0); k++) {
+    const [sx, sz] = on((k - 1) * 1.6, -0.15 * r);
+    decor.push(
+      { type: 'box', pos: [sx, y + 0.55, sz], half: [0.35, 0.28, 0.5], yaw: yaw + k, color: 0xf4f4f4 },
+      { type: 'box', pos: [sx + Math.sin(yaw + k) * 0.6, y + 0.7, sz + Math.cos(yaw + k) * 0.6], half: [0.15, 0.17, 0.15], yaw: yaw + k, color: 0x1d1d1f },
+    );
+  }
+  if (extras.hut) {
+    const [hx, hz] = on(0.15 * r, 0.1 * r);
+    decor.push(
+      { type: 'box', pos: [hx, y + 1.2, hz], half: [1.6, 1.2, 1.3], yaw, color: 0xd9c7a8 },
+      { type: 'box', pos: [hx, y + 2.65, hz], half: [1.9, 0.25, 1.6], yaw, color: 0x8a3b2e },
+    );
+  }
+  if (extras.fall) {
+    const [fx, fz] = on(r - 0.3, 0);
+    // (its top just under the grass, not level with it)
+    decor.push({ type: 'box', pos: [fx, y - 14.05, fz], half: [0.1, 14, 0.9], yaw, color: 0x8fc7e8 });
+  }
+}
+island(-35, Y - 8, 20, 9, 1, { sheep: 3 });
+island(45, Y + 6, 60, 12, 2, { hut: true, fall: true });
+island(-40, Y + 12, 110, 10, 3, { sheep: 2 });
+island(50, Y - 14, 140, 8, 4);
+island(-28, Y - 20, 172, 14, 5, { hut: true, sheep: 4 });
+island(35, Y + 18, 5, 7, 6);
+island(62, Y - 5, 205, 10, 7, { fall: true });
+island(-50, Y + 2, 235, 9, 8, { sheep: 2 });
+
+// A rainbow of blocks arching over the far side of the finish. (Every band a hair deeper
+// than the one inside it, so where their blocks overlap no two faces share a plane.)
+{
+  const RX = 10, RY = Y - 22, RZ = 245;
+  [0xe23b3b, 0xf08a2a, 0xf2d43a, 0x4caf50, 0x2f8fd8, 0x3f51b5, 0x8e44ad].forEach((color, i) => {
+    const r = 42 - i * 1.5, b = 0.75 + i * 0.012;
+    const steps = Math.ceil((Math.PI * r) / 1.4);
+    for (let k = 0; k <= steps; k++) {
+      const a = (k / steps) * Math.PI;
+      decor.push({ type: 'box', pos: [RX + Math.cos(a) * r, RY + i * 0.031 + Math.sin(a) * r, RZ], half: [b, b, b + i * 0.02], color });
+    }
+  });
+}
+
+// Balloons drifting at the path's own height, and an airship going by.
+decor.push(
+  { type: 'balloon', pos: [-22, Y - 6, 45], color: 0xd23b3b },
+  { type: 'balloon', pos: [34, Y - 2, 95], color: 0x2f6db5 },
+  { type: 'balloon', pos: [-20, Y + 4, 150], color: 0x3f8f5f },
+  { type: 'balloon', pos: [30, Y - 10, 180], color: 0xe3c04a },
+  { type: 'zeppelin', pos: [-70, Y + 8, 90], half: [120, 0, 0], yaw: 0, color: 0xd8d4c8 },
 );
 
 export const SKY: TrackDef = {

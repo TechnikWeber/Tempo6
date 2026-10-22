@@ -2,7 +2,7 @@ import { L } from '../i18n';
 import type { BoxDef, PropDef, TrackDef, TrafficDef } from '../sim/Track';
 import { distanceTo, forest } from './scenery';
 import { site } from './site';
-import { at, breakTable, car, door, gate, hall, lorry, pallets, panel, person, roadSpan, roadworks, sidesOf, tyres, windows, type Side, type Yard } from './works';
+import { at, breakTable, car, chimney, door, gate, hall, lorry, pallets, panel, person, roadSpan, roadworks, roofTop, sidesOf, smoke, tyres, windows, type Side, type Yard } from './works';
 
 // The old works at "Porta Westafrika" (a play on the real town's name): several halls grown together at an angle, the lap all
 // round. The footprint was read off an aerial picture; what is where was told side by side,
@@ -231,6 +231,16 @@ for (const [t, k, pose] of [[0.32, 0, 'wave'], [0.35, 2, 'stand'], [0.38, 7, 'po
   roadworks(y, s, s.len * 0.45, s.len * 0.45 + 20, lane, L('BAUSTELLE', 'ROADWORKS'));
 }
 
+// On the roofs: air handling, vent stacks, skylights, solar panels; and the old boiler
+// house's brick chimney against side 3, still smoking.
+roofTop(y, SITE.outline, HEIGHT, 72, 24);
+chimney(y, ...at(side(3), side(3).len / 2, 2.3), 30);
+// Workers walking along the long side 5, under the windows.
+{
+  const s = side(5);
+  for (const o of [0, 40]) walkers.push({ type: 'walker', color: 0x3a3a40, speed: 1.0, worker: true, offset: o, path: [at(s, 3, 1.8), at(s, s.len - 3, 1.8), at(s, s.len - 3, 2.4), at(s, 3, 2.4)] });
+}
+
 // The yard's own corners on the south and east sides, inside the wall but clear of both the
 // building and the road loop: small sheds, so the lot does not feel so empty. West and the
 // north corners are left alone — too close to the railway to risk it. A couple of bigger
@@ -240,6 +250,21 @@ for (const [cx, cz, yaw] of [[LX - 18, LZ - 16, 0.3], [LX - 16, -LZ + 18, -0.2],
   hall(y, cx, cz, yaw, 15, 11, 5.5, 0xb8a48c, 0x4a4d52, 4);
 }
 hall(y, LX + 65, -25, 0.2, 38, 20, 9, 0xa8967f, 0x3e4146, 8);
+// A scrap heap in the south-east of the yard: old cars stacked three high, a man at it with a torch.
+{
+  const spot: [number, number] = [LX - 22, -LZ + 40];
+  if (clear(spot, 14)) {
+    const RUST = [0x8a5a3a, 0x6b7078, 0x9a6a4a, 0x5a4a3a, 0x7d858c];
+    let k = 0;
+    for (const [layer, n] of [[0, 3], [1, 2], [2, 1]] as const) {
+      for (let i = 0; i < n; i++) {
+        const cx = spot[0] + (i - (n - 1) / 2) * 2.05;
+        y.decor.push(...car(cx, spot[1] + (layer % 2) * 0.4, (layer % 2) * 0.12, RUST[k++ % RUST.length]).map((d) => ({ ...d, pos: [d.pos[0], d.pos[1] + layer * 1.45, d.pos[2]] as [number, number, number] })));
+      }
+    }
+    y.decor.push(person(spot[0] + 4.2, spot[1] - 1, -1.8, 0x3a3a40, 'stand', true), smoke(spot[0] + 3.4, 1.0, spot[1] - 1));
+  }
+}
 hall(y, LX + 60, 55, -0.3, 30, 18, 8, 0xa8967f, 0x3e4146, 7);
 
 y.decor.push(

@@ -946,6 +946,56 @@ describe('catapult', () => {
   });
 });
 
+describe("the playground's sling field", () => {
+  const throwFrom = (spec: VehicleSpec, at: [number, number, number], seconds: number) => {
+    const sim = new Sim({ ...SPIELWIESE, spawn: { pos: at, yaw: 0 } }, spec);
+    let top = 0, fastest = 0;
+    for (let i = 0; i < seconds * 60; i++) {
+      sim.step({ throttle: 0, steer: 0, handbrake: false });
+      const v = sim.vehicle.body.linvel();
+      top = Math.max(top, sim.vehicle.body.translation().y);
+      fastest = Math.max(fastest, Math.hypot(v.x, v.y, v.z));
+    }
+    const out = { top, fastest, wrecked: sim.vehicle.wrecked, z: sim.vehicle.body.translation().z };
+    sim.world.free();
+    return out;
+  };
+
+  it.each(ALL)("%s on the mega sling goes at ten times the old one's speed into the wall, and is written off", (_id, spec) => {
+    const r = throwFrom(spec, [190, 0.7, -82], 3);
+    expect(r.fastest).toBeGreaterThan(149);
+    expect(r.top).toBeGreaterThan(9);
+    expect(r.wrecked).toBe(true);
+  });
+
+  it('throws from the lever sling 25 m up and far up the field', () => {
+    const r = throwFrom(VEHICLES.trex, [235, 0.7, -49], 8);
+    expect(r.top).toBeGreaterThan(20);
+    expect(r.z).toBeGreaterThan(20);
+  });
+});
+
+describe('the seesaw street', () => {
+  it('can be driven along from the small one to the monster, every one tipping under the vehicle', () => {
+    const sim = new Sim({ ...SPIELWIESE, spawn: { pos: [-145, 0.7, -130], yaw: Math.PI / 2 } }, VEHICLES.trex);
+    sim.vehicle.setMotor(24 / 3.6, 5);
+    const saws = sim.movers.filter((m) => m.def.type === 'seesaw');
+    const tipped = saws.map(() => -Infinity);
+    let top = 0;
+    for (let i = 0; i < 60 * 48; i++) {
+      sim.step({ throttle: 1, steer: 0, handbrake: false });
+      top = Math.max(top, sim.vehicle.body.translation().y);
+      saws.forEach((m, k) => (tipped[k] = Math.max(tipped[k], m.angle)));
+    }
+    expect(sim.vehicle.body.translation().x).toBeGreaterThan(160);
+    expect(top).toBeGreaterThan(8);
+    expect(sim.vehicle.upY).toBeGreaterThan(0.9);
+    // every one went right over to the far side at some point
+    saws.forEach((m, k) => expect(tipped[k]).toBeGreaterThan(m.def.angle * 0.9));
+    sim.world.free();
+  });
+});
+
 describe('a lap of the car park', () => {
   it('pays the lap, a first best time and a clean lap at the finish line', () => {
     const progress = new Progress();
@@ -1810,8 +1860,9 @@ describe('road circuits', () => {
       }
     }
     // people stand beside the road; only the roadworks crew stands on it, in the shut lane
+    // (and those up on a bridge over it, well above anything that drives along it)
     for (const d of t.decor) {
-      if (d.type !== 'person') continue;
+      if (d.type !== 'person' || d.pos[1] > 4) continue;
       expect(distanceTo(t.line!, d.pos[0], d.pos[2]), `person at ${d.pos}`).toBeGreaterThan(d.worker ? 1.4 : 3.9);
     }
   });

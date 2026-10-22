@@ -126,8 +126,8 @@ export class Mover {
           [this.stage, this.time] = ['snap', 0];
           // the board's speed at its middle, out along the board as it comes up: the same throw
           // wherever on it one stands (from the very end it would go into orbit)
-          const speed = (d.spin ?? 6) * d.half[2];
-          const a = d.angle * 0.8;
+          const speed = d.power ?? (d.spin ?? 6) * d.half[2];
+          const a = d.aim ?? d.angle * 0.8;
           this.fling = { x: Math.sin(d.yaw) * Math.sin(a) * speed, y: Math.cos(a) * speed, z: Math.cos(d.yaw) * Math.sin(a) * speed };
         }
       } else if (this.stage === 'snap') {

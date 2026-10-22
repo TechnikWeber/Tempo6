@@ -24,6 +24,8 @@ export interface SiteOptions {
 
 /** Half the thickness of the building's walls: their outer faces stand this far out from the outline. */
 export const WALL_HALF = 0.4;
+/** How far the roof's lid sits above the tops of the walls. */
+export const ROOF_LIFT = 0.02;
 
 /** Where a straight piece from p to q crosses another, as a share along p→q, or null. */
 function cross(p: [number, number], q: [number, number], a: [number, number], b: [number, number]): number | null {
@@ -129,6 +131,7 @@ export function site(o: SiteOptions): Pick<TrackDef, 'statics' | 'decor' | 'gate
       color: o.wallColor,
     });
   });
-  const decor: DecorDef[] = [...lap.decor, { type: 'slab', pos: [0, o.height, 0], points: outline, color: o.roofColor }];
+  // (the lid a hair above the tops of the walls, so the two never share a plane)
+  const decor: DecorDef[] = [...lap.decor, { type: 'slab', pos: [0, o.height + ROOF_LIFT, 0], points: outline, color: o.roofColor }];
   return { statics, decor, gates: lap.gates, spawn: lap.spawn, line: lap.line, length: lap.length, outline, lot: [lotX, lotZ] };
 }

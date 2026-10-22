@@ -1,6 +1,6 @@
 import { L } from '../i18n';
 import { ramp, type DecorDef, type PickupDef, type PropDef, type BoxDef, type TrackDef } from '../sim/Track';
-import { car, person, snackStand, tyres, type Yard } from './works';
+import { car, person, shelter, snackStand, tyres, type Yard } from './works';
 
 const ASPHALT = 0x3b3e44;
 const CONCRETE = 0x9a9a94;
@@ -74,7 +74,8 @@ for (let z = -35; z <= -10; z += 5) {
 const decor: DecorDef[] = [
   { type: 'finish', pos: [2, 0.01, -7], half: [0.6, 0, 3] },
   { type: 'box', pos: [2, 1.9, -ISLAND_Z + 0.3], half: [0.12, 1.3, 0.12], color: 0xd23b3b },
-  { type: 'box', pos: [2, 2.9, -7.15], half: [0.1, 0.3, 3.5], color: 0xf2f2f2 },
+  // (the beam's top a little above the posts', not level with them)
+  { type: 'box', pos: [2, 2.93, -7.15], half: [0.1, 0.3, 3.5], color: 0xf2f2f2 },
   { type: 'tree', pos: [-6, 0.6, 0] },
   { type: 'tree', pos: [0, 0.6, 1] },
   { type: 'tree', pos: [6, 0.6, -0.5] },
@@ -133,11 +134,12 @@ tyres(yard, [[52, 18], [52.8, 18.6], [51.4, 19.2], [49, 15], [55, 13]], [4, 3, 2
 // directing. The open bands either side of the island were bare asphalt; this, the fast-food
 // sign and the extra trees and lamps below fill them in.
 const TRAILER_X = -48, TRAILER_Z = 20;
-decor.push(...car(TRAILER_X, TRAILER_Z + 3.3, 0, 0x3a6ea5));
+// (the car far enough ahead that the bed and its load stop short of its back)
+decor.push(...car(TRAILER_X, TRAILER_Z + 4, 0, 0x3a6ea5));
 decor.push(
   // the flat bed, on two wheels, a drawbar up to the car's tow hitch
   { type: 'box', pos: [TRAILER_X, 0.42, TRAILER_Z - 0.2], half: [0.95, 0.06, 1.8], color: 0x5a5f66 },
-  { type: 'box', pos: [TRAILER_X, 0.3, TRAILER_Z + 2.0], half: [0.04, 0.04, 0.9], color: 0x2a2a2a },
+  { type: 'box', pos: [TRAILER_X, 0.3, TRAILER_Z + 2.3], half: [0.04, 0.04, 0.75], color: 0x2a2a2a },
   { type: 'box', pos: [TRAILER_X, 0.14, TRAILER_Z + 1.35], half: [0.05, 0.1, 0.05], color: 0x2a2a2a },
 );
 for (const s of [-1, 1]) decor.push({ type: 'box', pos: [TRAILER_X + s * 0.95, 0.22, TRAILER_Z - 0.2], half: [0.09, 0.22, 0.22], color: 0x1d1d1f });
@@ -164,6 +166,80 @@ decor.push(
 );
 // (well clear of the southeast corner, where a vehicle sliding along the east wall sweeps through)
 decor.push(...car(45, 20, Math.PI, 0xc8c8c8), person(44, 18.7, Math.PI, 0xd23b3b, 'stand'));
+
+// The garden centre in the south-west corner: a low green fence round it, open on the side
+// towards the island, tables of potted plants, a till, customers browsing.
+{
+  // (clear of the delivery van's way round, along x = -58)
+  const X0 = -54, X1 = -41, Z0 = -28, Z1 = -13;
+  const FENCE = 0x2e5e3a;
+  decor.push(
+    { type: 'box', pos: [(X0 + X1) / 2, 0.5, Z0], half: [(X1 - X0) / 2, 0.5, 0.03], color: FENCE },
+    { type: 'box', pos: [(X0 + X1) / 2, 0.5, Z1], half: [(X1 - X0) / 2, 0.5, 0.03], color: FENCE },
+    { type: 'box', pos: [X0, 0.5, (Z0 + Z1) / 2], half: [0.03, 0.5, (Z1 - Z0) / 2 - 0.03], color: FENCE },
+    // the east side only part of the way, the gap is the way in
+    { type: 'box', pos: [X1, 0.5, Z0 + 3.5], half: [0.03, 0.5, 3.47], color: FENCE },
+    { type: 'box', pos: [X1, 0.5, Z1 - 3], half: [0.03, 0.5, 2.97], color: FENCE },
+    { type: 'board', pos: [(X0 + X1) / 2, 2.4, Z1 + 0.2], half: [3.6, 0.5, 0.05], text: L('GARTENCENTER', 'GARDEN CENTRE') },
+  );
+  const POTS = [0x3f8f3f, 0x5aa04a, 0xd23b3b, 0xe3c04a, 0x7b2d8e, 0xf2f2f2];
+  let k = 0;
+  for (const tz of [-25, -21, -17]) {
+    for (const tx of [-51, -45.5]) {
+      // the table (solid), pots along it, plants in them
+      statics.push({ pos: [tx, 0.4, tz], half: [2.2, 0.4, 0.6], color: 0x8a5a32 });
+      for (let px = -1.8; px <= 1.81; px += 0.6) {
+        for (const pz of [-0.3, 0.3]) {
+          decor.push(
+            { type: 'box', pos: [tx + px, 0.92, tz + pz], half: [0.15, 0.12, 0.15], color: 0xb5653a },
+            { type: 'box', pos: [tx + px, 1.19, tz + pz], half: [0.18, 0.15, 0.18], color: POTS[k++ % POTS.length] },
+          );
+        }
+      }
+    }
+  }
+  // the till by the way in, and the people
+  statics.push({ pos: [X1 - 2, 0.5, Z0 + 8.5], half: [0.5, 0.5, 0.9], color: 0xd8d4c8 });
+  decor.push(
+    person(X1 - 3.2, Z0 + 8.5, Math.PI / 2, 0x3f8f3f, 'stand', true),
+    person(-48.2, -23, 0.2, SHIRTS[1], 'point'),
+    person(-42.6, -19, -1.4, SHIRTS[4], 'carry'),
+    person(-53, -15.6, 2.8, SHIRTS[2], 'phone'),
+  );
+}
+
+// A trolley shelter in the band north of the island, a few trolleys parked in it.
+shelter(yard, 14, 17, Math.PI);
+for (let k = 0; k < 4; k++) props.push({ type: 'cart', pos: [12.9 + k * 0.7, 0.46, 17.1] });
+
+// A bouncy castle for the children by the west ramp: a base, four towers, an arch.
+{
+  const BX = -55, BZ = 0;
+  decor.push({ type: 'box', pos: [BX, 0.6, BZ], half: [3, 0.6, 3], color: 0xd23b3b }, { type: 'box', pos: [BX, 1.8, BZ - 2.6], half: [2.6, 0.6, 0.3], color: 0x2f6db5 });
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    decor.push({ type: 'box', pos: [BX + sx * 2.65, 2.0, BZ + sz * 2.65], half: [0.4, 0.8, 0.4], color: 0xe3c04a }, { type: 'box', pos: [BX + sx * 2.65, 3.0, BZ + sz * 2.65], half: [0.45, 0.2, 0.45], color: 0x2f6db5 });
+  }
+  decor.push(person(BX + 4.2, BZ + 1.5, -1.8, SHIRTS[5], 'wave'), person(BX + 4.4, BZ - 0.8, -1.2, SHIRTS[0], 'phone'), person(BX - 1, BZ, 0.5, SHIRTS[2], 'wave', false, 1.2));
+}
+
+// Two vans to hire, in the band north of the island, and a sign.
+for (const [x, c] of [[33, 0xf2f2f2], [36.2, 0xe8833a]] as const) {
+  decor.push(
+    { type: 'box', pos: [x, 1.25, 17], half: [1, 0.95, 2.1], color: c },
+    { type: 'box', pos: [x, 0.9, 19.5], half: [0.98, 0.6, 0.4], color: c }, // the bonnet
+    { type: 'box', pos: [x, 1.65, 19.12], half: [0.9, 0.35, 0.02], color: 0x26323d }, // windscreen
+  );
+  for (const sx of [-1, 1]) for (const lz of [-1.4, 1.5]) decor.push({ type: 'box', pos: [x + sx * 0.92, 0.32, 17 + lz], half: [0.12, 0.32, 0.32], color: 0x1d1d1f });
+}
+decor.push({ type: 'board', pos: [34.6, 1.6, 13.6], half: [1.6, 0.4, 0.05], text: L('MIETEN', 'HIRE') });
+// A kicker of pallets on the south side, east of the slalom.
+statics.push(ramp([24, -20], Math.PI / 2, 5, 3, 0.2, 0xb08a5a));
+for (const dz of [-1, 0, 1]) decor.push({ type: 'box', pos: [29.9, 0.35, -20 + dz], half: [0.3, 0.35, 0.45], color: 0xc19a6b });
+
+// Flags along the north wall.
+for (let x = -56; x <= 56; x += 16) {
+  decor.push({ type: 'box', pos: [x, 4, 44.35], half: [0.06, 4, 0.06], color: 0xd8dde2 }, { type: 'box', pos: [x + 0.75, 7.2, 44.35], half: [0.7, 0.45, 0.02], color: [0xd23b3b, 0xe3c04a, 0x2f6db5][Math.abs(x / 16) % 3] });
+}
 
 // (keeping right: eastwards on the near side, back westwards on the far one)
 const MAIN_ROAD: [number, number][] = [[-250, ROAD_Z + 2.2], [250, ROAD_Z + 2.2], [250, ROAD_Z - 2.2], [-250, ROAD_Z - 2.2]];

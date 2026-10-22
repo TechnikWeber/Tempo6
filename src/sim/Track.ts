@@ -47,9 +47,10 @@ export interface DecorDef {
    * radius), `oval` a flat oval sign in `color` with a white rim (`half` its half width and
    * height), `balloon` a hot-air balloon bobbing in the air, `plane` a small aircraft and
    * `zeppelin` an airship, both flying back and forth at `pos` along `yaw`, `half[0]` metres
-   * either way, `wreck` a vehicle model standing idle, `vehicle` saying which one (its id),
-   * with nobody in the seat, `person` somebody standing about in `color` (`pose`, `worker`
-   * in a hard hat and hi-vis vest); people are solid.
+   * either way (planes with the same `half[1]` keep in step, a formation), `wreck` a
+   * vehicle model standing idle, `vehicle` saying which one (its id), with nobody in the
+   * seat, `person` somebody standing about in `color` (`pose`, `worker` in a hard hat and
+   * hi-vis vest); people are solid.
    */
   type: 'box' | 'tree' | 'lamp' | 'finish' | 'sign' | 'board' | 'label' | 'ring' | 'path' | 'slab' | 'smoke' | 'clock' | 'oval' | 'balloon' | 'plane' | 'zeppelin' | 'wreck' | 'person';
   /** `wreck`: which vehicle (a VehicleId, kept as a plain string so this file need not know the type). */
@@ -154,6 +155,17 @@ export interface MoverDef {
   phase?: number;
   /** Greatest tilt either way, in rad. A seesaw starts tipped back, towards -Z of its heading; a catapult snaps up this far. */
   angle: number;
+  /**
+   * Catapult: how far the throw leans forward from straight up, in rad. Without it the board
+   * throws the way it comes up (four fifths of `angle`); with it a strong one can be aimed.
+   */
+  aim?: number;
+  /**
+   * Catapult: the speed it throws at, in m/s. Without it, its board's own speed at the middle
+   * (`spin` × half its length); with it the board can swing slowly and still throw hard, or
+   * fast and throw like ten of the ordinary one.
+   */
+  power?: number;
   /** Seconds for a rocker to roll over and back, or a slider to go across and back. */
   period?: number;
   color: number;

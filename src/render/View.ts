@@ -13,7 +13,8 @@ import { drumSlats } from '../sim/Movers';
 import { SPINNER_HALF } from '../sim/Sim';
 import { heightAt, type DecorDef, type TrackDef } from '../sim/Track';
 import type { Tracked } from '../sim/Tracked';
-import { box, buildPerson, buildPickup, buildProp, buildTraffic, buildVehicle, cyl, mat, type PersonRig, type VehicleRig } from './models';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { box, buildPerson, buildPickup, buildProp, buildTraffic, buildVehicle, cyl, isShared, mat, type PersonRig, type VehicleRig } from './models';
 import { Sparks, SpeedLines } from './Boost';
 import { SkidMarks } from './Skid';
 import { Wreckage } from './Wreckage';
@@ -220,6 +221,8 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       g.userData.z0 = d.pos[2];
       g.userData.yaw = d.yaw ?? 0;
       g.userData.speed = 0.1;
+      // (planes given the same phase fly in step: a formation)
+      if (d.half?.[1]) g.userData.phase = d.half[1];
       break;
     }
     case 'wreck': {
@@ -291,6 +294,50 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
     }
   }
   return g;
+}
+
+/**
+ * Everything in `fixed` that never moves, melted down into one mesh per colour (and per way it
+ * takes part in shadows): thousands of boxes become a few dozen draw calls. What cannot be
+ * merged (a textured board, a sign) is handed back as it is, in place in the world.
+ */
+export function mergeFixed(fixed: Group): Object3D[] {
+  fixed.updateMatrixWorld(true);
+  const groups = new Map<string, { material: MeshStandardMaterial; cast: boolean; receive: boolean; parts: BufferGeometry[] }>();
+  const loose: Mesh[] = [];
+  fixed.traverse((o) => {
+    if (!(o instanceof Mesh)) return;
+    if (!isShared(o.material)) {
+      loose.push(o);
+      return;
+    }
+    let g = o.geometry.clone() as BufferGeometry;
+    g.applyMatrix4(o.matrixWorld);
+    if (g.index) g = g.toNonIndexed();
+    // (position and normal are all a flat-shaded plain colour needs, and all of them have both)
+    for (const name of Object.keys(g.attributes)) if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const material = o.material as MeshStandardMaterial;
+    const key = `${material.uuid}|${o.castShadow}|${o.receiveShadow}`;
+    let group = groups.get(key);
+    if (!group) groups.set(key, (group = { material, cast: o.castShadow, receive: o.receiveShadow, parts: [] }));
+    group.parts.push(g);
+  });
+  const out: Object3D[] = [];
+  for (const { material, cast, receive, parts } of groups.values()) {
+    const merged = mergeGeometries(parts);
+    for (const p of parts) p.dispose();
+    if (!merged) continue;
+    const m = new Mesh(merged, material);
+    m.castShadow = cast;
+    m.receiveShadow = receive;
+    out.push(m);
+  }
+  for (const m of loose) {
+    m.matrixWorld.decompose(m.position, m.quaternion, m.scale);
+    out.push(m);
+  }
+  return out;
 }
 
 /** Everything three.js: scene, camera, lights and the meshes that mirror the sim. */
@@ -411,8 +458,10 @@ export class View {
     this.track = track;
     this.propMeshes = [];
     this.pickupMeshes = [];
+    // what never moves goes in here first, to be merged down below
+    const fixed = new Group();
     for (const b of track.statics) {
-      const m = box(level, b.half[0] * 2, b.half[1] * 2, b.half[2] * 2, b.color, ...b.pos);
+      const m = box(fixed, b.half[0] * 2, b.half[1] * 2, b.half[2] * 2, b.color, ...b.pos);
       if (b.quat) m.quaternion.fromArray(b.quat);
     }
     const ground = (x: number, z: number) => heightAt(track.terrain, x, z);
@@ -438,8 +487,10 @@ export class View {
       if (m.userData.clock) this.clocks.push(m);
       if (m.userData.balloon) this.balloons.push(m);
       if (m.userData.plane) this.planes.push(m);
-      level.add(m);
+      const moves = m.userData.smoke || m.userData.clock || m.userData.balloon || m.userData.plane;
+      (moves ? level : fixed).add(m);
     }
+    for (const m of mergeFixed(fixed)) level.add(m);
     for (const p of track.props) {
       const m = buildProp(p.type);
       this.propMeshes.push(m);
