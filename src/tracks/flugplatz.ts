@@ -1,7 +1,7 @@
 import { L } from '../i18n';
 import { ramp, type BoxDef, type DecorDef, type MoverDef, type PickupDef, type PropDef, type TrackDef, type TrafficDef } from '../sim/Track';
 import { forest, stand, street } from './scenery';
-import { frame, hall, part, person, quat, smoke, snackStand, tyres, type Yard } from './works';
+import { car, frame, hall, part, person, quat, smoke, snackStand, tyres, type Yard } from './works';
 
 const TARMAC = 0x45484d;
 const CONCRETE = 0x9a9a94;
@@ -348,6 +348,58 @@ walkers.push(
 for (const [dx, dz] of [[0, 0], [-7, -6], [-7, 6]] as const) {
   decor.push({ type: 'plane', pos: [dx, 32, dz], half: [170, 2.5, 0], yaw: Math.PI / 2, color: 0xd23b3b });
 }
+
+// Apron paint. White a few millimetres up, yellow a few more, the writing above both, so where
+// they cross no two share a plane.
+{
+  const white = (x: number, z: number, hx: number, hz: number) => decor.push({ type: 'box', pos: [x, 0.004, z], half: [hx, 0.004, hz], color: 0xf2f2f2 });
+  const yellow = (x: number, z: number, hx: number, hz: number) => decor.push({ type: 'box', pos: [x, 0.008, z], half: [hx, 0.008, hz], color: 0xf2c230 });
+  const write = (text: string, x: number, z: number, yaw = Math.PI / 2, size = 1.6) => decor.push({ type: 'label', pos: [x, 0.022, z], half: [size * 0.75, 0, size], yaw, text });
+  /** A stand: a white box round it, a yellow line leading in along X to a stop bar, its name. */
+  const stand = (name: string, x0: number, x1: number, z0: number, z1: number, lead: [number, number, number] | null) => {
+    white((x0 + x1) / 2, z0, (x1 - x0) / 2, 0.08);
+    white((x0 + x1) / 2, z1, (x1 - x0) / 2, 0.08);
+    white(x0, (z0 + z1) / 2, 0.08, (z1 - z0) / 2 - 0.08);
+    white(x1, (z0 + z1) / 2, 0.08, (z1 - z0) / 2 - 0.08);
+    if (lead) {
+      const [from, to, z] = lead;
+      yellow((from + to) / 2, z, (to - from) / 2, 0.1);
+      yellow(to, z, 0.12, 1.4);
+    }
+    write(name, x1 - 2.2, z0 + 2.6);
+  };
+  stand('A1', -162, -138, 60, 76, [-166, -141, 68]);
+  stand('A2', -122, -98, 64, 80, [-126, -101, 72]);
+  stand('A3', -82, -58, 58, 74, [-86, -61, 66]);
+  stand('B1', 70, 101, 53, 79, [66, 99, 66]);
+  stand('C1', 13, 37, 52, 77, null);
+  // the taxiway along the north apron, and three ways down to the runway with their hold lines
+  yellow(-30, 56, 145, 0.1);
+  for (const x of [-110, -30, 60]) {
+    yellow(x, 43, 0.1, 12.9);
+    for (const z of [32.6, 33.0]) yellow(x, z, 3, 0.1);
+    for (const z of [33.6, 34.0]) for (const dx of [-2.25, -0.75, 0.75, 2.25]) yellow(x + dx, z, 0.5, 0.1);
+  }
+  // visitors' parking along the south wall, half of it taken
+  write('P', -24, -81, 0, 2);
+  for (let k = 0; k <= 28; k++) {
+    const x = -20 + k * 2.7;
+    white(x, -81, 0.06, 2.5);
+    if (k < 28 && (k * 5) % 7 < 3) decor.push(...car(x + 1.35, -81, 0, [0x2f6db5, 0xd23b3b, 0xc8c8c8, 0x404850, 0x2e7d4f, 0xe3c04a][k % 6]));
+  }
+  // a compass rose on the south apron, its points painted out to the four winds and the four between
+  const RX = 30, RZ = -62;
+  decor.push({ type: 'ring', pos: [RX, 0.012, RZ], half: [7, 0, 0.18], color: 0xf2f2f2 }, { type: 'ring', pos: [RX, 0.013, RZ], half: [5.4, 0, 0.12], color: 0xf2c230 });
+  for (let k = 0; k < 4; k++) {
+    decor.push({ type: 'box', pos: [RX, 0.004, RZ], half: [0.22, 0.004, 6.6], yaw: (k * Math.PI) / 2, color: 0xf2f2f2 });
+    decor.push({ type: 'box', pos: [RX, 0.008, RZ], half: [0.16, 0.008, 4.6], yaw: (k * Math.PI) / 2 + Math.PI / 4, color: 0xf2c230 });
+  }
+  for (const [text, a] of [[L('N', 'N'), 0], [L('O', 'E'), Math.PI / 2], [L('S', 'S'), Math.PI], [L('W', 'W'), -Math.PI / 2]] as const) {
+    write(text, RX + Math.sin(a) * 8.8, RZ + Math.cos(a) * 8.8, Math.PI, 1);
+  }
+}
+// The highlight of the flying day: a plane towing a banner up and down over the field.
+decor.push({ type: 'plane', pos: [0, 44, 20], half: [190, 0, 0], yaw: Math.PI / 2, color: 0xe3c04a, text: L('TEMPO 6 · FLUGTAG', 'TEMPO 6 · FLYING DAY') });
 
 // Woods round the field, and the road past the gate with traffic.
 const SOUTH_ROAD = street({ z: -LOT_Z - 14, x0: -320, x1: 320, near: 1, cars: 7, seed: 11 });

@@ -47,7 +47,8 @@ export interface DecorDef {
    * radius), `oval` a flat oval sign in `color` with a white rim (`half` its half width and
    * height), `balloon` a hot-air balloon bobbing in the air, `plane` a small aircraft and
    * `zeppelin` an airship, both flying back and forth at `pos` along `yaw`, `half[0]` metres
-   * either way (planes with the same `half[1]` keep in step, a formation), `wreck` a
+   * either way (planes with the same `half[1]` keep in step, a formation; a plane with
+   * `text` tows a banner saying it), `wreck` a
    * vehicle model standing idle, `vehicle` saying which one (its id), with nobody in the
    * seat, `person` somebody standing about in `color` (`pose`, `worker` in a hard hat and
    * hi-vis vest); people are solid.
@@ -133,10 +134,12 @@ export interface SpinnerDef {
  * big tube turning about its axle along the way, to be driven through on its inside; a
  * `slider` is a plank sliding from side to side across the way by itself. A `catapult` is a
  * board lying flat, hinged at its front end: stand on it for a moment and its back end snaps
- * up, flinging whatever is on it forward and up.
+ * up, flinging whatever is on it forward and up. A `lift` is a platform that, once something
+ * has stood on it for a second, rises `travel` metres in `period` seconds, waits up there for
+ * it to drive off and comes back down.
  */
 export interface MoverDef {
-  type: 'seesaw' | 'rocker' | 'propeller' | 'drum' | 'slider' | 'catapult';
+  type: 'seesaw' | 'rocker' | 'propeller' | 'drum' | 'slider' | 'catapult' | 'lift';
   /** Centre of its top surface when level; a propeller's or a drum's hub; a catapult's hinge, on its top surface. */
   pos: [number, number, number];
   /** Heading of its length, 0 = along Z; a propeller's axle. */
@@ -150,7 +153,7 @@ export interface MoverDef {
   gondolas?: boolean;
   /** Drum: inner radius; its half length is `half[2]`, a slat's half thickness `half[1]`. */
   radius?: number;
-  /** Slider: how far it goes out either side of its middle, and where in its swing it starts (rad). */
+  /** Slider: how far it goes out either side of its middle, and where in its swing it starts (rad); a lift: how high it goes. */
   travel?: number;
   phase?: number;
   /** Greatest tilt either way, in rad. A seesaw starts tipped back, towards -Z of its heading; a catapult snaps up this far. */
@@ -166,7 +169,7 @@ export interface MoverDef {
    * fast and throw like ten of the ordinary one.
    */
   power?: number;
-  /** Seconds for a rocker to roll over and back, or a slider to go across and back. */
+  /** Seconds for a rocker to roll over and back, a slider to go across and back, a lift to go up (or down). */
   period?: number;
   color: number;
 }

@@ -188,6 +188,8 @@ for (const [x, z, c] of [[-8, -6.5, 0xd2463c], [8, 6.5, 0xe8c23a], [-8, 6.5, 0xb
 // Hedges along the wall, and the clinic beyond it.
 for (const z of [-LOT_Z + 1, LOT_Z - 1]) decor.push({ type: 'box', pos: [0, 0.5, z], half: [LOT_X - 1.5, 0.5, 0.45], color: 0x3c6e34 });
 decor.push({ type: 'sign', pos: [0, 4, LOT_Z + 9], half: [16, 4, 5], color: 0xe8e2d0, text: L('REHA-ZENTRUM', 'REHAB CENTRE') });
+// The highlight: a balloon in the maker's purple, tied to the roof of the centre and bobbing over it.
+decor.push({ type: 'balloon', pos: [-12, 24, LOT_Z + 10], color: 0x7b2d8e }, { type: 'box', pos: [-12, 16.2, LOT_Z + 10], half: [0.03, 8.2, 0.03], color: 0x3a3c40 });
 // and a clock on its front, telling the real time
 decor.push({ type: 'clock', pos: [11, 5.2, LOT_Z + 4 - 0.01], half: [1.1, 0, 0], yaw: Math.PI });
 // a parked ambulance by the entrance

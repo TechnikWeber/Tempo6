@@ -1,6 +1,6 @@
 import { L } from '../i18n';
 import {
-  AmbientLight, BoxGeometry, BufferGeometry, CanvasTexture, CapsuleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
+  AmbientLight, BoxGeometry, DoubleSide, BufferGeometry, CanvasTexture, CapsuleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight,
   Float32BufferAttribute, Fog, Group,
   HemisphereLight, IcosahedronGeometry, Mesh, MeshStandardMaterial, type Object3D, PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry,
   Points, PointsMaterial,
@@ -223,6 +223,15 @@ function buildDecor(d: DecorDef, ground: (x: number, z: number) => number): Obje
       g.userData.speed = 0.1;
       // (planes given the same phase fly in step: a formation)
       if (d.half?.[1]) g.userData.phase = d.half[1];
+      if (d.text) {
+        // towing a banner with `text` on it, on a line from its tail
+        box(g, 0.04, 0.04, 6, 0x3a3c40, 0, 0.5, -6.5).castShadow = false;
+        const face = new MeshStandardMaterial({ map: textTexture(d.text, '#f4f4f4', '#c22a2a'), roughness: 0.9, side: DoubleSide });
+        const edge = mat(0xf4f4f4);
+        const banner = new Mesh(new BoxGeometry(0.04, 2.2, 17.6), [face, face, edge, edge, edge, edge]);
+        banner.position.set(0, 0.2, -18.4);
+        g.add(banner);
+      }
       break;
     }
     case 'wreck': {

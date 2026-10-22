@@ -167,6 +167,39 @@ const movers: MoverDef[] = [];
   });
 }
 
+// The highlight: a castle ruin on a hilltop of its own, broken walls round a yard, a tower
+// still standing with a flag on it.
+{
+  const spots: [number, number, number][] = [];
+  for (let x = -150; x <= 150; x += 15) for (let z = -80; z <= 95; z += 15) {
+    const free = distanceTo(ROAD.line, x, z) > 30 && clearings.every((c) => Math.hypot(c[0][0] + 1 - x, c[0][1] + 1 - z) > 45);
+    if (free) spots.push([x, z, heightAt(TERRAIN, x, z)]);
+  }
+  const [KX, KZ] = spots.sort((a, b) => b[2] - a[2])[0] ?? [-60, 60, 0];
+  const STONE = 0x9a948a, DARK = 0x7d776c;
+  // the walls, eight metres either side of the middle, with gaps where they have fallen
+  for (const [dx, dz, along] of [[0, -8, true], [0, 8, true], [-8, 0, false], [8, 0, false]] as const) {
+    for (let k = -3; k <= 3; k++) {
+      if ((dx + dz + k * 7) % 5 === 0) continue;
+      const h = 2.2 + ((k * k + dx) % 3) * 0.7;
+      const [x, z] = along ? [KX + dx + k * 2.2, KZ + dz] : [KX + dx, KZ + dz + k * 2.2];
+      decor.push({ type: 'box', pos: [x, h / 2, z], half: along ? [1.08, h / 2, 0.5] : [0.5, h / 2, 1.08], color: k % 2 ? STONE : DARK });
+    }
+  }
+  // the tower in a corner, its battlements, and the flag
+  decor.push({ type: 'box', pos: [KX + 8, 6, KZ + 8], half: [2.2, 6, 2.2], color: STONE });
+  for (const [ox, oz] of [[-1.8, -1.8], [1.8, -1.8], [-1.8, 1.8], [1.8, 1.8], [0, -1.8], [0, 1.8], [-1.8, 0], [1.8, 0]] as const) {
+    decor.push({ type: 'box', pos: [KX + 8 + ox, 12.4, KZ + 8 + oz], half: [0.38, 0.4, 0.38], color: DARK });
+  }
+  decor.push(
+    { type: 'box', pos: [KX + 8, 15, KZ + 8], half: [0.06, 2.6, 0.06], color: 0xd8dde2 },
+    { type: 'box', pos: [KX + 8.8, 16.9, KZ + 8], half: [0.75, 0.45, 0.02], color: 0xd23b3b },
+    person(KX + 2, KZ - 2, 0.7, SHIRTS[4], 'point'),
+    person(KX + 3, KZ - 2.6, 0.4, SHIRTS[1], 'phone'),
+  );
+  clearings.push(clearing(KX, KZ), clearing(KX + 8, KZ + 8));
+}
+
 // Woods over the hills, clear of the road, the village, the church, the farm and the turbines.
 decor.push(...forest({ x: [-182, 182], z: [-120, 118], count: 170, seed: 9, avoid: [ROAD.line, ...clearings], clear: 10 }));
 

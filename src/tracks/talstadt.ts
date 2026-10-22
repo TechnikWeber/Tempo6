@@ -4,7 +4,7 @@ import type { TrackDef, TrafficDef } from '../sim/Track';
 import { distanceTo, forest } from './scenery';
 import { site } from './site';
 import {
-  armyTruck, at, baler, barrels, bikeShed, breakTable, canopy, car, container, door, frame, gate, glassFront, hall, lorry, pallets, panel, person,
+  armyTruck, at, baler, barrels, bikeShed, breakTable, canopy, car, container, door, frame, gate, glassFront, hall, lorry, pallets, panel, part, person,
   roadSpan, roadworks, roofTop, shelter, sidesOf, smoke, snackStand, tractor, tyres, unimog, windows, wingDoors, type Yard,
 } from './works';
 
@@ -281,6 +281,29 @@ for (const [cx, cz, yaw] of [[LX - 20, LZ - 15, 0.2], [-LX + 20, LZ - 15, -0.15]
   hall(y, cx, cz, yaw, 16, 12, 6, 0xb9bcc2, 0x5a6068, 4);
 }
 hall(y, LX + 70, 30, -0.25, 40, 22, 10, 0xaab0b6, 0x474c52, 9);
+// The highlight: a tower crane in the yard (the works is growing), its jib swung out towards
+// the hall, a container hanging off it. The mast is solid.
+{
+  const spot = ([[LX - 48, -LZ + 22], [-LX + 48, -LZ + 22], [LX - 48, LZ - 22], [-LX + 48, LZ - 22]] as [number, number][]).find((p) => clear(p, 12));
+  if (spot) {
+    const [cx, cz] = spot;
+    const yaw = Math.atan2(-cx, -cz);
+    const f = frame(cx, cz, yaw);
+    const YELLOW = 0xf2b705;
+    y.statics.push({ pos: [cx, 18, cz], half: [1, 18, 1], color: YELLOW });
+    y.decor.push(
+      { type: 'box', pos: [cx, 0.5, cz], half: [3, 0.5, 3], color: 0x9a9a94 }, // the foot
+      { type: 'box', pos: [cx, 39.2, cz], half: [0.5, 3.2, 0.5], color: YELLOW }, // the peak
+      part(f, yaw, 0, 37, 1.6, 1.2, 1, 1.0, 0xf4f4f4), // the cab
+      part(f, yaw, 0, 37.7, 15, 0.6, 0.6, 16, YELLOW), // the jib
+      part(f, yaw, 0, 37.7, -6, 0.6, 0.6, 5, YELLOW), // the counter-jib
+      part(f, yaw, 0, 36.6, -9.5, 1.2, 1.2, 1.3, 0x7d858c), // its weights
+      part(f, yaw, 0, 37.0, 22, 0.5, 0.15, 0.6, 0x3a3c40), // the trolley
+      part(f, yaw, 0, 30.5, 22, 0.04, 6.4, 0.04, 0x2a2a2e), // the rope
+      part(f, yaw, 0, 22.8, 22, 1.25, 1.3, 3, 0xd23b3b), // the container
+    );
+  }
+}
 hall(y, -LX - 75, -40, 0.3, 36, 20, 9, 0xaab0b6, 0x474c52, 8);
 
 y.decor.push(

@@ -1,7 +1,7 @@
 import { L } from '../i18n';
-import { looping, ramp, type BoxDef, type DecorDef, type MoverDef, type PropDef, type SpinnerDef, type TrackDef, type TrafficDef } from '../sim/Track';
+import { looping, profile, ramp, type BoxDef, type DecorDef, type MoverDef, type PropDef, type SpinnerDef, type TrackDef, type TrafficDef } from '../sim/Track';
 import { forest, house, stand, street } from './scenery';
-import { bowl, cartonHill, halfpipe, hoop, seesaw, skiJump, skittles, type Toys } from './toys';
+import { bowl, cartonHill, easedSlope, halfpipe, hoop, seesaw, skiJump, skittles, type Toys } from './toys';
 import { person, snackStand, type Yard } from './works';
 
 const TARMAC = 0x45484d;
@@ -316,9 +316,14 @@ for (let k = 0; k < 18; k++) {
 board(L('HALFPIPE', 'HALF-PIPE'), -40, -194, Math.PI);
 halfpipe(toys, -40, -258, 56, 6, 8, RAMP);
 decor.push(person(-29.6, -236, WEST, 0x3f8f5f, 'wave', false, 6), person(-50.4, -222, EAST, 0xe8833a, 'point', false, 6));
-// The bowl: banked walls round a flat middle, the way in from the north.
+// The bowl: banked walls round a flat middle, steeper and steeper up to a wall standing straight
+// up 16 m high, and on top a ring leaning in over it all, so whoever is quick enough can go
+// round and round up there without flying out. The way in from the north.
 board(L('STEILWANDKESSEL', 'THE BOWL'), 50, -206, Math.PI);
-bowl(toys, 50, -232, 9, [[7, 0.55, 0x8c949c], [6, 1.05, 0x5c6670]], NORTH);
+bowl(toys, 50, -232, 9, [[7, 0.55, 0x8c949c], [6, 1.05, 0x5c6670], [7, 1.5, 0x7d858c], [3.5, 2.1, 0xd23b3b]], NORTH);
+// The turbo drum: the washing drum's big brother, turning ten times as fast.
+board(L('TURBOTROMMEL', 'TURBO DRUM'), 158, -191, WEST);
+movers.push({ type: 'drum', pos: [180, 3.08, -200], yaw: EAST, half: [0, 0.1, 8], radius: 3, blades: 28, spin: 8, angle: 0, color: 0xd23b3b });
 // A heap of cartons and one of barrels, to plough through.
 cartonHill(toys, 135, -232, 6);
 for (let l = 0; l < 4; l++) for (let k = 0; k < 4 - l; k++) props.push({ type: 'barrel', pos: [175 + (k - (3 - l) / 2) * 0.62, 0.45 + l * 0.89, -232] });
@@ -332,6 +337,70 @@ statics.push({ pos: [262, 4, -150], half: [2, 4, 2], color: 0xd8d4c8 });
 decor.push({ type: 'box', pos: [262, 8.9, -150], half: [2.3, 0.9, 2.3], color: 0x6d8fa8 }, { type: 'box', pos: [262, 9.95, -150], half: [2.6, 0.15, 2.6], color: 0x5a5f66 });
 crowd(242, -140, EAST, 5, 7);
 crowd(242, -122, EAST, 4, 8);
+
+// ---------------------------------------------------------------------------------------
+// The lift by the start, up 40 m to the crazy path: a sky path of its own, only everything
+// on it twice to ten times as fast, a catapult across a gap, and a slide back down to earth.
+{
+  const X = -148, H = 40, WOOD = 0xc9a15a, DECK = 0xe8eef5, EDGE = 0xf2c230;
+  /** A deck with its top at the path's height, yellow along its sides. */
+  const deck = (z: number, hz: number, hx = 3) => {
+    statics.push({ pos: [X, H - 0.4, z], half: [hx, 0.4, hz], color: DECK });
+    for (const s of [-1, 1]) decor.push({ type: 'box', pos: [X + s * (hx - 0.08), H + 0.006, z], half: [0.08, 0.006, hz], color: EDGE });
+  };
+  /** A plank from one deck to the next, its top a centimetre under theirs. */
+  const walk = (z0: number, z1: number, width: number) => statics.push({ pos: [X, H - 0.16, (z0 + z1) / 2], half: [width / 2, 0.15, Math.abs(z1 - z0) / 2], color: WOOD });
+
+  // the lift and its shaft, and a sign at its foot
+  const LIFT_Z = 16;
+  movers.push({ type: 'lift', pos: [X, 0.05, LIFT_Z], yaw: 0, half: [3, 0.15, 3], angle: 0, travel: H - 0.05, period: 9, color: 0x5c6670 });
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) decor.push({ type: 'box', pos: [X + sx * 3.5, (H + 3) / 2, LIFT_Z + sz * 3.5], half: [0.2, (H + 3) / 2, 0.2], color: 0xd23b3b });
+  for (let y = 8; y < H; y += 8) for (const sx of [-1, 1]) decor.push({ type: 'box', pos: [X + sx * 3.5, y, LIFT_Z], half: [0.12, 0.12, 3.3], color: 0x8c949c });
+  decor.push({ type: 'box', pos: [X, H + 3.1, LIFT_Z], half: [3.75, 0.2, 3.75], color: 0x3a3c40 }, { type: 'smoke', pos: [X + 2.5, H + 3.4, LIFT_Z + 2.5] });
+  board(L('WAHNSINNSPFAD ↑', 'CRAZY PATH ↑'), X, LIFT_Z + 9, NORTH);
+
+  deck(9, 4, 2.8);
+  walk(5, -9, 1.2);
+  deck(-12, 3);
+  // the wobble bridge, rolling twice as fast as on the sky path, and further
+  movers.push({ type: 'rocker', pos: [X, H, -21], yaw: 0, half: [0.9, 0.08, 6], angle: 0.22, period: 1.6, color: 0x6aa0c8 });
+  deck(-30, 3);
+  // two sliding planks, quicker and further
+  for (const [z, phase, color] of [[-34.65, 0, 0x4a9a6a], [-37.95, -0.7, 0x3f8a8c]] as const) {
+    movers.push({ type: 'slider', pos: [X, H, z], yaw: 0, half: [1.7, 0.1, 1.6], travel: 2.2, period: 2.6, phase, angle: 0, color });
+  }
+  deck(-42.65, 3);
+  // the turbo drum: the sky path's big turning drum, ten times as fast
+  movers.push({ type: 'drum', pos: [X, H + 3.5, -53.8], yaw: 0, half: [0, 0.1, 8], radius: 3.5, blades: 36, spin: 7, angle: 0, color: 0xd23b3b });
+  deck(-64.95, 3);
+  // a seesaw, tipped back towards the way in
+  movers.push({ type: 'seesaw', pos: [X, H + 6 * Math.sin(0.22) + 0.02, -73.95], yaw: Math.PI, half: [1.0, 0.08, 6], angle: 0.22, color: 0xc86a4a });
+  deck(-82.95, 3);
+  // a plank with a hammer swinging across it, hung from a beam between two pylons
+  walk(-85.95, -101.95, 1.6);
+  movers.push({ type: 'propeller', pos: [X, H + 4.4, -94], yaw: 0, half: [0.5, 2.1, 0.2], angle: 0, blades: 2, spin: 3, color: 0xd23b3b });
+  decor.push({ type: 'box', pos: [X, H + 4.4, -93.4], half: [3.6, 0.15, 0.15], color: 0x3a3c40 });
+  for (const s of [-1, 1]) decor.push({ type: 'box', pos: [X + s * 3.6, H - 1, -93.4], half: [0.2, 5.5, 0.2], color: 0x5a5f66 });
+  deck(-104.95, 3);
+  // a turntable spinning four times as fast as the sky path's
+  spinners.push({ pos: [X, H, -111.15], radius: 3.2, speed: 3, color: 0xe8833a });
+  deck(-117.45, 3);
+  // a kicker and a jump over four metres of nothing
+  walk(-120.45, -126.45, 1.6);
+  const KICK = Math.atan2(0.3, 1.6);
+  statics.push({ pos: [X, H + 0.15 - 0.15 * Math.cos(KICK), -127.25 - 0.15 * Math.sin(KICK)], half: [0.8, 0.15, 0.8 / Math.cos(KICK)], quat: [Math.sin(KICK / 2), 0, 0, Math.cos(KICK / 2)], color: EDGE });
+  deck(-139.05, 7, 4.5);
+  // a catapult at the far end of that deck: stop on it, and it throws you over 13 m of nothing
+  // onto the last deck
+  movers.push({ type: 'catapult', pos: [X, H + 0.04, -144.5], yaw: Math.PI, half: [1.5, 0.1, 2], angle: 1, spin: 7.5, power: 14.5, aim: 0.8, color: 0xd9822b });
+  deck(-165, 6, 4.5);
+  // and the slide back down: 40 m in 115, steepest in the middle
+  const slide = easedSlope(-286, -171, 0.03, H - 0.01);
+  statics.push(...profile(X, slide, 4, 0xd23b3b));
+  for (const [z, y] of slide) if (y > 1.5) decor.push({ type: 'box', pos: [X, (y - 0.4) / 2, z], half: [0.25, (y - 0.4) / 2, 0.25], color: 0x5a5f66 });
+  // cartons to stop in at the bottom, before the wall
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 11; c++) props.push({ type: 'carton', pos: [X + (c - 5) * 0.52, 0.26 + r * 0.51, -297] });
+}
 
 // Grandstands along the south wall, a sausage stand between them.
 decor.push(...stand(-60, -292, NORTH, 40, 5, 53), ...stand(110, -292, NORTH, 40, 5, 54));
@@ -396,8 +465,8 @@ export const SPIELWIESE: TrackDef = {
   id: 'spielwiese',
   name: L('Spielwiese', 'Playground'),
   blurb: L(
-    'Sieben Loopings, sechs Schleudern (die stärkste zehnmal so stark wie die alte), Wippen bis 80 m, Feuerreifen, Hammer, Zentrifuge, Halfpipe, Steilwandkessel, Skisprung: alles, was Unsinn ist.',
-    'Seven loops, six catapults (the strongest ten times the old one), seesaws up to 80 m, hoops of fire, a hammer, a centrifuge, a half-pipe, a bowl, a ski jump: everything that is nonsense.',
+    'Sieben Loopings, sieben Schleudern (die stärkste zehnmal so stark wie die alte), Wippen bis 80 m, ein Aufzug zum Wahnsinnspfad in 40 m Höhe, Feuerreifen, Turbotrommeln, Zentrifuge, Halfpipe, ein geschlossener Steilwandkessel, Skisprung: alles, was Unsinn ist.',
+    'Seven loops, seven catapults (the strongest ten times the old one), seesaws up to 80 m, a lift up to the crazy path 40 m high, hoops of fire, turbo drums, a centrifuge, a half-pipe, a closed wall of death, a ski jump: everything that is nonsense.',
   ),
   unlockPrice: 200,
   lapPay: 20,

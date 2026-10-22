@@ -250,6 +250,20 @@ for (const [cx, cz, yaw] of [[LX - 18, LZ - 16, 0.3], [LX - 16, -LZ + 18, -0.2],
   hall(y, cx, cz, yaw, 15, 11, 5.5, 0xb8a48c, 0x4a4d52, 4);
 }
 hall(y, LX + 65, -25, 0.2, 38, 20, 9, 0xa8967f, 0x3e4146, 8);
+// The highlight: the old works' water tower on four legs, the name of the place on its tank.
+{
+  const spot = ([[LX - 40, LZ - 30], [LX - 30, -LZ + 45], [-LX + 35, -LZ + 40]] as [number, number][]).find((p) => clear(p, 10));
+  if (spot) {
+    const [wx, wz] = spot;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) y.statics.push({ pos: [wx + sx * 3, 11, wz + sz * 3], half: [0.3, 11, 0.3], color: 0x6b6258 });
+    y.decor.push(
+      { type: 'box', pos: [wx, 25.5, wz], half: [4.5, 3.5, 4.5], color: 0x8a9aa8 },
+      { type: 'box', pos: [wx, 29.6, wz], half: [3.6, 0.6, 3.6], color: 0x5a5f66 },
+      { type: 'box', pos: [wx, 22.0, wz], half: [3.4, 0.08, 3.4], color: 0x6b6258 },
+      { type: 'board', pos: [wx, 25.5, wz + 4.7], half: [4, 1, 0.1], text: 'PORTA' },
+    );
+  }
+}
 // A scrap heap in the south-east of the yard: old cars stacked three high, a man at it with a torch.
 {
   const spot: [number, number] = [LX - 22, -LZ + 40];

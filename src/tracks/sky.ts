@@ -236,8 +236,29 @@ decor.push(
   { type: 'balloon', pos: [34, Y - 2, 95], color: 0x2f6db5 },
   { type: 'balloon', pos: [-20, Y + 4, 150], color: 0x3f8f5f },
   { type: 'balloon', pos: [30, Y - 10, 180], color: 0xe3c04a },
-  { type: 'zeppelin', pos: [-70, Y + 8, 90], half: [120, 0, 0], yaw: 0, color: 0xd8d4c8 },
+  { type: 'zeppelin', pos: [-120, Y + 8, 90], half: [120, 0, 0], yaw: 0, color: 0xd8d4c8 },
 );
+
+// The highlight: a whale of blocks swimming through the sky beside the path, blowing.
+{
+  const WX = -65, WY = Y + 6, WZ = 62, BODY = 0x4a6a8a;
+  decor.push(
+    { type: 'box', pos: [WX, WY, WZ], half: [4, 3.5, 8], color: BODY },
+    { type: 'box', pos: [WX, WY - 0.2, WZ + 10.3], half: [3.6, 3.0, 2.5], color: BODY }, // head
+    { type: 'box', pos: [WX, WY - 2.8, WZ + 1], half: [3.2, 1, 9.5], color: 0xe8eef5 }, // belly
+    { type: 'box', pos: [WX, WY + 0.3, WZ - 10.4], half: [3, 2.5, 2.6], color: BODY },
+    { type: 'box', pos: [WX, WY + 0.6, WZ - 14.8], half: [2, 1.8, 2.0], color: BODY },
+    { type: 'box', pos: [WX, WY + 0.8, WZ - 18.0], half: [5, 0.4, 1.4], color: BODY }, // the flukes
+    { type: 'box', pos: [WX, WY + 6.8, WZ + 4], half: [0.3, 3.3, 0.3], color: 0x8fc7e8 }, // the spout
+    { type: 'smoke', pos: [WX, WY + 10, WZ + 4] },
+  );
+  for (const s of [-1, 1]) {
+    decor.push(
+      { type: 'box', pos: [WX + s * 5.4, WY - 1.5, WZ + 3], half: [1.5, 0.3, 1.4], color: BODY }, // fins
+      { type: 'box', pos: [WX + s * 3.62, WY + 0.6, WZ + 11.2], half: [0.05, 0.35, 0.35], color: 0x1d1d1f }, // eyes
+    );
+  }
+}
 
 export const SKY: TrackDef = {
   id: 'sky',

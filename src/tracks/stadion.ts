@@ -177,6 +177,13 @@ for (const [x, z, yaw] of [[36, -80, 0], [126, 95, Math.PI + 0.6]] as const) {
   }
 }
 
+// The highlight: the name in letters as tall as houses up on the hill behind the hairpin,
+// the way a famous one stands over a famous city.
+[...'TEMPO6'].forEach((ch, k) => {
+  const x = 40 + k * 8 + (k > 4 ? 6 : 0);
+  decor.push({ type: 'board', pos: [x, 4.5, LOT_Z - 3], half: [3.2, 4, 0.3], text: ch });
+});
+
 export const STADION: TrackDef = {
   id: 'stadion',
   name: L('Stadionkurs', 'Stadium Circuit'),

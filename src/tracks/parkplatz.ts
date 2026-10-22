@@ -208,6 +208,31 @@ decor.push(...car(45, 20, Math.PI, 0xc8c8c8), person(44, 18.7, Math.PI, 0xd23b3b
   );
 }
 
+// The highlight: a garden gnome as tall as a house beside the garden centre, looking out over
+// the lot. His coat is solid, the rest of him just to look at.
+{
+  const GX = -36, GZ = -16, RED = 0xd23b3b, SKIN = 0xf0c8a0;
+  statics.push({ pos: [GX, 1.8, GZ], half: [1.1, 1.2, 0.9], color: 0x2f6db5 });
+  decor.push(
+    { type: 'box', pos: [GX, 1.4, GZ], half: [1.12, 0.12, 0.92], color: 0x2a2a2e }, // belt
+    { type: 'box', pos: [GX, 1.4, GZ + 0.95], half: [0.25, 0.1, 0.03], color: 0xe3c04a }, // buckle
+    { type: 'box', pos: [GX, 3.7, GZ], half: [0.75, 0.7, 0.7], color: SKIN }, // head
+    { type: 'box', pos: [GX, 3.2, GZ + 0.8], half: [0.7, 0.6, 0.15], color: 0xf4f4f4 }, // beard, standing out over his coat
+    { type: 'box', pos: [GX, 3.78, GZ + 0.85], half: [0.18, 0.15, 0.15], color: RED }, // nose
+    { type: 'box', pos: [GX, 4.75, GZ], half: [0.85, 0.35, 0.8], color: RED }, // the hat, tapering up
+    { type: 'box', pos: [GX, 5.45, GZ - 0.1], half: [0.6, 0.35, 0.55], color: RED },
+    { type: 'box', pos: [GX, 6.05, GZ - 0.25], half: [0.35, 0.25, 0.3], color: RED },
+    { type: 'box', pos: [GX, 6.45, GZ - 0.4], half: [0.15, 0.15, 0.12], color: RED },
+  );
+  for (const s of [-1, 1]) {
+    decor.push(
+      { type: 'box', pos: [GX + s * 1.35, 2.1, GZ + 0.1], half: [0.25, 0.8, 0.25], color: RED }, // arms
+      { type: 'box', pos: [GX + s * 0.5, 0.3, GZ + 0.2], half: [0.45, 0.3, 0.6], color: 0x3a2a1e }, // boots
+    );
+  }
+  decor.push(person(GX + 2.6, GZ + 3, 2.6, SHIRTS[3], 'phone'), person(GX + 3.4, GZ + 2.2, 2.9, SHIRTS[5], 'point'));
+}
+
 // A trolley shelter in the band north of the island, a few trolleys parked in it.
 shelter(yard, 14, 17, Math.PI);
 for (let k = 0; k < 4; k++) props.push({ type: 'cart', pos: [12.9 + k * 0.7, 0.46, 17.1] });

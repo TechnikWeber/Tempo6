@@ -1,5 +1,5 @@
 import { Matrix4, Quaternion, Vector3 } from 'three';
-import { profile, ramp, type BoxDef, type DecorDef, type MoverDef, type PropDef } from '../sim/Track';
+import { profile, type BoxDef, type DecorDef, type MoverDef, type PropDef } from '../sim/Track';
 
 // Building blocks for the playground's bigger toys: seesaws of every size on their trestles,
 // burning hoops to jump through, a half-pipe, a bowl with banked walls, a ski jump, heaps of
@@ -97,24 +97,79 @@ export function halfpipe(t: Toys, x: number, z0: number, length: number, radius:
 }
 
 /**
- * A bowl: banked walls all the way round a flat middle, a first ring of `bank1` from radius
- * `r0` and a steeper one of `bank2` above it, the faster the higher one goes round. A gap of
- * `gap` pieces facing `door` (a heading) is the way in.
+ * A plank whose top surface starts at `start`, `base` metres up, and rises along heading `yaw`
+ * at `angle` from level, `length` long: past a quarter turn it leans back over the way it came,
+ * its top facing in and down (an overhang). Placed exactly, thickness and all, at any angle.
+ */
+export function plankAt(start: [number, number], yaw: number, length: number, width: number, angle: number, color: number, base = 0, thick = 0.1): BoxDef {
+  const fx = Math.sin(yaw), fz = Math.cos(yaw);
+  const along = (length / 2) * Math.cos(angle), up = (length / 2) * Math.sin(angle);
+  // the middle of the top surface, then half a thickness back along its normal
+  const nOut = -Math.sin(angle), nUp = Math.cos(angle);
+  const sy = Math.sin(yaw / 2), cy = Math.cos(yaw / 2);
+  const sp = Math.sin(-angle / 2), cp = Math.cos(-angle / 2);
+  return {
+    pos: [start[0] + fx * (along - thick * nOut), base + up - thick * nUp, start[1] + fz * (along - thick * nOut)],
+    half: [width / 2, thick, length / 2],
+    quat: [cy * sp, sy * cp, -sy * sp, cy * cp],
+    color,
+  };
+}
+
+/**
+ * A bowl: banked walls all the way round a flat middle, ring upon ring, each `[length, bank,
+ * colour]` starting where the one below ends: the faster one goes round, the higher up. A ring
+ * banked past a quarter turn leans in over the others and closes the bowl off at the top. The
+ * way in faces `door` (a heading): a passage `gap` pieces wide through the first ring and the
+ * skirt round the outside, under the rings above.
  */
 export function bowl(t: Toys, cx: number, cz: number, r0: number, tiers: [length: number, bank: number, color: number][], door: number, pieces = 56, gap = 3): void {
-  let r = r0, base = 0;
+  let r = r0, base = 0, outer = r0;
   const step = (2 * Math.PI) / pieces;
+  const inGap = (k: number) => k >= pieces - Math.ceil(gap / 2) || k < Math.floor(gap / 2);
   for (const [len, bank, color] of tiers) {
-    const outer = r + len * Math.cos(bank);
-    // (as wide as the outer edge needs; the inner edges overlap their neighbours a little)
-    const width = 2 * outer * Math.tan(Math.PI / pieces) + 0.04;
+    const end = r + len * Math.cos(bank);
+    // (as wide as its widest edge needs; the narrow edges overlap their neighbours a little)
+    const width = 2 * Math.max(r, end) * Math.tan(Math.PI / pieces) + 0.04;
+    // (the way in goes through the first ring only, and under the rest, which go all the way round)
+    const open = r === r0;
     for (let k = 0; k < pieces; k++) {
       const a = door + (k + 0.5) * step;
-      if (k >= pieces - Math.ceil(gap / 2) || k < Math.floor(gap / 2)) continue;
-      t.statics.push({ ...ramp([cx + Math.sin(a) * r, cz + Math.cos(a) * r], a, len, width, bank, color, base), color: k % 2 ? color : shade(color) });
+      if (open && inGap(k)) continue;
+      t.statics.push(plankAt([cx + Math.sin(a) * r, cz + Math.cos(a) * r], a, len, width, bank, k % 2 ? color : shade(color), base));
     }
-    r = outer;
+    r = end;
     base += len * Math.sin(bank);
+    outer = Math.max(outer, r);
+  }
+  // A shell round the outside from the ground to the very top, closing every seam between the
+  // rings, open at the bottom only where the passage comes in, `PASSAGE` metres high.
+  const PASSAGE = 3.4;
+  const shell = outer + 0.45;
+  const shellWidth = 2 * shell * Math.tan(Math.PI / pieces) + 0.04;
+  for (let k = 0; k < pieces; k++) {
+    const a = door + (k + 0.5) * step;
+    const [sx, sz] = [cx + Math.sin(a) * shell, cz + Math.cos(a) * shell];
+    const from = inGap(k) ? PASSAGE : 0;
+    t.statics.push(plankAt([sx, sz], a, base + 0.3 - from, shellWidth, Math.PI / 2, 0x6b7078, from, 0.15));
+  }
+  // the passage walled either side up to the rings, so nothing gets in under them
+  const surface = (rr: number) => {
+    let r1 = r0, h = 0;
+    for (const [len, bank] of tiers) {
+      const r2 = r1 + len * Math.cos(bank);
+      if (bank >= 1.4 || rr <= r2) return bank >= 1.4 ? h : h + (rr - r1) * Math.tan(bank);
+      h += len * Math.sin(bank);
+      r1 = r2;
+    }
+    return h;
+  };
+  for (const a of [door + Math.floor(gap / 2) * step, door - Math.ceil(gap / 2) * step]) {
+    for (let rr = r0; rr < shell; rr += 1) {
+      const h = Math.max(surface(rr) - 0.05, PASSAGE);
+      const m = Math.min(rr + 0.5, shell - 0.5);
+      t.statics.push({ pos: [cx + Math.sin(a) * m, h / 2, cz + Math.cos(a) * m], half: [0.15, h / 2, 0.5], quat: [0, Math.sin(a / 2), 0, Math.cos(a / 2)], color: 0x6b7078 });
+    }
   }
   // (every other piece a shade darker, so one sees it go round) and a yellow ring round the flat middle
   t.decor.push({ type: 'ring', pos: [cx, 0.012, cz], half: [r0 - 0.5, 0, 0.25], color: 0xf2c230 });

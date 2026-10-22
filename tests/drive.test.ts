@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { Matrix4, Quaternion, Vector3 } from 'three';
 import { BONUS, BOOST, DAMAGE, stageSpeedKmh, STAGES, STUNTS } from '../src/config/tuning';
 import { CRASH, FREESTYLE, MODES, RACE } from '../src/config/modes';
-import { HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
+import { groundY, HANDLING, VEHICLES, VEHICLE_ORDER, type VehicleSpec } from '../src/config/vehicles';
 import { GameCore, type GameEvent, type GameInput } from '../src/sim/GameCore';
 import { Progress } from '../src/sim/Progress';
 import { GATE_SLACK, Race } from '../src/sim/Race';
@@ -975,11 +976,66 @@ describe("the playground's sling field", () => {
   });
 });
 
+describe('the bowl', () => {
+  // (the ones with steered wheels; a chair steered by its two motors alone wobbles off it)
+  it.each(ALL.filter(([id]) => ['trex', 'komet', 'orkan', 'wagen', 'arrivo', 'sprite'].includes(id)))('%s goes round and round on its straight wall at speed without coming down', (_id, spec) => {
+    const sim = new Sim(SPIELWIESE, spec);
+    sim.vehicle.setMotor(75 / 3.6, 11);
+    // on the wall at the far side from the way in, 12 m up, going round
+    const cx = 50, cz = -232, y0 = 12, r = 18.17 + groundY(spec);
+    const radial = new Vector3(0, 0, -1), fwd = new Vector3(-1, 0, 0), up = new Vector3(0, 0, 1);
+    const q = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(up.clone().cross(fwd), up, fwd));
+    const b = sim.vehicle.body;
+    b.setTranslation({ x: cx + radial.x * r, y: y0, z: cz + radial.z * r }, true);
+    b.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
+    b.setLinvel({ x: fwd.x * 19, y: 0, z: fwd.z * 19 }, true);
+    let turned = 0, last = Math.PI, low = 99;
+    for (let i = 0; i < 60 * 10; i++) {
+      const p = b.translation(), v = b.linvel();
+      // (steering up the wall when it sinks, down when it climbs)
+      sim.step({ throttle: 1, steer: Math.max(-1, Math.min(1, (y0 - p.y) * 0.3 - v.y * 0.15)), handbrake: false });
+      const a = Math.atan2(p.x - cx, p.z - cz);
+      turned += Math.atan2(Math.sin(a - last), Math.cos(a - last));
+      last = a;
+      if (i > 30) low = Math.min(low, p.y);
+    }
+    expect(Math.abs(turned)).toBeGreaterThan(2 * Math.PI * 1.5);
+    expect(low).toBeGreaterThan(9);
+    expect(sim.vehicle.wrecked).toBe(false);
+    sim.world.free();
+  });
+});
+
+describe('the lift to the crazy path', () => {
+  it('takes a vehicle standing on it up 40 m, and it drives off onto the path', () => {
+    const sim = new Sim({ ...SPIELWIESE, spawn: { pos: [-148, 0.8, 17], yaw: Math.PI } }, VEHICLES.trex);
+    sim.vehicle.setMotor(12 / 3.6, 4);
+    drive(sim, 12, 0);
+    expect(sim.vehicle.body.translation().y).toBeGreaterThan(40);
+    drive(sim, 5, 1);
+    const p = sim.vehicle.body.translation();
+    expect(p.y).toBeGreaterThan(40);
+    expect(p.z).toBeLessThan(5);
+    sim.world.free();
+  });
+
+  it('throws from the catapult at the end of it onto the last deck', () => {
+    const sim = new Sim({ ...SPIELWIESE, spawn: { pos: [-148, 40.7, -142.5], yaw: Math.PI } }, VEHICLES.trex);
+    drive(sim, 5, 0);
+    const p = sim.vehicle.body.translation();
+    expect(p.y).toBeGreaterThan(40);
+    expect(p.z).toBeLessThan(-160);
+    sim.world.free();
+  });
+});
+
 describe('the seesaw street', () => {
   it('can be driven along from the small one to the monster, every one tipping under the vehicle', () => {
     const sim = new Sim({ ...SPIELWIESE, spawn: { pos: [-145, 0.7, -130], yaw: Math.PI / 2 } }, VEHICLES.trex);
     sim.vehicle.setMotor(24 / 3.6, 5);
-    const saws = sim.movers.filter((m) => m.def.type === 'seesaw');
+    // (the six on the ground; the one up on the crazy path is not on the way)
+    const saws = sim.movers.filter((m) => m.def.type === 'seesaw' && m.def.pos[2] === -130);
+    expect(saws.length).toBe(6);
     const tipped = saws.map(() => -Infinity);
     let top = 0;
     for (let i = 0; i < 60 * 48; i++) {

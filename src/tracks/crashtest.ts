@@ -131,6 +131,31 @@ decor.push(
   person(14.5, WALL_Z - 4.5, -1.6, 0x2b3a5a, 'stand', true),
 );
 
+// The highlight: a target painted on the end wall, and beside the wall a crash test dummy the
+// size of a house sitting there to watch, yellow and black, the marks on its head and all.
+for (const [r, c, k] of [[1.3, 0xd23b3b, 0], [0.85, 0xf4f4f4, 1], [0.4, 0xd23b3b, 2]] as const) {
+  decor.push({ type: 'oval', pos: [0, 1.3, END_Z - 0.5 - k * 0.1], half: [r, r, 0], yaw: Math.PI, color: c });
+}
+{
+  const DX = 22, DZ = END_Z - 2, Y = 0xf2c230, K = 0x1d1d1f;
+  decor.push(
+    { type: 'box', pos: [DX, 1.0, DZ], half: [2.2, 1.0, 1.6], color: K }, // the block it sits on
+    { type: 'box', pos: [DX, 2.1, DZ - 2.6], half: [1.6, 0.6, 1.4], color: Y }, // thighs, out in front
+    { type: 'box', pos: [DX, 4.0, DZ], half: [1.7, 2.0, 1.1], color: Y }, // the body
+    { type: 'box', pos: [DX, 6.9, DZ], half: [1.0, 0.9, 1.0], color: Y }, // head
+    { type: 'box', pos: [DX, 6.9, DZ - 1.02], half: [0.45, 0.45, 0.02], color: K }, // the marks on its head
+    { type: 'box', pos: [DX + 1.02, 6.9, DZ], half: [0.02, 0.45, 0.45], color: K },
+    { type: 'box', pos: [DX - 1.02, 6.9, DZ], half: [0.02, 0.45, 0.45], color: K },
+  );
+  for (const s of [-1, 1]) {
+    decor.push(
+      { type: 'box', pos: [DX + s * 2.15, 4.2, DZ - 0.6], half: [0.45, 1.5, 0.45], color: Y }, // arms
+      { type: 'box', pos: [DX + s * 0.8, 1.2, DZ - 4.4], half: [0.55, 1.2, 0.55], color: Y }, // shins
+      { type: 'box', pos: [DX + s * 0.8, 0.25, DZ - 4.9], half: [0.6, 0.25, 0.9], color: K }, // feet
+    );
+  }
+}
+
 export const CRASHTEST: TrackDef = {
   id: 'crashtest',
   name: L('Crashtest-Gelände', 'Crash Test Ground'),

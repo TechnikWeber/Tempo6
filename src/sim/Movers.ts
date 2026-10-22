@@ -13,6 +13,8 @@ const TIP_DAMPING = 5;
 const COUNTERWEIGHT = 0.6;
 /** Catapult: seconds something has to stand on it before it lets go, it stays up, and the rate it comes back down at (rad/s). */
 const CATAPULT = { load: 0.5, hold: 1.2, back: 0.8 };
+/** Lift: seconds something has to stand on it before it goes up, and how long it waits up there. */
+const LIFT = { load: 1, hold: 6 };
 
 /**
  * A moving plank. It is a kinematic body driven by velocity, like the turning disc, so the
@@ -26,8 +28,10 @@ export class Mover {
   offset = 0;
   private rate = 0;
   private time = 0;
-  /** Where a catapult is in its throw. */
+  /** Where a catapult is in its throw, or a lift in its ride. */
   private stage: 'armed' | 'snap' | 'hold' | 'back' = 'armed';
+  /** How far a lift is up. */
+  rise = 0;
   /**
    * The velocity a catapult gives whatever stands on it, in the step it lets go; null in every
    * other step. (Its springs would swallow most of the blow if the board had to deliver it.)
@@ -86,6 +90,7 @@ export class Mover {
     this.time = 0;
     this.stage = 'armed';
     this.fling = null;
+    this.rise = 0;
     this.offset = this.slide(0);
     const b = this.tracked.body;
     const [x, y, z] = this.at(this.offset);
@@ -106,6 +111,24 @@ export class Mover {
       const [x, y, z] = this.at(this.offset);
       const p = this.tracked.body.translation();
       this.tracked.body.setLinvel({ x: (x - p.x) / dt, y: (y - p.y) / dt, z: (z - p.z) / dt }, true);
+      return;
+    }
+    if (d.type === 'lift') {
+      // Waits at the bottom for someone to stand on it a moment, then up (easing in and out),
+      // a wait at the top, and down again. Steered onto where it should be, like a slider.
+      const ride = d.period ?? 8, top = d.travel ?? 10;
+      this.time += dt;
+      if (this.stage === 'armed') {
+        if (!onIt) this.time = 0;
+        else if (this.time >= LIFT.load) [this.stage, this.time] = ['snap', 0];
+      } else if (this.stage === 'snap' && this.time >= ride) [this.stage, this.time] = ['hold', 0];
+      else if (this.stage === 'hold' && this.time >= LIFT.hold) [this.stage, this.time] = ['back', 0];
+      else if (this.stage === 'back' && this.time >= ride) [this.stage, this.time] = ['armed', 0];
+      const share = this.stage === 'snap' ? this.time / ride : this.stage === 'back' ? 1 - this.time / ride : this.stage === 'hold' ? 1 : 0;
+      this.rise = (top * (1 - Math.cos(Math.PI * Math.min(1, share)))) / 2;
+      const [x, y, z] = this.at(0);
+      const p = this.tracked.body.translation();
+      this.tracked.body.setLinvel({ x: (x - p.x) / dt, y: (y + this.rise - p.y) / dt, z: (z - p.z) / dt }, true);
       return;
     }
     if (d.type === 'propeller' || d.type === 'drum') {
@@ -168,7 +191,7 @@ export class Mover {
     const l = dx * Math.cos(d.yaw) - dz * Math.sin(d.yaw);
     // (a catapult's board reaches back from its hinge, the others' either way from the middle)
     if ((d.type === 'catapult' ? s > 0.2 || s < -2 * d.half[2] : Math.abs(s) > d.half[2]) || Math.abs(l) > d.half[0] + 0.2) return false;
-    const top = this.pitches ? d.pos[1] - s * Math.sin(this.angle) : d.pos[1] + l * Math.sin(this.angle);
+    const top = d.type === 'lift' ? c.y : this.pitches ? d.pos[1] - s * Math.sin(this.angle) : d.pos[1] + l * Math.sin(this.angle);
     return at.y > top - 0.2 && at.y < top + reach;
   }
 
