@@ -33,7 +33,7 @@ export class Sound {
   /** The master slider's setting, 0…1. */
   private masterVolume = 1;
   /** The sounds slider's setting, 0…1. */
-  private fxVolume = 0.25;
+  private fxVolume = 0.15;
   muted = false;
 
   /**
