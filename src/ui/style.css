@@ -464,6 +464,7 @@ body.pad .pad-focus { outline: 3px solid #fff !important; outline-offset: 2px; }
 #menu .menubar .tool.danger.on { outline-color: #ff5252; }
 #menu .settings { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(92vw, 560px); display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px; background: rgb(18 20 24 / 0.92); border-radius: 12px; }
 #menu .settings .toggle { display: flex; align-items: center; gap: 4px; }
+body:not(.pad) #menu .settings .pad-only { display: none; }
 #menu .settings .slider { gap: 8px; }
 #menu .settings .slider input { width: 110px; accent-color: var(--accent); }
 #menu .settings .slider .level { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }

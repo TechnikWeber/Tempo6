@@ -274,7 +274,8 @@ export class Menu {
       this.refreshPad();
     });
     // kids' mode: the stick only steers a little, for small hands that wiggle it end to end
-    const kid = h('label', 'tool toggle');
+    // (only shown while a controller is in use: keys, d-pad and touch steer the same either way)
+    const kid = h('label', 'tool toggle pad-only');
     this.kid.type = 'checkbox';
     this.kid.addEventListener('change', () => this.handlers.onKidMode(this.kid.checked));
     kid.append(this.kid, L(' 🧒 Kindermodus', ' 🧒 Kids\' mode'));
