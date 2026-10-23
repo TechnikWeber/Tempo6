@@ -4,7 +4,7 @@ import { Music } from './Music';
 const MUSIC_MAX = 0.44;
 /** How loud all of it is at full volume (the master slider at 100 %). */
 const MASTER_MAX = 0.5;
-/** How loud the sounds are with their slider all the way up; at the default half they are as loud as they always were. */
+/** How loud the sounds are with their slider all the way up; at half they are as loud as they used to be. */
 const FX_MAX = 2;
 
 /** Synthesised sounds, no audio files: an electric motor whine and a few blips. */
@@ -33,7 +33,7 @@ export class Sound {
   /** The master slider's setting, 0…1. */
   private masterVolume = 1;
   /** The sounds slider's setting, 0…1. */
-  private fxVolume = 0.5;
+  private fxVolume = 0.25;
   muted = false;
 
   /**

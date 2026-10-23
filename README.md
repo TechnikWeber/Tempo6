@@ -21,7 +21,7 @@ A racing game with power wheelchairs and mobility scooters. Every vehicle starts
 - **Tracks:** Reha-Parcours, DIY-store car park, Talstadt works, the Sky Path, the old works at Porta West Africa, an old airfield, a playground of ramps, a stadium circuit, a long hill circuit and the crashtest ground.
 - **Tuning:** eight stages up to 75 km/h, a boost battery, three driving profiles per vehicle, all in the garage too.
 - **Save:** kept in the browser, and with "Speichern"/"Laden" as a file that survives clearing the browser's data; "Spielstand löschen" in the settings starts over.
-- **Sound:** made in the browser, no audio files: the motors, the knocks, and an 8-bit tune on the start screen and in the garage (sliders in the settings for everything, 100 % to start with, for the sounds, 50 %, and for the music, 25 %, where 0 % turns it off; M mutes all sound).
+- **Sound:** made in the browser, no audio files: the motors, the knocks, and an 8-bit tune on the start screen and in the garage (sliders in the settings for everything, 100 % to start with, for the sounds, 25 %, and for the music, 25 %, where 0 % turns it off; M mutes all sound).
 
 ## Vehicles
 

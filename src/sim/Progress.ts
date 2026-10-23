@@ -78,8 +78,8 @@ export class Progress {
   musicVolume = 0.25;
   /** How loud everything is, 0 to 1. */
   masterVolume = 1;
-  /** How loud the motors and the other sounds are (not the music), 0 to 1; half is the default. */
-  fxVolume = 0.5;
+  /** How loud the motors and the other sounds are (not the music), 0 to 1; a quarter is the default. */
+  fxVolume = 0.25;
   /** Best laps per track id, fastest first. Kept on this device, to beat your own times. */
   readonly boards: Record<string, BoardEntry[]> = {};
 
