@@ -21,7 +21,7 @@ Ein Rennspiel mit Elektrorollstühlen und Seniorenmobilen. Jedes Gefährt starte
 - **Strecken:** Reha-Parcours, Baumarkt-Parkplatz, Werk Talstadt, Himmelspfad, Altwerk Porta Westafrika, Alter Flugplatz, Spielwiese, Stadionkurs, Große Schleife und das Crashtest-Gelände.
 - **Tuning:** acht Stufen bis 75 km/h, Boost-Batterie, drei Fahrprofile je Gefährt, alles auch in der Garage.
 - **Spielstand:** bleibt im Browser; über „Speichern“ und „Laden“ auch als Datei, die das Löschen der Browserdaten übersteht; „Spielstand löschen“ in den Einstellungen fängt von vorn an.
-- **Ton:** entsteht im Browser, ohne Audiodateien: die Motoren, die Stöße und eine 8-Bit-Melodie im Startbildschirm und in der Garage („🎵 Musik“ in den Einstellungen regelt ihre Lautstärke, anfangs 25 %, 0 % ist aus; M schaltet allen Ton ab).
+- **Ton:** entsteht im Browser, ohne Audiodateien: die Motoren, die Stöße und eine 8-Bit-Melodie im Startbildschirm und in der Garage (Regler in den Einstellungen für die Gesamtlautstärke, anfangs 100 %, für die Geräusche, 50 %, und für die Musik, 25 %, bei 0 % ist sie aus; M schaltet allen Ton ab).
 
 ## Fahrzeuge
 

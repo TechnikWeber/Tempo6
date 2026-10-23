@@ -76,6 +76,10 @@ export class Progress {
   showGhost = true;
   /** How loud the start screen's tune is, 0 (off) to 1; a quarter is the default. */
   musicVolume = 0.25;
+  /** How loud everything is, 0 to 1. */
+  masterVolume = 1;
+  /** How loud the motors and the other sounds are (not the music), 0 to 1; half is the default. */
+  fxVolume = 0.5;
   /** Best laps per track id, fastest first. Kept on this device, to beat your own times. */
   readonly boards: Record<string, BoardEntry[]> = {};
 
@@ -106,6 +110,8 @@ export class Progress {
       if (typeof d.musicVolume === 'number') this.musicVolume = Math.min(1, Math.max(0, d.musicVolume));
       // (an older save only had the tune on or off)
       else if (d.music === false) this.musicVolume = 0;
+      if (typeof d.masterVolume === 'number') this.masterVolume = Math.min(1, Math.max(0, d.masterVolume));
+      if (typeof d.fxVolume === 'number') this.fxVolume = Math.min(1, Math.max(0, d.fxVolume));
       for (const [k, list] of Object.entries(d.boards ?? {})) {
         if (Array.isArray(list)) this.boards[k] = list.filter((e) => typeof e?.time === 'number' && e.vehicle in VEHICLES).slice(0, BOARD_SIZE);
       }
@@ -304,6 +310,8 @@ export class Progress {
         boostActive: this.boostActive,
         showGhost: this.showGhost,
         musicVolume: this.musicVolume,
+        masterVolume: this.masterVolume,
+        fxVolume: this.fxVolume,
         boards: this.boards,
       }),
     );

@@ -2,6 +2,10 @@ import { Music } from './Music';
 
 /** How loud the start screen's tune is against everything else, with its slider all the way up. */
 const MUSIC_MAX = 0.44;
+/** How loud all of it is at full volume (the master slider at 100 %). */
+const MASTER_MAX = 0.5;
+/** How loud the sounds are with their slider all the way up; at the default half they are as loud as they always were. */
+const FX_MAX = 2;
 
 /** Synthesised sounds, no audio files: an electric motor whine and a few blips. */
 export class Sound {
@@ -10,6 +14,8 @@ export class Sound {
   private whine: OscillatorNode | null = null;
   private motorGain: GainNode | null = null;
   private master: GainNode | null = null;
+  /** Everything but the music (motors, knocks, blips) goes through here, for its own slider. */
+  private fx: GainNode | null = null;
   private squealGain: GainNode | null = null;
   private boostGain: GainNode | null = null;
   private boostTone: OscillatorNode | null = null;
@@ -24,6 +30,10 @@ export class Sound {
   private musicGain: GainNode | null = null;
   /** The slider's setting, 0…1. */
   private musicVolume = 0.25;
+  /** The master slider's setting, 0…1. */
+  private masterVolume = 1;
+  /** The sounds slider's setting, 0…1. */
+  private fxVolume = 0.5;
   muted = false;
 
   /**
@@ -38,15 +48,18 @@ export class Sound {
     const ctx = new AudioContext();
     this.ctx = ctx;
     this.master = ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.5;
+    this.master.gain.value = this.masterLevel;
     this.master.connect(ctx.destination);
+    this.fx = ctx.createGain();
+    this.fx.gain.value = this.fxVolume * FX_MAX;
+    this.fx.connect(this.master);
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 1800;
     this.motorGain = ctx.createGain();
     this.motorGain.gain.value = 0;
-    filter.connect(this.motorGain).connect(this.master);
+    filter.connect(this.motorGain).connect(this.fx);
     this.motor = ctx.createOscillator();
     this.motor.type = 'sawtooth';
     this.whine = ctx.createOscillator();
@@ -70,33 +83,33 @@ export class Sound {
     band.Q.value = 6;
     this.squealGain = ctx.createGain();
     this.squealGain.gain.value = 0;
-    noise.connect(band).connect(this.squealGain).connect(this.master);
+    noise.connect(band).connect(this.squealGain).connect(this.fx);
     // Boost: the same noise as a bright hiss, plus a rising whistle.
     const hiss = ctx.createBiquadFilter();
     hiss.type = 'highpass';
     hiss.frequency.value = 3200;
     this.boostGain = ctx.createGain();
     this.boostGain.gain.value = 0;
-    noise.connect(hiss).connect(this.boostGain).connect(this.master);
+    noise.connect(hiss).connect(this.boostGain).connect(this.fx);
     this.boostTone = ctx.createOscillator();
     this.boostTone.type = 'triangle';
     this.boostToneGain = ctx.createGain();
     this.boostToneGain.gain.value = 0;
-    this.boostTone.connect(this.boostToneGain).connect(this.master);
+    this.boostTone.connect(this.boostToneGain).connect(this.fx);
     this.boostTone.start();
     const rumble = ctx.createBiquadFilter();
     rumble.type = 'lowpass';
     rumble.frequency.value = 180;
     this.rumbleGain = ctx.createGain();
     this.rumbleGain.gain.value = 0;
-    noise.connect(rumble).connect(this.rumbleGain).connect(this.master);
+    noise.connect(rumble).connect(this.rumbleGain).connect(this.fx);
     const whoosh = ctx.createBiquadFilter();
     whoosh.type = 'bandpass';
     whoosh.frequency.value = 520;
     whoosh.Q.value = 1.2;
     this.whooshGain = ctx.createGain();
     this.whooshGain.gain.value = 0;
-    noise.connect(whoosh).connect(this.whooshGain).connect(this.master);
+    noise.connect(whoosh).connect(this.whooshGain).connect(this.fx);
     this.noiseBuffer = buf;
     noise.start();
     const music = ctx.createGain();
@@ -129,7 +142,7 @@ export class Sound {
 
   /** The train's two-tone horn. */
   trainHorn(): void {
-    if (!this.ctx || !this.master) return;
+    if (!this.ctx || !this.fx) return;
     const t = this.ctx.currentTime;
     for (const [f, start, len] of [[311, 0, 0.7], [370, 0, 0.7], [311, 0.85, 1.1], [370, 0.85, 1.1]]) {
       const o = this.ctx.createOscillator();
@@ -140,7 +153,7 @@ export class Sound {
       g.gain.linearRampToValueAtTime(0.07, t + start + 0.05);
       g.gain.setValueAtTime(0.07, t + start + len - 0.1);
       g.gain.linearRampToValueAtTime(0, t + start + len);
-      o.connect(g).connect(this.master);
+      o.connect(g).connect(this.fx);
       o.start(t + start);
       o.stop(t + start + len + 0.05);
     }
@@ -148,7 +161,7 @@ export class Sound {
 
   /** A crowd cheering: noise in a voice band, swelling and dying away, with a few whistles. */
   cheer(): void {
-    if (!this.ctx || !this.master || !this.noiseBuffer) return;
+    if (!this.ctx || !this.fx || !this.noiseBuffer) return;
     const t = this.ctx.currentTime;
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuffer;
@@ -161,7 +174,7 @@ export class Sound {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(0.32, t + 0.25);
     g.gain.exponentialRampToValueAtTime(0.001, t + 2.4);
-    src.connect(band).connect(g).connect(this.master);
+    src.connect(band).connect(g).connect(this.fx);
     src.start(t);
     src.stop(t + 2.5);
     this.blip([1900, 2300, 1900, 2500], 0.11, 'sine', 0.06);
@@ -169,7 +182,22 @@ export class Sound {
 
   toggleMute(): void {
     this.muted = !this.muted;
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.5;
+    if (this.master) this.master.gain.value = this.masterLevel;
+  }
+
+  private get masterLevel(): number {
+    return this.muted ? 0 : this.masterVolume * MASTER_MAX;
+  }
+
+  /** The sliders in the settings, each 0…1: everything, and the sounds without the music. Call every frame. */
+  setVolumes(master: number, fx: number): void {
+    if (master === this.masterVolume && fx === this.fxVolume) return;
+    this.masterVolume = master;
+    this.fxVolume = fx;
+    if (!this.ctx || !this.master || !this.fx) return;
+    const t = this.ctx.currentTime;
+    this.master.gain.setTargetAtTime(this.masterLevel, t, 0.05);
+    this.fx.gain.setTargetAtTime(fx * FX_MAX, t, 0.05);
   }
 
   /** Still silent because the browser has not let it start yet. */
@@ -221,7 +249,7 @@ export class Sound {
   }
 
   private blip(freqs: number[], step: number, type: OscillatorType = 'triangle', vol = 0.25): void {
-    if (!this.ctx || !this.master) return;
+    if (!this.ctx || !this.fx) return;
     const t0 = this.ctx.currentTime;
     freqs.forEach((f, i) => {
       const o = this.ctx!.createOscillator();
@@ -232,7 +260,7 @@ export class Sound {
       g.gain.setValueAtTime(0, t);
       g.gain.linearRampToValueAtTime(vol, t + 0.01);
       g.gain.exponentialRampToValueAtTime(0.001, t + step * 1.8);
-      o.connect(g).connect(this.master!);
+      o.connect(g).connect(this.fx!);
       o.start(t);
       o.stop(t + step * 2);
     });
@@ -256,7 +284,7 @@ export class Sound {
 
   /** Landing: a short low thump, louder the harder it comes down. */
   thud(sinkRate: number): void {
-    if (!this.ctx || !this.master) return;
+    if (!this.ctx || !this.fx) return;
     const t = this.ctx.currentTime;
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
@@ -265,7 +293,7 @@ export class Sound {
     o.frequency.exponentialRampToValueAtTime(38, t + 0.18);
     g.gain.setValueAtTime(Math.min(0.6, 0.15 + sinkRate * 0.05), t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-    o.connect(g).connect(this.master);
+    o.connect(g).connect(this.fx);
     o.start(t);
     o.stop(t + 0.3);
   }
