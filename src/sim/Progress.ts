@@ -74,8 +74,8 @@ export class Progress {
   boostActive = true;
   /** Whether the best lap drives along as a shadow. */
   showGhost = true;
-  /** How loud the start screen's tune is, 0 (off) to 1; half is the default. */
-  musicVolume = 0.5;
+  /** How loud the start screen's tune is, 0 (off) to 1; a quarter is the default. */
+  musicVolume = 0.25;
   /** Best laps per track id, fastest first. Kept on this device, to beat your own times. */
   readonly boards: Record<string, BoardEntry[]> = {};
 

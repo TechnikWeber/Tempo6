@@ -23,7 +23,7 @@ export class Sound {
   private music: Music | null = null;
   private musicGain: GainNode | null = null;
   /** The slider's setting, 0…1. */
-  private musicVolume = 0.5;
+  private musicVolume = 0.25;
   muted = false;
 
   /**
