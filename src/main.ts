@@ -449,7 +449,7 @@ function frame(now: number): void {
   sound.setSqueal(racing ? Math.max(...v.skid) : 0);
   sound.setBoost(racing ? v.boost : 0);
   // the tune belongs to the start screen (and the garage behind it), not to the driving
-  sound.setMusic(!racing && progress.music);
+  sound.setMusic(!racing, progress.musicVolume);
   listen(v.body.translation());
   if (racing) hud.update(core);
   view.render(core, acc / STEP, dt, !racing, !menu.showingVehicleAlone);

@@ -1,7 +1,7 @@
 import { Music } from './Music';
 
-/** How loud the start screen's tune is against everything else. */
-const MUSIC_VOLUME = 0.22;
+/** How loud the start screen's tune is against everything else, with its slider all the way up. */
+const MUSIC_MAX = 0.44;
 
 /** Synthesised sounds, no audio files: an electric motor whine and a few blips. */
 export class Sound {
@@ -21,6 +21,9 @@ export class Sound {
   private noiseBuffer: AudioBuffer | null = null;
   /** The start screen's chiptune. */
   private music: Music | null = null;
+  private musicGain: GainNode | null = null;
+  /** The slider's setting, 0…1. */
+  private musicVolume = 0.5;
   muted = false;
 
   /**
@@ -97,14 +100,19 @@ export class Sound {
     this.noiseBuffer = buf;
     noise.start();
     const music = ctx.createGain();
-    music.gain.value = MUSIC_VOLUME;
+    music.gain.value = this.musicVolume * MUSIC_MAX;
     music.connect(this.master);
+    this.musicGain = music;
     this.music = new Music(ctx, music, buf);
   }
 
-  /** The start screen's tune: plays while `on`, fades out otherwise. Call every frame. */
-  setMusic(on: boolean): void {
-    this.music?.update(on);
+  /** The start screen's tune: plays while `on` at `volume` (0…1, 0 is off), fades out otherwise. Call every frame. */
+  setMusic(on: boolean, volume: number): void {
+    if (volume !== this.musicVolume) {
+      this.musicVolume = volume;
+      if (this.ctx && this.musicGain) this.musicGain.gain.setTargetAtTime(volume * MUSIC_MAX, this.ctx.currentTime, 0.05);
+    }
+    this.music?.update(on && volume > 0);
   }
 
   /** @param level 0…1 how close the train is */

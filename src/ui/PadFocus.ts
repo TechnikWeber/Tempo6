@@ -1,6 +1,6 @@
 import type { PadPress } from '../input/pads';
 
-/** What can be pressed: buttons, the toggles, and whatever else carries a data-pad name. */
+/** What can be pressed: buttons, the toggles and sliders, and whatever else carries a data-pad name. */
 const PRESSABLE = 'button, label.toggle, [data-pad]';
 
 function pressable(e: HTMLElement): boolean {
@@ -65,6 +65,15 @@ export class PadFocus {
     if (p !== 'up' && p !== 'down' && p !== 'left' && p !== 'right') return false;
     this.sync();
     if (!this.el) return true;
+    // (on a slider, left and right move the slider instead of the highlight)
+    const range = this.el.querySelector<HTMLInputElement>('input[type=range]');
+    if (range && (p === 'left' || p === 'right')) {
+      if (p === 'left') range.stepDown();
+      else range.stepUp();
+      range.dispatchEvent(new Event('input', { bubbles: true }));
+      range.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
     const from = this.el.getBoundingClientRect();
     const fx = from.left + from.width / 2, fy = from.top + from.height / 2;
     const [dx, dy] = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[p];

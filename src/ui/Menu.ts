@@ -73,6 +73,7 @@ export class Menu {
   private readonly start = h('button', 'start', L('Los!', 'Go!'));
   private readonly ghost = h('input');
   private readonly music = h('input');
+  private readonly musicLevel = h('span', 'level');
   private readonly kid = h('input');
   private readonly dev = h('input');
   private readonly garage = h('button', 'garage-btn', '🔧 Garage');
@@ -240,14 +241,20 @@ export class Menu {
     shadow.append(this.ghost, L(' Schatten der Bestzeit', ' Best-lap ghost'));
     shadow.title = L('Im Zeitrennen fährt die Bestzeit als Schatten mit (beim Fahren auch Taste G)', 'In the time trial your best lap drives along as a ghost (key G while driving)');
     // the chiptune on the start screen and in the garage
-    const tune = h('label', 'tool toggle');
-    this.music.type = 'checkbox';
-    this.music.addEventListener('change', () => {
-      this.progress.music = this.music.checked;
-      this.progress.save();
+    const tune = h('label', 'tool toggle slider');
+    tune.dataset.pad = 'music';
+    this.music.type = 'range';
+    this.music.min = '0';
+    this.music.max = '100';
+    this.music.step = '5';
+    // (heard straight away while sliding, saved once let go)
+    this.music.addEventListener('input', () => {
+      this.progress.musicVolume = Number(this.music.value) / 100;
+      this.musicLevel.textContent = `${this.music.value} %`;
     });
-    tune.append(this.music, L(' 🎵 Musik', ' 🎵 Music'));
-    tune.title = L('Chiptune im Startbildschirm und in der Garage (M schaltet allen Ton aus)', 'Chiptune on the start screen and in the garage (M turns all sound off)');
+    this.music.addEventListener('change', () => this.progress.save());
+    tune.append(L('🎵 Musik', '🎵 Music'), this.music, this.musicLevel);
+    tune.title = L('Lautstärke der Chiptune im Startbildschirm und in der Garage, 0 % ist aus (M schaltet allen Ton aus)', 'How loud the chiptune on the start screen and in the garage is, 0 % is off (M turns all sound off)');
     // the other language, one tap away
     const other = h('button', 'tool', L('🌐 English', '🌐 Deutsch'));
     other.title = L('Switch to English', 'Auf Deutsch umstellen');
@@ -510,7 +517,8 @@ export class Menu {
     this.root.dataset.step = this.mobileStep;
     this.money.textContent = formatMoney(this.progress.money);
     this.ghost.checked = this.progress.showGhost;
-    this.music.checked = this.progress.music;
+    this.music.value = String(Math.round(this.progress.musicVolume * 100));
+    this.musicLevel.textContent = `${this.music.value} %`;
     this.kid.checked = this.handlers.kidMode();
     this.dev.checked = this.progress.workshop;
     this.refreshPad();
