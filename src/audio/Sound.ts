@@ -1,7 +1,7 @@
 import { Music } from './Music';
 
 /** How loud the start screen's tune is against everything else. */
-const MUSIC_VOLUME = 0.35;
+const MUSIC_VOLUME = 0.28;
 
 /** Synthesised sounds, no audio files: an electric motor whine and a few blips. */
 export class Sound {
