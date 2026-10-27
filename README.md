@@ -1,5 +1,3 @@
-**English** · [Deutsch](README.de.md)
-
 # Tempo6
 
 **▶ Play in your browser: [technikweber.github.io/Tempo6](https://technikweber.github.io/Tempo6/)** · on a computer or a phone held sideways, nothing to install, no sign-up.
