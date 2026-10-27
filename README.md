@@ -84,3 +84,7 @@ On a phone held sideways: steering strip bottom left with "aufrichten" (upright)
 - `src/input/`: keyboard, controller and touch merged into one driving intent; `pads.ts` holds the controller profiles.
 - `src/config/`: tuning stages, vehicle specs and handling parameters.
 - `src/tracks/`: tracks as plain data, used by both physics and rendering.
+
+## License
+
+[MIT](LICENSE).
