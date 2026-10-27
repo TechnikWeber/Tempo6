@@ -1,5 +1,13 @@
 # Tempo6
 
+<p>
+  <img alt="Status: beta 0.1" src="https://img.shields.io/badge/status-beta%200.1-yellow">
+  <a href="https://github.com/TechnikWeber/Tempo6/actions/workflows/pages.yml"><img alt="build" src="https://img.shields.io/github/actions/workflow/status/TechnikWeber/Tempo6/pages.yml?branch=main&label=build"></a>
+  <img alt="Platform: browser · desktop | phone" src="https://img.shields.io/badge/platform-browser%20%C2%B7%20desktop%20%7C%20phone-blue">
+  <img alt="UI: English | Deutsch" src="https://img.shields.io/badge/UI-English%20%7C%20Deutsch-informational">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
+</p>
+
 **▶ Play in your browser: [technikweber.github.io/Tempo6](https://technikweber.github.io/Tempo6/)** · on a computer or a phone held sideways, nothing to install, no sign-up.
 
 A racing game with power wheelchairs and mobility scooters. Every vehicle starts at 12 km/h (on paper: the legal 6) in the Reha-Parcours, a training course with a seesaw, a rocking bridge and a balance beam. Get through once and the throttle comes off; then earn Schrauben (screws) with laps, races and stunts and spend them on increasingly questionable tuning until 75 km/h. The game is in English and switches to German with one button on the start screen.
